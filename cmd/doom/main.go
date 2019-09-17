@@ -101,44 +101,12 @@ func playerInput(m *goom.Map, cam *opengl.Camera, player *Player, w *glfw.Window
 		player.Turn(3)
 	}
 
-	var height = float32(0)
-	for _, node := range m.Nodes("GL_NODES") {
-		if goom.MagicU32(node.Right).MagicBit() {
-			if node.RightBBox.PosInBox(player.position[0], player.position[1]) {
-				var (
-					ssect  = m.SubSectors("GL_SSECT")[int(goom.MagicU32(node.Right).Uint32())]
-					fseg   = ssect.Segments()[0]
-					line   = m.LinesDefs[fseg.GetLineDef()]
-					side   = m.SideDefs[line.Right]
-					sector = m.Sectors[side.Sector]
-				)
-
-				if fseg.GetDirection() == 1 {
-					side = m.SideDefs[line.Left]
-					sector = m.Sectors[side.Sector]
-				}
-
-				height = sector.FloorHeight()
-			}
-		}
-		if goom.MagicU32(node.Left).MagicBit() {
-			if node.LeftBBox.PosInBox(player.position[0], player.position[1]) {
-				var (
-					ssect  = m.SubSectors("GL_SSECT")[int(goom.MagicU32(node.Left).Uint32())]
-					fseg   = ssect.Segments()[0]
-					line   = m.LinesDefs[fseg.GetLineDef()]
-					side   = m.SideDefs[line.Right]
-					sector = m.Sectors[side.Sector]
-				)
-
-				if fseg.GetDirection() == 1 {
-					side = m.SideDefs[line.Left]
-					sector = m.Sectors[side.Sector]
-				}
-
-				height = sector.FloorHeight()
-			}
-		}
+	var ssect, err = m.FindPositionInBsp(goom.GLNodesName, player.position[0], player.position[1])
+	if err != nil {
+		fmt.Println("could not find GLnode for pos", player.position)
+	} else {
+		var sector = m.SectorFromSSect(ssect)
+		player.height = sector.FloorHeight() + 50
 	}
-	cam.SetCamera(player.Position(), player.dir, height+50)
+	cam.SetCamera(player.Position(), player.dir, player.Height())
 }

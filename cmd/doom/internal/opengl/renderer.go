@@ -3,6 +3,7 @@ package opengl
 import (
 	"fmt"
 	"runtime"
+	"time"
 
 	"github.com/tinogoehlert/goom"
 
@@ -149,7 +150,7 @@ func (gr *GLRenderer) GetSectorForSSect(ssect *goom.SubSector) goom.Sector {
 }
 
 func (gr *GLRenderer) DrawThingsInBBox(sector goom.Sector, bbox goom.BBox) {
-	gr.shaders["main"].Uniform1i("is_billboard", 1)
+	gr.shaders["main"].Uniform1i("draw_phase", 1)
 	gr.shaders["main"].Uniform2f("billboard_size", mgl32.Vec2{0.57, 0.57})
 
 	for _, t := range gr.currentLevel.mapRef.Things {
@@ -177,7 +178,7 @@ func (gr *GLRenderer) DrawThingsInBBox(sector goom.Sector, bbox goom.BBox) {
 			}
 		}
 	}
-	gr.shaders["main"].Uniform1i("is_billboard", 0)
+	gr.shaders["main"].Uniform1i("draw_phase", 0)
 
 }
 
@@ -187,46 +188,38 @@ func (gr *GLRenderer) DrawHUD() {
 	gl.Disable(gl.DEPTH_TEST) // Disable the Depth-testing
 
 	gr.shaders["main"].UniformMatrix4fv("ortho", Ortho)
-	gr.shaders["main"].Uniform1i("is_billboard", 2)
+	gr.shaders["main"].Uniform1i("draw_phase", 2)
 	gr.shaders["main"].Uniform2f("billboard_size", mgl32.Vec2{1.4, 1.4})
 	gr.shaders["main"].Uniform3f("billboard_pos", mgl32.Vec3{float32(gr.fbWidth) / 2, -float32(gr.fbHeight), 0})
 	gr.sprites["CHGG"].mesh.DrawMesh(gl.TRIANGLES)
-	gr.shaders["main"].Uniform1i("is_billboard", 0)
+	gr.shaders["main"].Uniform1i("draw_phase", 0)
 }
 
 // Loop starts the render loop
 func (gr *GLRenderer) Loop(fps int, gameCB func(win *glfw.Window)) {
-	// Set game FPS manually
-	//lasttime := glfw.GetTime()
-	//targetFPS := float64(fps)
 	for !gr.window.ShouldClose() {
 		gr.fbWidth, gr.fbHeight = gr.window.GetFramebufferSize()
 		gl.Viewport(0, 0, int32(gr.fbWidth), int32(gr.fbHeight))
 		// Do OpenGL stuff.
-		gl.Enable(gl.DEPTH_TEST) // Disable the Depth-testing
+		gl.Enable(gl.DEPTH_TEST)
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 		gr.shaders["main"].Use()
 		gr.setProjection()
 		gr.setView()
 		gr.setModel()
 
-		for _, node := range gr.currentLevel.mapRef.Nodes("GL_NODES") {
-			if goom.MagicU32(node.Left).MagicBit() {
-				ssect := gr.currentLevel.subSectors[int(goom.MagicU32(node.Left).Uint32())]
-				gr.DrawSubSector(int(goom.MagicU32(node.Left).Uint32()))
-				gr.DrawThingsInBBox(ssect.sector, node.LeftBBox)
-			}
-			if goom.MagicU32(node.Right).MagicBit() {
-				ssect := gr.currentLevel.subSectors[int(goom.MagicU32(node.Right).Uint32())]
-				gr.DrawSubSector(int(goom.MagicU32(node.Right).Uint32()))
-				gr.DrawThingsInBBox(ssect.sector, node.RightBBox)
-			}
-		}
+		gr.currentLevel.mapRef.WalkBsp(goom.GLNodesName, func(i int, n *goom.Node, b goom.BBox) {
+			rS := gr.currentLevel.subSectors[i]
+			gr.DrawSubSector(i)
+			gr.DrawThingsInBBox(rS.sector, b)
+
+		})
+
 		gr.DrawHUD()
 		gr.window.SwapBuffers()
 		glfw.PollEvents()
 		gameCB(gr.window)
-		//time.Sleep(20 * time.Millisecond)
+		time.Sleep(20 * time.Millisecond)
 	}
 }
 

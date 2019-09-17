@@ -5,6 +5,15 @@ import (
 	"regexp"
 )
 
+const (
+	GLNodesName  = "GL_NODES"
+	NodesName    = "NODES"
+	GLSsectsName = "GL_SSECT"
+	SSectsName   = "SSECT"
+	GLSegsName   = "GL_SEGS"
+	SegsName     = "SEGS"
+)
+
 // Map - A map in Doom is made up of several lumps,
 // each containing specific data required to construct and execute the map.
 type Map struct {
@@ -19,35 +28,7 @@ type Map struct {
 	nodePool   map[string][]Node
 }
 
-func (m *Map) Vert(id uint32) *Vertex {
-	if MagicU32(id).MagicBit() {
-		return &m.vertexPool["GL_VERT"][MagicU32(id).Uint32()]
-	}
-	return &m.vertexPool["VERTEXES"][id]
-}
-
-func (m *Map) Segments(name string) []Segment {
-	return m.segPool[name]
-}
-
-func (m *Map) Nodes(name string) []Node {
-	return m.nodePool[name]
-}
-
-func (m *Map) SubSectors(name string) []SubSector {
-	return m.ssectPool[name]
-}
-
-func (m *Map) OtherSide(line *LineDef, seg Segment) *SideDef {
-	if seg.GetDirection() == 0 {
-		if line.Left == -1 {
-			return nil
-		}
-		return &m.SideDefs[line.Left]
-	}
-	return &m.SideDefs[line.Right]
-}
-
+// LoadMaps loads all the maps
 func (wm *WadManager) LoadMaps() (maps []Map, err error) {
 	var (
 		nameRegex   = regexp.MustCompile(`^E\dM\d|^MAP\d\d`)
@@ -141,105 +122,102 @@ func appendGLNodes(m *Map, lumps []Lump) (err error) {
 	return nil
 }
 
-/*
-
-
-func (m *Map) verticesFromLump(lump Lump) error {
-	if lump.Size%vertexSize != 0 {
-		return fmt.Errorf("size missmatch")
+// Vert gets a vert
+func (m *Map) Vert(id uint32) *Vertex {
+	if MagicU32(id).MagicBit() {
+		return &m.vertexPool["GL_VERT"][MagicU32(id).Uint32()]
 	}
+	return &m.vertexPool["VERTEXES"][id]
+}
 
-	var vertCount = lump.Size / vertexSize
+// Segments gets segs (SEGS or GL_SEGS)
+func (m *Map) Segments(name string) []Segment {
+	return m.segPool[name]
+}
 
-	verts := make([]Vertex, vertCount)
-	for i := 0; i < vertCount; i++ {
-		buff := lump.Data[(i * vertexSize) : (i*vertexSize)+vertexSize]
-		v, err := newVertexFromBuffer(buff)
-		if err != nil {
-			return fmt.Errorf("could not load vertex: %s", err.Error())
+// Nodes gets BSP Nodes (NODES or GL_NODES)
+func (m *Map) Nodes(name string) []Node {
+	return m.nodePool[name]
+}
+
+// SubSectors gets Subsectors (GL_SSECT or SSECT)
+func (m *Map) SubSectors(name string) []SubSector {
+	return m.ssectPool[name]
+}
+
+// OtherSide gets the opposite side of a side / seg
+func (m *Map) OtherSide(line *LineDef, seg Segment) *SideDef {
+	if seg.GetDirection() == 0 {
+		if line.Left == -1 {
+			return nil
 		}
-		verts[i] = *v
+		return &m.SideDefs[line.Left]
 	}
-	m.Bsp.vertexPool[lump.Name] = verts
+	return &m.SideDefs[line.Right]
+}
+
+// SectorFromSSect gets the sector from a subsector
+func (m *Map) SectorFromSSect(ssect *SubSector) *Sector {
+	var (
+		fseg   = ssect.Segments()[0]
+		line   = m.LinesDefs[fseg.GetLineDef()]
+		side   = m.SideDefs[line.Right]
+		sector = m.Sectors[side.Sector]
+	)
+
+	if fseg.GetDirection() == 1 {
+		side = m.SideDefs[line.Left]
+		sector = m.Sectors[side.Sector]
+	}
+	return &sector
+}
+
+// WalkBsp walks through the node tree
+func (m *Map) WalkBsp(nodeType string, fn func(index int, n *Node, b BBox)) error {
+	nodes, ok := m.nodePool[nodeType]
+	if !ok {
+		return fmt.Errorf("could not find %s", nodeType)
+	}
+	for i := len(nodes) - 1; i >= 0; i-- {
+		if nodes[i].Right.IsSubSector() {
+			fn(int(nodes[i].Right.Num()), &nodes[i], nodes[i].RightBBox)
+		}
+		if nodes[i].Left.IsSubSector() {
+			fn(int(nodes[i].Left.Num()), &nodes[i], nodes[i].LeftBBox)
+		}
+	}
 	return nil
 }
 
-
-func (m *Map) sectorsFromLump(lump Lump) error {
-	if lump.Size%sectorSize != 0 {
-		return fmt.Errorf("size missmatch")
+// FindPositionInBsp finds a position in the nodeTree
+func (m *Map) FindPositionInBsp(nodeType string, x, y float32) (*SubSector, error) {
+	ssects := m.SubSectors(SSectsName)
+	if nodeType == GLNodesName {
+		ssects = m.SubSectors(GLSsectsName)
 	}
-
-	var sectorCount = lump.Size / sectorSize
-	m.Sectors = make([]Sector, sectorCount)
-	for i := 0; i < sectorCount; i++ {
-		r := bytes.NewBuffer(lump.Data[(i * sectorSize) : (i*sectorSize)+sectorSize])
-		s := &Sector{}
-		if err := binary.Read(r, binary.LittleEndian, s); err != nil {
-			return err
+	nodes, ok := m.nodePool[nodeType]
+	if !ok {
+		return nil, fmt.Errorf("could not find %s", nodeType)
+	}
+	root := nodes[len(nodes)-1]
+	currNode := &root
+	var i = 0
+	for ; i < len(nodes); i++ {
+		if currNode.LeftBBox.PosInBox(x, y) {
+			if currNode.Left.IsSubSector() {
+				return &ssects[currNode.Left.Num()], nil
+			}
+			currNode = &nodes[currNode.Left.Num()]
+			continue
 		}
-		m.Sectors[i] = *s
-	}
-	return nil
-}
-
-func (m *Map) nodesFromLump(lump Lump) error {
-	r := bytes.NewBuffer(lump.Data)
-	n := &Node{}
-	if err := binary.Read(r, binary.LittleEndian, n); err != nil {
-		return err
-	}
-	m.Nodes = append(m.Nodes, *n)
-	return nil
-}
-
-// DoomMaps holds Doom Maps (levels)
-type DoomMaps []*Map
-
-func LoadMapsFromWAD(wad *WAD) (DoomMaps, error) {
-
-	maps := make(DoomMaps, 0, 8)
-	var m *Map
-	var err error
-	for _, lump := range goom.GetLumps() {
-		if nameRegex.Match([]byte(lump.Name)) {
-			m = &Map{Name: lump.Name}
-			maps = append(maps, m)
-		}
-		switch lump.Name {
-		case "THINGS":
-			m.Things, err = loadThingsFromLump(&lump)
-			if err != nil {
-				return nil, err
+		if currNode.RightBBox.PosInBox(x, y) {
+			if currNode.Right.IsSubSector() {
+				return &ssects[currNode.Right.Num()], nil
 			}
-			break
-		case "LINEDEFS":
-			err := m.linesFromLump(lump)
-			if err != nil {
-				return nil, err
-			}
-		case "VERTEXES":
-			err := m.verticesFromLump(lump)
-			if err != nil {
-				return nil, err
-			}
-		case "SIDEDEFS":
-			err := m.sidesFromLump(lump)
-			if err != nil {
-				return nil, fmt.Errorf("could not read sides: %s", err.Error())
-			}
-		case "SECTORS":
-			err := m.sectorsFromLump(lump)
-			if err != nil {
-				return nil, fmt.Errorf("could not read sectors: %s", err.Error())
-			}
-		case "NODES":
-			err := m.nodesFromLump(lump)
-			if err != nil {
-				return nil, fmt.Errorf("could not read sectors: %s", err.Error())
-			}
+			currNode = &nodes[currNode.Right.Num()]
+			continue
 		}
 	}
-	return maps, nil
+	fmt.Println(currNode)
+	return nil, fmt.Errorf("not found")
 }
-*/
