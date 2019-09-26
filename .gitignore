@@ -16,4 +16,5 @@
 
 #DOOM wads
 *.WAD
+*.wad
 *.gwa
