@@ -3,6 +3,8 @@ DOOM engine written in Go
 
 currently WIP
 
+![Alt text](/misc/goom.png?raw=true "GOOM")
+
 # Development Setup
 
 ## Linux
