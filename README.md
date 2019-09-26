@@ -15,6 +15,7 @@ First install the following system packages:
 - libxrandr-dev
 - libxinerama-dev
 - libxi-dev
+- glbsp
 
 These are the package names on Debian/Ubuntu. On other distributions use corresponding packages.
 
@@ -29,5 +30,7 @@ Finally install the remaining Go dependecies:
 
 - github.com/go-gl/mathgl/mgl32
 - github.com/go-gl/gl/v2.1/gl
+- github.com/ttacon/chalk
+- github.com/go-gl/glfw/v3.2/glfw
 
-The run GOOM: `go run cmd/doom/main.go`
+The run GOOM: `make run`
