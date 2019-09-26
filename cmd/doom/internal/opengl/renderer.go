@@ -2,10 +2,12 @@ package opengl
 
 import (
 	"fmt"
+	"math"
 	"runtime"
 	"time"
 
 	"github.com/tinogoehlert/goom"
+	"github.com/tinogoehlert/goom/cmd/doom/internal/game"
 
 	"github.com/go-gl/gl/v2.1/gl"
 	"github.com/go-gl/glfw/v3.2/glfw"
@@ -22,6 +24,7 @@ type GLRenderer struct {
 	camera        *Camera
 	modelMatrix   mgl32.Mat4
 	sprites       spriteList
+	currentShader string
 	inputCallback func(*glfw.Window)
 }
 
@@ -35,8 +38,8 @@ func init() {
 		panic(err.Error())
 	}
 	glfw.WindowHint(glfw.Resizable, glfw.True)
-	glfw.WindowHint(glfw.ContextVersionMajor, 3)
-	glfw.WindowHint(glfw.ContextVersionMinor, 3)
+	glfw.WindowHint(glfw.ContextVersionMajor, 4)
+	glfw.WindowHint(glfw.ContextVersionMinor, 0)
 	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
 	glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
 }
@@ -44,9 +47,10 @@ func init() {
 // NewRenderer initialize the renderer
 func NewRenderer() (*GLRenderer, error) {
 	return &GLRenderer{
-		shaders:     make(map[string]*ShaderProgram),
-		camera:      NewCamera(),
-		modelMatrix: mgl32.Ident4(),
+		shaders:       make(map[string]*ShaderProgram),
+		camera:        NewCamera(),
+		modelMatrix:   mgl32.Ident4(),
+		currentShader: "main",
 	}, nil
 }
 
@@ -64,7 +68,13 @@ func (gr *GLRenderer) LoadShaderProgram(name, vertFile, fragFile string) error {
 	if err := shader.Link(); err != nil {
 		return err
 	}
-	gr.shaders["main"] = shader
+	gr.shaders[name] = shader
+	return nil
+}
+
+// LoadShaderProgram loads a shader program
+func (gr *GLRenderer) SetShaderProgram(name string) error {
+	gr.currentShader = name
 	return nil
 }
 
@@ -116,21 +126,21 @@ func (gr *GLRenderer) KeyPressed(keyPressed func(key int)) {
 }
 
 func (gr *GLRenderer) setLight(light float32) {
-	gr.shaders["main"].Uniform1f("sectorLight", light)
+	gr.shaders[gr.currentShader].Uniform1f("sectorLight", light)
 }
 
 func (gr *GLRenderer) setProjection() {
-	gr.shaders["main"].UniformMatrix4fv("projection",
+	gr.shaders[gr.currentShader].UniformMatrix4fv("projection",
 		mgl32.Perspective(64.0, float32(gr.fbWidth)/float32(gr.fbHeight), 1.0, 10000.0),
 	)
 }
 
 func (gr *GLRenderer) setView() {
-	gr.shaders["main"].UniformMatrix4fv("view", gr.camera.ViewMat4())
+	gr.shaders[gr.currentShader].UniformMatrix4fv("view", gr.camera.ViewMat4())
 }
 
 func (gr *GLRenderer) setModel() {
-	gr.shaders["main"].UniformMatrix4fv("model", gr.modelMatrix)
+	gr.shaders[gr.currentShader].UniformMatrix4fv("model", gr.modelMatrix)
 }
 
 func (gr *GLRenderer) DrawSubSector(idx int) {
@@ -149,80 +159,66 @@ func (gr *GLRenderer) GetSectorForSSect(ssect *goom.SubSector) goom.Sector {
 	return sector
 }
 
-func (gr *GLRenderer) DrawThingsInBBox(sector goom.Sector, bbox goom.BBox) {
-	gr.shaders["main"].Uniform1i("draw_phase", 1)
-	gr.shaders["main"].Uniform2f("billboard_size", mgl32.Vec2{0.57, 0.57})
-
-	for _, t := range gr.currentLevel.mapRef.Things {
-		x, y := float32(t.X), float32(t.Y)
-		if bbox.PosInBox(x, y) {
-			if t.Type == 3004 {
-				spr := gr.sprites["POSS"]
-				gr.shaders["main"].Uniform3f("billboard_pos", mgl32.Vec3{-x, sector.FloorHeight() + spr.median + 4, y})
-				gr.sprites["POSS"].mesh.DrawMesh(gl.TRIANGLES)
-			}
-			if t.Type == 3001 {
-				spr := gr.sprites["TROO"]
-				gr.shaders["main"].Uniform3f("billboard_pos", mgl32.Vec3{-x, sector.FloorHeight() + spr.median + 4, y})
-				gr.sprites["TROO"].mesh.DrawMesh(gl.TRIANGLES)
-			}
-			if t.Type == 48 {
-				spr := gr.sprites["ELEC"]
-				gr.shaders["main"].Uniform3f("billboard_pos", mgl32.Vec3{-x, sector.FloorHeight() + spr.median + 6, y})
-				gr.sprites["ELEC"].mesh.DrawMesh(gl.TRIANGLES)
-			}
-			if t.Type == 2018 {
-				spr := gr.sprites["ARM1"]
-				gr.shaders["main"].Uniform3f("billboard_pos", mgl32.Vec3{-x, sector.FloorHeight() + spr.median + 4, y})
-				gr.sprites["ARM1"].mesh.DrawMesh(gl.TRIANGLES)
-			}
+func (gr *GLRenderer) DrawThings(things []game.DoomThing) {
+	gr.shaders[gr.currentShader].Uniform1i("draw_phase", 1)
+	camAngle := math.Atan2(
+		float64(gr.camera.direction.Y()),
+		float64(-gr.camera.direction.X()),
+	)
+	for _, t := range things {
+		a, f := t.CurrentFrame(int(camAngle * 180 / math.Pi))
+		spr := gr.sprites[t.SpriteName()]
+		tex := spr.mesh.GetTexture(t.SpriteName() + string(f) + string(a))
+		if tex == nil {
+			fmt.Println("could not find tex: ", t.SpriteName()+string(f)+string(a))
+			continue
 		}
+		gr.shaders[gr.currentShader].Uniform3f("billboard_pos", mgl32.Vec3{
+			-t.Position()[0],
+			t.Height() + (tex.height / 2) + 4,
+			t.Position()[1],
+		})
+		gr.shaders[gr.currentShader].Uniform2f("billboard_size", mgl32.Vec2{tex.width / 70, tex.height / 85})
+		spr.mesh.DrawWithTexture(gl.TRIANGLES, tex)
 	}
-	gr.shaders["main"].Uniform1i("draw_phase", 0)
-
+	gr.shaders[gr.currentShader].Uniform1i("draw_phase", 0)
 }
 
+// DrawHUD draws the game hud
 func (gr *GLRenderer) DrawHUD() {
-	Ortho := mgl32.Ortho2D(0, float32(gr.fbWidth), -float32(gr.fbHeight), 0)
+	Ortho := mgl32.Ortho2D(0, float32(gr.fbWidth), float32(-gr.fbHeight), 0)
 
 	gl.Disable(gl.DEPTH_TEST) // Disable the Depth-testing
-
-	gr.shaders["main"].UniformMatrix4fv("ortho", Ortho)
-	gr.shaders["main"].Uniform1i("draw_phase", 2)
-	gr.shaders["main"].Uniform2f("billboard_size", mgl32.Vec2{1.4, 1.4})
-	gr.shaders["main"].Uniform3f("billboard_pos", mgl32.Vec3{float32(gr.fbWidth) / 2, -float32(gr.fbHeight), 0})
+	gr.shaders[gr.currentShader].UniformMatrix4fv("ortho", Ortho)
+	gr.shaders[gr.currentShader].Uniform1i("draw_phase", 2)
+	gr.shaders[gr.currentShader].Uniform2f("billboard_size", mgl32.Vec2{1.8, 1.8})
+	gr.shaders[gr.currentShader].Uniform3f("billboard_pos", mgl32.Vec3{float32(gr.fbWidth) / 2, -float32(gr.fbHeight), 0})
 	gr.sprites["CHGG"].mesh.DrawMesh(gl.TRIANGLES)
-	gr.shaders["main"].Uniform1i("draw_phase", 0)
+	gr.shaders[gr.currentShader].Uniform1i("draw_phase", 0)
 }
 
 // Loop starts the render loop
-func (gr *GLRenderer) Loop(fps int, gameCB func(win *glfw.Window)) {
+func (gr *GLRenderer) Loop(fps int, thingPass func(), inputCB func(win *glfw.Window)) {
 	for !gr.window.ShouldClose() {
 		gr.fbWidth, gr.fbHeight = gr.window.GetFramebufferSize()
 		gl.Viewport(0, 0, int32(gr.fbWidth), int32(gr.fbHeight))
 		// Do OpenGL stuff.
 		gl.Enable(gl.DEPTH_TEST)
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
-		gr.shaders["main"].Use()
+		gr.shaders[gr.currentShader].Use()
 		gr.setProjection()
 		gr.setView()
 		gr.setModel()
 
 		gr.currentLevel.mapRef.WalkBsp(goom.GLNodesName, func(i int, n *goom.Node, b goom.BBox) {
-			rS := gr.currentLevel.subSectors[i]
 			gr.DrawSubSector(i)
-			gr.DrawThingsInBBox(rS.sector, b)
-
 		})
 
+		thingPass()
 		gr.DrawHUD()
 		gr.window.SwapBuffers()
 		glfw.PollEvents()
-		gameCB(gr.window)
+		inputCB(gr.window)
 		time.Sleep(20 * time.Millisecond)
 	}
 }
-
-/*
-ticker := time.NewTicker(int64(second) / 60) // max 60 fps
-*/

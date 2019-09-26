@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"math"
 
@@ -9,6 +10,8 @@ import (
 	"github.com/go-gl/glfw/v3.2/glfw"
 
 	"github.com/tinogoehlert/goom"
+	"github.com/tinogoehlert/goom/cmd/doom/internal/game"
+	"github.com/tinogoehlert/goom/cmd/doom/internal/game/monsters"
 	"github.com/tinogoehlert/goom/cmd/doom/internal/opengl"
 	"github.com/ttacon/chalk"
 )
@@ -43,7 +46,10 @@ func tryMove(m *goom.Map, from, to mgl32.Vec3, angleX, angleY float64) mgl32.Vec
 }
 
 func main() {
+	wadfile := flag.String("wad", "DOOM1", "wad file to load (without extension)")
+	flag.Parse()
 	fmt.Println(chalk.Green.Color("GOOM - DOOM clone written in go"))
+	fmt.Println(chalk.Green.Color(fmt.Sprintf("load %s", *wadfile)))
 
 	renderer, err := opengl.NewRenderer()
 	if err != nil {
@@ -51,7 +57,7 @@ func main() {
 	}
 
 	doomWAD := goom.NewWadManager()
-	if err := doomWAD.LoadFile("DOOM1.WAD"); err != nil {
+	if err := doomWAD.LoadFile(*wadfile + ".wad"); err != nil {
 		fmt.Printf(chalk.Red.Color("could not load WAD: %s\n"), err.Error())
 	}
 	doomGfx, err := doomWAD.LoadGraphics()
@@ -59,7 +65,7 @@ func main() {
 		fmt.Printf(chalk.Red.Color("could not load gfx: %s\n"), err.Error())
 	}
 
-	if err := doomWAD.LoadFile("DOOM1.gwa"); err != nil {
+	if err := doomWAD.LoadFile(*wadfile + ".gwa"); err != nil {
 		fmt.Printf(chalk.Red.Color("could not load gwa: %s\n"), err.Error())
 	}
 
@@ -73,21 +79,52 @@ func main() {
 	if err := renderer.LoadShaderProgram("main", shaderDir+"/main.vert", shaderDir+"/main.frag"); err != nil {
 		fmt.Printf(chalk.Red.Color("could not init GL: %s\n"), err.Error())
 	}
+	if err := renderer.LoadShaderProgram("red", shaderDir+"/main.vert", shaderDir+"/simpleRed.frag"); err != nil {
+		fmt.Printf(chalk.Red.Color("could not init GL: %s\n"), err.Error())
+	}
+
+	renderer.SetShaderProgram("main")
 
 	m := &doomMaps[0]
+	fmt.Println(len(m.Nodes(goom.GLNodesName)))
 	renderer.BuildLevel(m, doomGfx)
 	renderer.BuildSprites(doomGfx)
 
 	playerPos := m.Things[0]
-	var player = NewPlayer(float32(playerPos.X), float32(playerPos.Y), 45, float32(playerPos.Angle))
-	renderer.Camera().SetCamera(player.Position(), player.dir, player.Height())
+	var player = game.NewPlayer(float32(playerPos.X), float32(playerPos.Y), 45, float32(playerPos.Angle))
+	renderer.Camera().SetCamera(player.Position(), player.Direction(), player.Height())
 
-	renderer.Loop(30, func(w *glfw.Window) {
+	var things = []game.DoomThing{}
+
+	for _, t := range m.Things {
+		if obstacle := game.NewObstacle(&t); obstacle != nil {
+			things = appendDoomThing(things, obstacle, m)
+		}
+		if monster := monsters.NewMonster(&t); monster != nil {
+			things = appendDoomThing(things, monster, m)
+		}
+	}
+	//os.Exit(0)
+	renderer.Loop(30, func() {
+		renderer.DrawThings(things)
+	}, func(w *glfw.Window) {
 		playerInput(m, renderer.Camera(), player, w)
 	})
 }
 
-func playerInput(m *goom.Map, cam *opengl.Camera, player *Player, w *glfw.Window) {
+func appendDoomThing(dst []game.DoomThing, src game.DoomThing, m *goom.Map) []game.DoomThing {
+	var ssect, err = m.FindPositionInBsp(goom.GLNodesName, src.Position()[0], src.Position()[1])
+	if err != nil {
+		fmt.Println("could not find GLnode for pos", src.Position())
+	} else {
+		var sector = m.SectorFromSSect(ssect)
+		src.SetHeight(sector.FloorHeight())
+	}
+
+	return append(dst, src)
+}
+
+func playerInput(m *goom.Map, cam *opengl.Camera, player *game.Player, w *glfw.Window) {
 	if w.GetKey(glfw.KeyUp) == glfw.Press {
 		player.Walk(7)
 	}
@@ -101,12 +138,12 @@ func playerInput(m *goom.Map, cam *opengl.Camera, player *Player, w *glfw.Window
 		player.Turn(3)
 	}
 
-	var ssect, err = m.FindPositionInBsp(goom.GLNodesName, player.position[0], player.position[1])
+	var ssect, err = m.FindPositionInBsp(goom.GLNodesName, player.Position()[0], player.Position()[1])
 	if err != nil {
-		fmt.Println("could not find GLnode for pos", player.position)
+		fmt.Println("could not find GLnode for pos", player.Position())
 	} else {
 		var sector = m.SectorFromSSect(ssect)
-		player.height = sector.FloorHeight() + 50
+		player.SetHeight(sector.FloorHeight() + 50)
 	}
-	cam.SetCamera(player.Position(), player.dir, player.Height())
+	cam.SetCamera(player.Position(), player.Direction(), player.Height())
 }

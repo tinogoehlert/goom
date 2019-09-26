@@ -12,14 +12,21 @@ import (
 	"github.com/go-gl/gl/v2.1/gl"
 )
 
+type glTexture struct {
+	name   string
+	ID     uint32
+	width  float32
+	height float32
+}
+
 type Mesh struct {
-	data       []float32
-	vao        uint32
-	textureIDs []uint32
-	light      float32
-	position   mgl32.Vec3
-	currentTex int
-	seqTime    time.Time
+	data     []float32
+	vao      uint32
+	textures map[string]*glTexture
+	light    float32
+	position mgl32.Vec3
+	firstTex *glTexture
+	seqTime  time.Time
 }
 
 func AddMesh(dst []*Mesh, src *Mesh) []*Mesh {
@@ -29,19 +36,20 @@ func AddMesh(dst []*Mesh, src *Mesh) []*Mesh {
 	return append(dst, src)
 }
 
-func NewMesh(data []float32, light float32, texture goom.DoomTex, palette *goom.Palette) *Mesh {
+func NewMesh(data []float32, light float32, texture goom.DoomTex, palette *goom.Palette, frameID string) *Mesh {
 	if texture == nil {
 		return nil
 	}
 	m := &Mesh{
-		data:       data,
-		light:      light,
-		textureIDs: make([]uint32, 0),
-		seqTime:    time.Now(),
+		data:     data,
+		light:    light,
+		textures: make(map[string]*glTexture),
+		seqTime:  time.Now(),
 	}
 	m.generateGLBuffers()
 	if texture != nil && palette != nil {
-		m.generateGLTexture(texture.ToRGBA(palette))
+		m.generateGLTexture(texture.ToRGBA(palette), frameID)
+		m.firstTex = m.textures[frameID]
 	}
 	return m
 }
@@ -51,16 +59,19 @@ func (m *Mesh) Pos() mgl32.Vec3 {
 }
 
 func (m *Mesh) DrawMesh(method uint32) {
-	if len(m.textureIDs) > 0 {
-		if time.Now().Sub(m.seqTime) >= 180*time.Millisecond {
-			if m.currentTex+1 >= len(m.textureIDs) {
-				m.currentTex = 0
-			} else {
-				m.currentTex++
-			}
-			m.seqTime = time.Now()
-		}
-		gl.BindTexture(gl.TEXTURE_2D, m.textureIDs[m.currentTex])
+	/*
+
+	*/
+	m.DrawWithTexture(method, m.firstTex)
+}
+
+func (m *Mesh) GetTexture(name string) *glTexture {
+	return m.textures[name]
+}
+
+func (m *Mesh) DrawWithTexture(method uint32, texture *glTexture) {
+	if texture != nil {
+		gl.BindTexture(gl.TEXTURE_2D, texture.ID)
 	}
 	gl.BindVertexArray(m.vao)
 	gl.DrawArrays(method, 0, int32(len(m.data)/5))
@@ -83,11 +94,11 @@ func (m *Mesh) generateGLBuffers() {
 	gl.EnableVertexAttribArray(1)
 }
 
-func (m *Mesh) AddTexture(tex goom.DoomTex, palette *goom.Palette) {
-	m.generateGLTexture(tex.ToRGBA(palette))
+func (m *Mesh) AddTexture(tex goom.DoomTex, palette *goom.Palette, frameID string) {
+	m.generateGLTexture(tex.ToRGBA(palette), frameID)
 }
 
-func (m *Mesh) generateGLTexture(tex *image.RGBA) {
+func (m *Mesh) generateGLTexture(tex *image.RGBA, frameID string) {
 	if tex == nil {
 		fmt.Println("no texture found")
 		return
@@ -110,5 +121,11 @@ func (m *Mesh) generateGLTexture(tex *image.RGBA) {
 		gl.RGBA,
 		gl.UNSIGNED_BYTE,
 		gl.Ptr(tex.Pix))
-	m.textureIDs = append(m.textureIDs, texID)
+
+	m.textures[frameID] = &glTexture{
+		width:  float32(tex.Rect.Size().X),
+		height: float32(tex.Rect.Size().Y),
+		ID:     texID,
+		name:   frameID,
+	}
 }

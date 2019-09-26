@@ -152,6 +152,7 @@ func newTexture(tbuff []byte) (*Texture, error) {
 	for i := 0; i < int(tex.patchCount); i++ {
 		var patch = &Patch{}
 		if err := binary.Read(r, binary.LittleEndian, patch); err != nil {
+			fmt.Println("could not read patch for", tex.Name)
 			return nil, err
 		}
 		tex.patches[i] = *patch
@@ -204,7 +205,7 @@ func (wm *WadManager) LoadGraphics() (*Graphics, error) {
 			switch {
 			case lump.Name == "PLAYPAL":
 				if err := gfx.loadPalettesFromBuff(lump.Data); err != nil {
-					fmt.Println(err)
+					fmt.Println("could not load palette", err)
 				}
 			case lump.Name == "PNAMES":
 				numPnames := int(binary.LittleEndian.Uint32(lump.Data[0:4]))
@@ -216,7 +217,7 @@ func (wm *WadManager) LoadGraphics() (*Graphics, error) {
 			case lump.Name == "TEXTURE1" || lump.Name == "TEXTURE2":
 				err := gfx.loadTexturesFromBuff(lump.Data)
 				if err != nil {
-					fmt.Println(err)
+					fmt.Println("could not load texture", lump.Name, err)
 				}
 			case patchStartRegex.Match([]byte(lump.Name)):
 				for {
@@ -225,7 +226,7 @@ func (wm *WadManager) LoadGraphics() (*Graphics, error) {
 						di := DoomImage{Name: lump.Name}
 						err := di.FromBuff(lump.Data)
 						if err != nil {
-							fmt.Println(err)
+							fmt.Println("could not load patch", err)
 						}
 						gfx.images[lump.Name] = di
 					}
@@ -254,10 +255,14 @@ func (wm *WadManager) LoadGraphics() (*Graphics, error) {
 						s, ok := gfx.sprites[lump.Name[:4]]
 						if !ok {
 							s = NewSprite(lump.Name[:4])
+							s.first = lump.Name[:6]
 							gfx.sprites[lump.Name[:4]] = s
 						}
 						sf := s.AddSpriteFrame(lump)
 						sf.image.FromBuff(lump.Data)
+						if len(lump.Name) == 8 {
+							s.frames[lump.Name[:4]+lump.Name[6:8]] = sf
+						}
 					}
 					if spriteEndRegex.Match([]byte(lump.Name)) {
 						break
@@ -315,12 +320,11 @@ func (gfx *Graphics) loadPalettesFromBuff(data []byte) error {
 func (gfx *Graphics) loadTexturesFromBuff(data []byte) error {
 	texCount := int(binary.LittleEndian.Uint32(data[0:4]))
 	for i := 0; i < texCount; i++ {
-
 		offset := int(binary.LittleEndian.Uint32(data[4*i : (4*i)+4]))
 		tbuff := data[offset : offset+textureSize]
 		tex, err := newTexture(tbuff)
 		if err != nil {
-			return err
+			continue
 		}
 		gfx.textures[tex.Name] = tex
 	}

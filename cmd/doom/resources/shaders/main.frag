@@ -9,9 +9,10 @@ uniform float sectorLight;
 
 void main()
 {
+
     float alpha = texture(tex, fragTexCoord).a;
     if (alpha == 1.0) {
-	outColor = texture(tex, fragTexCoord) * vec4(sectorLight/256,sectorLight/256,sectorLight/256,1);
+	  outColor = texture(tex, fragTexCoord) * vec4(sectorLight/300,sectorLight/300,sectorLight/300,1);
     } else {
       discard;
     }

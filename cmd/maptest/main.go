@@ -18,11 +18,13 @@ import (
 
 var data goom.WAD
 var maps []goom.Map
+var ssectName = "SSECTORS"
 
 func run() {
 	cfg := pixelgl.WindowConfig{
-		Title:  "GOOM",
-		Bounds: pixel.R(0, 0, 1024, 768),
+		Title:     "GOOM - maptest " + ssectName,
+		Bounds:    pixel.R(0, 0, 800, 600),
+		Resizable: true,
 	}
 	win, err := pixelgl.NewWindow(cfg)
 	if err != nil {
@@ -38,23 +40,25 @@ func run() {
 	down := float32(6)
 	rand.Seed(time.Now().UnixNano())
 
-	for _, ssect := range e1m1.SubSectors("GL_SSECT")[:] {
+	for _, ssect := range e1m1.SubSectors(ssectName)[:] {
 		var (
 			r = rand.Float64()
 			g = rand.Float64()
 			b = rand.Float64()
 		)
-		//fseg := ssect.Segments()[0]
+
+		fseg := ssect.Segments()[0]
 		for _, seg := range ssect.Segments() {
 			imd.Color = pixel.RGB(r, g, b)
+
 			var (
-				//f = e1m1.Vert(fseg.GetStartVert())
+				f = e1m1.Vert(fseg.GetStartVert())
 				s = e1m1.Vert(seg.GetStartVert())
 				e = e1m1.Vert(seg.GetEndVert())
 			)
 
 			imd.Push(
-				//	pixel.V(float64(f.X()/down), float64(f.Y()/down)),
+				pixel.V(float64(f.X()/down), float64(f.Y()/down)),
 				pixel.V(float64(s.X()/down), float64(s.Y()/down)),
 				pixel.V(float64(e.X()/down), float64(e.Y()/down)),
 			)
@@ -71,7 +75,7 @@ func run() {
 					pixel.V(float64(ls.X()/down), float64(ls.Y()/down)),
 					pixel.V(float64(le.X()/down), float64(le.Y()/down)),
 				)
-				imd.Line(0)
+				imd.Line(1)
 			}
 		}
 	}
@@ -105,20 +109,23 @@ func run() {
 		win.SetMatrix(cam)
 		imd.Draw(win)
 		win.Update()
+		time.Sleep(20)
 	}
 }
 
 func main() {
-	path := flag.String("wad", "DOOM1.WAD", "WAD file to load")
-	fmt.Println(chalk.Green.Color("GOOM - DOOM clone written in go"))
+	path := flag.String("wad", "DOOM1", "WAD file to load")
+	ssects := flag.String("ssect", "SSECTORS", "use this secs")
+	flag.Parse()
 
+	ssectName = *ssects
 	wm := goom.NewWadManager()
-	err := wm.LoadFile(*path)
+	err := wm.LoadFile(*path + ".wad")
 	if err != nil {
 		fmt.Println(chalk.Red.Color(err.Error()))
 		os.Exit(2)
 	}
-	err = wm.LoadFile("DOOM1.gwa")
+	err = wm.LoadFile(*path + ".gwa")
 	if err != nil {
 		fmt.Println(chalk.Red.Color(err.Error()))
 		os.Exit(2)

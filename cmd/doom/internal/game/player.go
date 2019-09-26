@@ -1,4 +1,4 @@
-package main
+package game
 
 import (
 	"math"
@@ -56,9 +56,18 @@ func (p *Player) Position() [2]float32 {
 	return p.position
 }
 
+// Direction get XY direction
+func (p *Player) Direction() [2]float32 {
+	return p.dir
+}
+
 // Height get players height
 func (p *Player) Height() float32 {
 	return p.height
+}
+
+func (p *Player) SetHeight(height float32) {
+	p.height = height
 }
 
 // PositionChanged callback for pos change

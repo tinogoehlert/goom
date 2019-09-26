@@ -72,8 +72,8 @@ func (s *subSector) addFlats(md *goom.Map, gfx *goom.Graphics) {
 	}
 
 	s.sector = sector
-	fm := NewMesh(floorData, sector.LightLevel(), gfx.GetFlat(sector.FloorTexture()), gfx.Palette(0))
-	cm := NewMesh(ceilData, md.Sectors[side.Sector].LightLevel(), gfx.GetFlat(sector.CeilTexture()), gfx.Palette(0))
+	fm := NewMesh(floorData, sector.LightLevel(), gfx.GetFlat(sector.FloorTexture()), gfx.Palette(0), sector.FloorTexture())
+	cm := NewMesh(ceilData, md.Sectors[side.Sector].LightLevel(), gfx.GetFlat(sector.CeilTexture()), gfx.Palette(0), sector.FloorTexture())
 	s.floors = AddMesh(s.floors, fm)
 	s.ceilings = AddMesh(s.ceilings, cm)
 }
@@ -112,7 +112,7 @@ func (s *subSector) addWalls(md *goom.Map, gfx *goom.Graphics) {
 				-end.X(), sector.CeilHeight(), end.Y(), 1.0, 1.0,
 				-start.X(), sector.CeilHeight(), start.Y(), 0.0, 1.0,
 			}
-			wm := NewMesh(wallData, sector.LightLevel(), gfx.GetTexture(side.UpperName.ToString()), gfx.Palette(0))
+			wm := NewMesh(wallData, sector.LightLevel(), gfx.GetTexture(side.UpperName.ToString()), gfx.Palette(0), side.UpperName.ToString())
 			s.walls = AddMesh(s.walls, wm)
 		}
 
@@ -127,7 +127,7 @@ func (s *subSector) addWalls(md *goom.Map, gfx *goom.Graphics) {
 				-end.X(), sector.FloorHeight(), end.Y(), 1.0, 1.0,
 				-start.X(), sector.FloorHeight(), start.Y(), 0.0, 1.0,
 			}
-			wm := NewMesh(wallData, sector.LightLevel(), gfx.GetTexture(side.Lowername.ToString()), gfx.Palette(0))
+			wm := NewMesh(wallData, sector.LightLevel(), gfx.GetTexture(side.Lowername.ToString()), gfx.Palette(0), side.Lowername.ToString())
 			s.walls = AddMesh(s.walls, wm)
 		}
 
@@ -141,7 +141,7 @@ func (s *subSector) addWalls(md *goom.Map, gfx *goom.Graphics) {
 				-end.X(), sector.FloorHeight(), end.Y(), 1.0, 1.0,
 				-start.X(), sector.FloorHeight(), start.Y(), 0.0, 1.0,
 			}
-			wm := NewMesh(wallData, sector.LightLevel(), gfx.GetTexture(side.MiddleName.ToString()), gfx.Palette(0))
+			wm := NewMesh(wallData, sector.LightLevel(), gfx.GetTexture(side.MiddleName.ToString()), gfx.Palette(0), side.MiddleName.ToString())
 			s.walls = AddMesh(s.walls, wm)
 		}
 	}

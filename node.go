@@ -24,17 +24,33 @@ func NewBBoxFromi16(buff []byte) BBox {
 	}
 }
 
-func (b BBox) Top() float32    { return b[0] }
-func (b BBox) Bottom() float32 { return b[1] }
-func (b BBox) Left() float32   { return b[2] }
-func (b BBox) Right() float32  { return b[3] }
+// Top top
+func (b BBox) Top() float32 { return b[0] }
 
+// Bottom Bottom
+func (b BBox) Bottom() float32 { return b[1] }
+
+// Left Left
+func (b BBox) Left() float32 { return b[2] }
+
+// Right Right
+func (b BBox) Right() float32 { return b[3] }
+
+// PosInBox is position in box?
 func (b BBox) PosInBox(x, y float32) bool {
 	return x > b[2] && x < b[3] && y > b[1] && y < b[0]
 }
 
 // NodeChild can be a Sector or a Node
 type NodeChild uint32
+
+func nodeChildI16(v int) NodeChild {
+	n := NodeChild(v &^ (1 << 15))
+	if v > 3000 {
+		n |= (1 << 31)
+	}
+	return n
+}
 
 // IsSubSector Checks if NodeChild is Subsector
 func (n *NodeChild) IsSubSector() bool {
@@ -52,8 +68,8 @@ type Node struct {
 	diff      Point
 	RightBBox BBox
 	LeftBBox  BBox
-	Right     uint32
-	Left      uint32
+	Right     NodeChild
+	Left      NodeChild
 }
 
 func newNodesFromLump(lump *Lump) ([]Node, error) {
@@ -68,8 +84,8 @@ func newNodesFromLump(lump *Lump) ([]Node, error) {
 			diff:      Point{X: i16Tof(vb[4:6]), Y: i16Tof(vb[6:8])},
 			RightBBox: NewBBoxFromi16(vb[8:16]),
 			LeftBBox:  NewBBoxFromi16(vb[16:24]),
-			Right:     uint32(binary.LittleEndian.Uint16(vb[24:26])),
-			Left:      uint32(binary.LittleEndian.Uint16(vb[26:28])),
+			Right:     nodeChildI16(int(binary.LittleEndian.Uint16(vb[24:26]))),
+			Left:      nodeChildI16(int(binary.LittleEndian.Uint16(vb[26:28]))),
 		}
 	}
 	return nodes, nil
@@ -77,7 +93,7 @@ func newNodesFromLump(lump *Lump) ([]Node, error) {
 
 func newGLNodesFromLump(lump *Lump) ([]Node, error) {
 	var (
-		nodeCount = len(lump.Data) / glNodeSize
+		nodeCount = lump.Size / glNodeSize
 		nodes     = make([]Node, nodeCount)
 	)
 	for i := 0; i < nodeCount; i++ {
@@ -87,8 +103,8 @@ func newGLNodesFromLump(lump *Lump) ([]Node, error) {
 			diff:      Point{X: i16Tof(vb[4:6]), Y: i16Tof(vb[6:8])},
 			RightBBox: NewBBoxFromi16(vb[8:16]),
 			LeftBBox:  NewBBoxFromi16(vb[16:24]),
-			Right:     uint32(binary.LittleEndian.Uint32(vb[24:28])),
-			Left:      uint32(binary.LittleEndian.Uint32(vb[28:32])),
+			Right:     NodeChild(binary.LittleEndian.Uint32(vb[24:28])),
+			Left:      NodeChild(binary.LittleEndian.Uint32(vb[28:32])),
 		}
 	}
 	return nodes, nil

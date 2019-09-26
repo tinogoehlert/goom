@@ -32,7 +32,7 @@ type Map struct {
 func (wm *WadManager) LoadMaps() (maps []Map, err error) {
 	var (
 		nameRegex   = regexp.MustCompile(`^E\dM\d|^MAP\d\d`)
-		glNameRegex = regexp.MustCompile(`^GL_E\dM\d|^MAP\d\d`)
+		glNameRegex = regexp.MustCompile(`^GL_E\dM\d|^GL_MAP\d\d`)
 	)
 	maps = make([]Map, 0)
 	tmpMaps := make(map[string]*Map)
@@ -199,25 +199,33 @@ func (m *Map) FindPositionInBsp(nodeType string, x, y float32) (*SubSector, erro
 	if !ok {
 		return nil, fmt.Errorf("could not find %s", nodeType)
 	}
-	root := nodes[len(nodes)-1]
-	currNode := &root
-	var i = 0
-	for ; i < len(nodes); i++ {
-		if currNode.LeftBBox.PosInBox(x, y) {
-			if currNode.Left.IsSubSector() {
-				return &ssects[currNode.Left.Num()], nil
+	var (
+		lastSub    *SubSector
+		lastHeight = float32(-10000)
+	)
+	for i := 0; i < len(nodes); i++ {
+		if nodes[i].Right.IsSubSector() {
+			if nodes[i].RightBBox.PosInBox(x, y) {
+				height := m.SectorFromSSect(&ssects[nodes[i].Right.Num()]).FloorHeight()
+				if height > lastHeight {
+					lastSub = &ssects[nodes[i].Right.Num()]
+					lastHeight = height
+				}
 			}
-			currNode = &nodes[currNode.Left.Num()]
-			continue
 		}
-		if currNode.RightBBox.PosInBox(x, y) {
-			if currNode.Right.IsSubSector() {
-				return &ssects[currNode.Right.Num()], nil
+		if nodes[i].Left.IsSubSector() {
+			if nodes[i].LeftBBox.PosInBox(x, y) {
+				height := m.SectorFromSSect(&ssects[nodes[i].Left.Num()]).FloorHeight()
+				if height > lastHeight {
+					lastSub = &ssects[nodes[i].Left.Num()]
+					lastHeight = height
+				}
 			}
-			currNode = &nodes[currNode.Right.Num()]
-			continue
 		}
 	}
-	fmt.Println(currNode)
-	return nil, fmt.Errorf("not found")
+
+	if lastSub == nil {
+		return nil, fmt.Errorf("not found")
+	}
+	return lastSub, nil
 }
