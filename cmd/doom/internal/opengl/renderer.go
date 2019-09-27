@@ -199,7 +199,9 @@ func (gr *GLRenderer) DrawHUD() {
 
 // Loop starts the render loop
 func (gr *GLRenderer) Loop(fps int, thingPass func(), inputCB func(win *glfw.Window)) {
+	frameTime := time.Duration(1000 / fps)
 	for !gr.window.ShouldClose() {
+		t0 := time.Now()
 		gr.fbWidth, gr.fbHeight = gr.window.GetFramebufferSize()
 		gl.Viewport(0, 0, int32(gr.fbWidth), int32(gr.fbHeight))
 		// Do OpenGL stuff.
@@ -219,6 +221,9 @@ func (gr *GLRenderer) Loop(fps int, thingPass func(), inputCB func(win *glfw.Win
 		gr.window.SwapBuffers()
 		glfw.PollEvents()
 		inputCB(gr.window)
-		time.Sleep(20 * time.Millisecond)
+		remaining := frameTime - time.Now().Sub(t0)
+		if remaining > 0 {
+			time.Sleep(remaining)
+		}
 	}
 }
