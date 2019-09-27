@@ -1,15 +1,22 @@
 # GOOM
 DOOM engine written in Go
 
-currently WIP
-
 ![Alt text](/misc/goom.png?raw=true "GOOM")
+
+Place a `DOOM1.wad` in the root dir and type `make run` to run GOOM.
+
+# Development Status
+
+The project is an experiment and is still lacking a lot of
+features, such as sound, music, menus, and more.
 
 # Development Setup
 
 ## Linux
 
-First install the following system packages:
+On Arch/Manjaro, just install `glbsp`, the rest should be present.
+
+On Ubuntu, install the following system packages:
 
 - libxcursor-dev
 - libxrandr-dev
@@ -17,20 +24,12 @@ First install the following system packages:
 - libxi-dev
 - glbsp
 
-These are the package names on Debian/Ubuntu. On other distributions use corresponding packages.
+For other systems, please check the Debian/Ubuntu requirements and use your corresponding packages.
 
-Then run `go get github.com/go-gl/glfw/v3.2/glfw`.
-This may result in errors that can be fixed as follows.
+## OSX
 
-Until `go-gl` adds `glfw/v3.3` support, you now need to hack your `linux_joystick.c`. It is located on your Go `src` dir at `github.com/go-gl/glfw/v3.2/glfw/glfw/src/linux_joystick.c`.
-Change any `path[20]` statement to `path[512]` in the code directly.
-Then run `go get github.com/go-gl/glfw/v3.2/glfw` again.
+TBD
 
-Finally install the remaining Go dependecies:
+## Windows
 
-- github.com/go-gl/mathgl/mgl32
-- github.com/go-gl/gl/v2.1/gl
-- github.com/ttacon/chalk
-- github.com/go-gl/glfw/v3.2/glfw
-
-The run GOOM: `make run`
+TBD
