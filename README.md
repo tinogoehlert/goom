@@ -1,16 +1,22 @@
 # GOOM
 DOOM engine written in Go
 
-![Alt text](/misc/goom.png?raw=true "GOOM")
+![GOOM](/misc/goom.png?raw=true "GOOM")
 
 Place a `DOOM1.wad` in the root dir and type `make run` to run GOOM.
 
 # Development Status
 
 The project is an experiment and is still lacking a lot of
-features, such as sound, music, menus, and more.
+features, such as shooting, enemy behavior, sound, music, menus, and more.
+
+The current [GOOM Demo Video](/misc/2019-09-goom-pre-alpha.movie.m4v)
+shows what you can expect.
 
 # Development Setup
+
+Running `make` will initialize go modules. Some of the used modules
+use C-bindings and may show compile warnings that can be ignored.
 
 ## Linux
 
