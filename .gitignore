@@ -18,3 +18,6 @@
 *.WAD
 *.wad
 *.gwa
+
+# External Docs
+doc/extern

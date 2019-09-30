@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"math"
 	"strings"
 
@@ -15,11 +14,11 @@ import (
 	"github.com/tinogoehlert/goom/cmd/doom/internal/game/monsters"
 	"github.com/tinogoehlert/goom/cmd/doom/internal/opengl"
 	"github.com/tinogoehlert/goom/level"
-	"github.com/ttacon/chalk"
 )
 
 var (
 	shaderDir = "resources/shaders"
+	log       = goom.GoomConsole
 )
 
 func dist(x1, y1, x2, y2 float32) float32 {
@@ -62,24 +61,24 @@ func main() {
 	level := flag.String("level", "E1M1", "Level to start e.g. E1M1")
 
 	flag.Parse()
-	fmt.Println(chalk.Green.Color("GOOM - DOOM clone written in go"))
-	fmt.Println(chalk.Green.Color(fmt.Sprintf("load %s", *iwadfile)))
+	log.Green("GOOM - DOOM clone written in Go")
+	log.Green("loading %s", *iwadfile)
 
 	renderer, err := opengl.NewRenderer()
 	if err != nil {
-		fmt.Printf(chalk.Red.Color("could not init GL: %s\n"), err.Error())
+		log.Red("could not init GL: %s", err.Error())
 	}
 
 	gameData, err := loadWAD(*iwadfile, *pwadfile)
 	if err != nil {
-		fmt.Printf(chalk.Red.Color("could not load WAD: %s\n"), err.Error())
+		log.Red("could not load WAD: %s", err.Error())
 	}
 
 	if err := renderer.CreateWindow(800, 600, "GOOM"); err != nil {
-		fmt.Printf(chalk.Red.Color("could not load maps: %s\n"), err.Error())
+		log.Red("could not load maps: %s", err.Error())
 	}
 	if err := renderer.LoadShaderProgram("main", shaderDir+"/main.vert", shaderDir+"/main.frag"); err != nil {
-		fmt.Printf(chalk.Red.Color("could not init GL: %s\n"), err.Error())
+		log.Red("could not init GL: %s", err.Error())
 	}
 
 	renderer.SetShaderProgram("main")
@@ -102,6 +101,9 @@ func main() {
 			things = appendDoomThing(things, monster, m)
 		}
 	}
+	music := doomTracks["D_E1M1"]
+	music.Loop()
+	defer music.Stop()
 	//os.Exit(0)
 	renderer.Loop(30, func() {
 		renderer.DrawThings(things)
@@ -113,7 +115,7 @@ func main() {
 func appendDoomThing(dst []game.DoomThing, src game.DoomThing, m *level.Level) []game.DoomThing {
 	var ssect, err = m.FindPositionInBsp(level.GLNodesName, src.Position()[0], src.Position()[1])
 	if err != nil {
-		fmt.Println("could not find GLnode for pos", src.Position())
+		log.Print("could not find GLnode for pos %v", src.Position())
 	} else {
 		var sector = m.SectorFromSSect(ssect)
 		src.SetHeight(sector.FloorHeight())
@@ -138,7 +140,7 @@ func playerInput(m *level.Level, cam *opengl.Camera, player *game.Player, w *glf
 
 	var ssect, err = m.FindPositionInBsp(level.GLNodesName, player.Position()[0], player.Position()[1])
 	if err != nil {
-		fmt.Println("could not find GLnode for pos", player.Position())
+		log.Print("could not find GLnode for pos %v", player.Position())
 	} else {
 		var sector = m.SectorFromSSect(ssect)
 		player.SetHeight(sector.FloorHeight() + 50)
