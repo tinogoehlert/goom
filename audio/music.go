@@ -99,7 +99,7 @@ func NewMusicSuite() MusicSuite {
 
 // LoadWAD loads the music data from the WAD and returns it
 // as playble music tracks.
-func (suite MusicSuite) LoadWAD(w wad.WAD) error {
+func (suite MusicSuite) LoadWAD(w *wad.WAD) error {
 	var (
 		midiRegex = regexp.MustCompile(`^D_`)
 		lumps     = w.Lumps()
