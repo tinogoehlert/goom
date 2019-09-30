@@ -1,8 +1,6 @@
 package opengl
 
 import (
-	"fmt"
-
 	"github.com/go-gl/gl/v2.1/gl"
 	"github.com/tinogoehlert/goom"
 	"github.com/tinogoehlert/goom/level"
@@ -151,9 +149,6 @@ func (s *subSector) addWalls(md *level.Level, gd *goom.GameData) {
 				-end.X(), sector.CeilHeight(), end.Y(), 1.0, 0.0,
 				-end.X(), sector.FloorHeight(), end.Y(), 1.0, 1.0,
 				-start.X(), sector.FloorHeight(), start.Y(), 0.0, 1.0,
-			}
-			if gd.Texture(side.Middle()) == nil {
-				fmt.Println(side.Middle())
 			}
 			wm := NewMesh(wallData, sector.LightLevel(), gd.Texture(side.Middle()), gd.DefaultPalette(), side.Middle())
 			s.walls = AddMesh(s.walls, wm)

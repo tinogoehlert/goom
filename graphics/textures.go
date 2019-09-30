@@ -41,7 +41,6 @@ func NewTexture(buff []byte) (*Texture, error) {
 		height:     int(int16(binary.LittleEndian.Uint16(buff[14:16]))),
 		patchCount: int(int16(binary.LittleEndian.Uint16(buff[20:22]))),
 	}
-	fmt.Println("new tex:", tex.name)
 	tex.patches = make([]*Patch, tex.patchCount)
 	pbuff := buff[22:]
 	for i := 0; i < int(tex.patchCount); i++ {
