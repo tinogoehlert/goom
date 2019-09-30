@@ -101,7 +101,7 @@ func main() {
 			things = appendDoomThing(things, monster, m)
 		}
 	}
-	music := doomTracks["D_E1M1"]
+	music := gameData.Music["D_E1M1"]
 	music.Loop()
 	defer music.Stop()
 	//os.Exit(0)
