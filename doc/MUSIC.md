@@ -2,8 +2,9 @@
 
 Links
 -----
-[1]: http://www.shikadi.net/moddingwiki/MUS_Format            MUS Format (ModdingWiki)
-[2]: https://www.doomworld.com/idgames/docs/editing/mus_form  MUS Format Description (by Vladimir Arnost)
+[[1]](http://www.shikadi.net/moddingwiki/MUS_Format)            MUS Format (ModdingWiki)
+
+[[2]](https://www.doomworld.com/idgames/docs/editing/mus_form)  MUS Format Description (by Vladimir Arnost)
 
 MUS File Format
 ===============
@@ -70,7 +71,7 @@ before proceeding with the next group.
 
 *Work in Progress! The followign may not be correct or complete!*
 
-> *Source*: [MUS Format Description by Vladimir Arnost][2]
+> *Source*: [MUS Format Description by Vladimir Arnost](https://www.doomworld.com/idgames/docs/editing/mus_form)
 > 
 > 1. time = 0
 > 2. READ a byte
