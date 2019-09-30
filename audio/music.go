@@ -1,10 +1,12 @@
-package goom
+package audio
 
 import (
 	"encoding/binary"
 	"fmt"
 	"regexp"
 	"strings"
+
+	"github.com/tinogoehlert/goom/wad"
 )
 
 // MusID identifies MUS data.
@@ -48,7 +50,7 @@ func (h *MusData) Info() string {
 
 // MusicTrack contains a playable Music track.
 type MusicTrack struct {
-	Lump
+	wad.Lump
 	MusData *MusData
 }
 
@@ -90,28 +92,31 @@ func NewMusData(data []byte) (*MusData, error) {
 // MusicSuite is a suite of named MusicTracks.
 type MusicSuite map[string]*MusicTrack
 
-// LoadMusic loads the music data from the WAD and returns it
+// NewMusicSuite creates a new MusicStore
+func NewMusicSuite() MusicSuite {
+	return make(MusicSuite)
+}
+
+// LoadWAD loads the music data from the WAD and returns it
 // as playble music tracks.
-func (wm *WadManager) LoadMusic() (MusicSuite, error) {
+func (suite MusicSuite) LoadWAD(w wad.WAD) error {
 	var (
 		midiRegex = regexp.MustCompile(`^D_`)
+		lumps     = w.Lumps()
 	)
-	suite := make(MusicSuite)
-	for _, w := range wm.wads {
-		for i := 0; i < len(w.lumps); i++ {
-			l := w.lumps[i]
-			switch {
-			case midiRegex.Match([]byte(l.Name)):
-				m, err := NewMusData(l.Data)
-				t := &MusicTrack{l, m}
-				if err != nil {
-					GoomConsole.Red("failed to load MUS track: %s, err: %s", t.Name, err)
-				}
-				suite[l.Name] = t
+	for i := 0; i < len(lumps); i++ {
+		l := lumps[i]
+		switch {
+		case midiRegex.Match([]byte(l.Name)):
+			m, err := NewMusData(l.Data)
+			t := &MusicTrack{l, m}
+			if err != nil {
+				fmt.Printf("failed to load MUS track: %s, err: %s\n", t.Name, err)
 			}
+			suite[l.Name] = t
 		}
 	}
-	return suite, nil
+	return nil
 }
 
 // Play plays the MusicTrack.

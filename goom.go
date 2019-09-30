@@ -1,6 +1,7 @@
 package goom
 
 import (
+	"github.com/tinogoehlert/goom/audio"
 	"github.com/tinogoehlert/goom/graphics"
 	"github.com/tinogoehlert/goom/level"
 	"github.com/tinogoehlert/goom/wad"
@@ -13,6 +14,7 @@ type GameData struct {
 	Flats    graphics.FlatStore
 	Sprites  graphics.SpriteStore
 	Palettes *graphics.Palettes
+	Music    audio.MusicSuite
 }
 
 // LoadGameData Load Engine data from WAD files
@@ -22,6 +24,7 @@ func LoadGameData(files ...string) (*GameData, error) {
 		Textures: graphics.NewTextureStore(),
 		Flats:    graphics.NewFlatStore(),
 		Sprites:  graphics.NewSpriteStore(),
+		Music:    audio.NewMusicSuite(),
 	}
 	for _, file := range files {
 		wad, err := wad.NewWADFromFile(file)
@@ -29,6 +32,9 @@ func LoadGameData(files ...string) (*GameData, error) {
 			return nil, err
 		}
 		if err := gd.Levels.LoadWAD(wad); err != nil {
+			return nil, err
+		}
+		if err := gd.Music.LoadWAD(wad); err != nil {
 			return nil, err
 		}
 		if p, _ := graphics.NewPalettes(wad); p != nil {
