@@ -10,8 +10,7 @@ Place a `DOOM1.wad` in the root dir and type `make run` to run GOOM.
 The project is an experiment and is still lacking a lot of
 features, such as shooting, enemy behavior, sound, music, menus, and more.
 
-The current [GOOM Demo Video](/misc/2019-09-goom-pre-alpha.movie.m4v)
-shows what you can expect.
+![DEMO](/misc/goom-preview.gif?raw=true "DEMO")
 
 # Development Setup
 
