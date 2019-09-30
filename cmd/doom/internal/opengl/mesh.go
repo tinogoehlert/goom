@@ -5,9 +5,9 @@ import (
 	"image"
 	"time"
 
-	"github.com/go-gl/mathgl/mgl32"
+	"github.com/tinogoehlert/goom/graphics"
 
-	"github.com/tinogoehlert/goom"
+	"github.com/go-gl/mathgl/mgl32"
 
 	"github.com/go-gl/gl/v2.1/gl"
 )
@@ -36,7 +36,7 @@ func AddMesh(dst []*Mesh, src *Mesh) []*Mesh {
 	return append(dst, src)
 }
 
-func NewMesh(data []float32, light float32, texture goom.DoomTex, palette *goom.Palette, frameID string) *Mesh {
+func NewMesh(data []float32, light float32, texture graphics.Image, palette graphics.Palette, frameID string) *Mesh {
 	if texture == nil {
 		return nil
 	}
@@ -47,8 +47,8 @@ func NewMesh(data []float32, light float32, texture goom.DoomTex, palette *goom.
 		seqTime:  time.Now(),
 	}
 	m.generateGLBuffers()
-	if texture != nil && palette != nil {
-		m.generateGLTexture(texture.ToRGBA(palette), frameID)
+	if texture != nil {
+		m.generateGLTexture(texture.ToRGBA(palette.Colors), frameID)
 		m.firstTex = m.textures[frameID]
 	}
 	return m
@@ -59,13 +59,16 @@ func (m *Mesh) Pos() mgl32.Vec3 {
 }
 
 func (m *Mesh) DrawMesh(method uint32) {
-	/*
-
-	*/
+	if m == nil {
+		return
+	}
 	m.DrawWithTexture(method, m.firstTex)
 }
 
 func (m *Mesh) GetTexture(name string) *glTexture {
+	if m == nil {
+		return nil
+	}
 	return m.textures[name]
 }
 
@@ -94,8 +97,8 @@ func (m *Mesh) generateGLBuffers() {
 	gl.EnableVertexAttribArray(1)
 }
 
-func (m *Mesh) AddTexture(tex goom.DoomTex, palette *goom.Palette, frameID string) {
-	m.generateGLTexture(tex.ToRGBA(palette), frameID)
+func (m *Mesh) AddTexture(tex graphics.Image, palette *graphics.Palette, frameID string) {
+	m.generateGLTexture(tex.ToRGBA(palette.Colors), frameID)
 }
 
 func (m *Mesh) generateGLTexture(tex *image.RGBA, frameID string) {
@@ -108,7 +111,7 @@ func (m *Mesh) generateGLTexture(tex *image.RGBA, frameID string) {
 	gl.ActiveTexture(gl.TEXTURE0)
 	gl.BindTexture(gl.TEXTURE_2D, texID)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT)
 	gl.TexImage2D(

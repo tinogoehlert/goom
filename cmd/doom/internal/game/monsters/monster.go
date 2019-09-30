@@ -1,8 +1,8 @@
 package monsters
 
 import (
-	"github.com/tinogoehlert/goom"
 	"github.com/tinogoehlert/goom/cmd/doom/internal/game"
+	"github.com/tinogoehlert/goom/level"
 )
 
 // Monster A DOOM Monster
@@ -11,7 +11,7 @@ type Monster interface {
 }
 
 // NewMonster converts ID to name and sequence
-func NewMonster(t *goom.Thing) Monster {
+func NewMonster(t *level.Thing) Monster {
 	switch t.Type {
 	case 68:
 		return NewDummyMonster(t, "BSPI")

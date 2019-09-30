@@ -17,4 +17,4 @@ DOOM1.gwa: DOOM1.wad
 	glbsp -v5 DOOM1.wad
 
 run: all
-	cd cmd/doom && go run main.go -wad ../../DOOM1
+	cd cmd/doom && go run main.go -iwad ../../DOOM1

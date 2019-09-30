@@ -16,8 +16,7 @@ import (
 	"golang.org/x/image/colornames"
 )
 
-var data goom.WAD
-var maps []goom.Map
+var gameData *goom.GameData
 var ssectName = "SSECTORS"
 
 func run() {
@@ -33,7 +32,7 @@ func run() {
 	}
 	imd := imdraw.New(nil)
 	imd.Color = colornames.White
-	e1m1 := maps[0]
+	e1m1 := gameData.Level("E1M1")
 	camPos := pixel.ZV
 	camZoom := float64(1)
 
@@ -52,9 +51,9 @@ func run() {
 			imd.Color = pixel.RGB(r, g, b)
 
 			var (
-				f = e1m1.Vert(fseg.GetStartVert())
-				s = e1m1.Vert(seg.GetStartVert())
-				e = e1m1.Vert(seg.GetEndVert())
+				f = e1m1.Vert(fseg.StartVert())
+				s = e1m1.Vert(seg.StartVert())
+				e = e1m1.Vert(seg.EndVert())
 			)
 
 			imd.Push(
@@ -64,8 +63,8 @@ func run() {
 			)
 			imd.Line(1)
 
-			if seg.GetLineDef() != -1 {
-				line := e1m1.LinesDefs[seg.GetLineDef()]
+			if seg.LineDef() != -1 {
+				line := e1m1.LinesDefs[seg.LineDef()]
 				var (
 					ls = e1m1.Vert(uint32(line.Start))
 					le = e1m1.Vert(uint32(line.End))
@@ -119,18 +118,8 @@ func main() {
 	flag.Parse()
 
 	ssectName = *ssects
-	wm := goom.NewWadManager()
-	err := wm.LoadFile(*path + ".wad")
-	if err != nil {
-		fmt.Println(chalk.Red.Color(err.Error()))
-		os.Exit(2)
-	}
-	err = wm.LoadFile(*path + ".gwa")
-	if err != nil {
-		fmt.Println(chalk.Red.Color(err.Error()))
-		os.Exit(2)
-	}
-	maps, err = wm.LoadMaps()
+	var err error
+	gameData, err = goom.LoadGameData(*path + ".wad")
 	if err != nil {
 		fmt.Println(chalk.Red.Color(err.Error()))
 		os.Exit(2)

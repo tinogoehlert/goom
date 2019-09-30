@@ -3,25 +3,26 @@ package opengl
 import (
 	"github.com/go-gl/gl/v2.1/gl"
 	"github.com/tinogoehlert/goom"
+	"github.com/tinogoehlert/goom/level"
 )
 
-type level struct {
+type doomLevel struct {
 	name       string
 	walls      []*Mesh
 	subSectors []*subSector
-	mapRef     *goom.Map
+	mapRef     *level.Level
 }
 
 type subSector struct {
 	floors   []*Mesh
 	ceilings []*Mesh
 	walls    []*Mesh
-	sector   goom.Sector
-	ref      goom.SubSector
+	sector   level.Sector
+	ref      level.SubSector
 }
 
-func RegisterMap(m *goom.Map, gfx *goom.Graphics) *level {
-	l := level{
+func RegisterMap(m *level.Level, gd *goom.GameData) *doomLevel {
+	l := doomLevel{
 		name:       m.Name,
 		mapRef:     m,
 		subSectors: make([]*subSector, 0, len(m.SubSectors("GL_SSECT"))),
@@ -29,24 +30,24 @@ func RegisterMap(m *goom.Map, gfx *goom.Graphics) *level {
 
 	for _, ssect := range m.SubSectors("GL_SSECT") {
 		var s = &subSector{ref: ssect}
-		s.addFlats(m, gfx)
-		s.addWalls(m, gfx)
+		s.addFlats(m, gd)
+		s.addWalls(m, gd)
 		l.subSectors = append(l.subSectors, s)
 	}
 	return &l
 }
 
-func (s *subSector) addFlats(md *goom.Map, gfx *goom.Graphics) {
+func (s *subSector) addFlats(md *level.Level, gd *goom.GameData) {
 	s.floors, s.ceilings = []*Mesh{}, []*Mesh{}
 	var (
 		fseg   = s.ref.Segments()[0]
-		vfs    = md.Vert(fseg.GetStartVert())
-		line   = md.LinesDefs[fseg.GetLineDef()]
+		vfs    = md.Vert(fseg.StartVert())
+		line   = md.LinesDefs[fseg.LineDef()]
 		side   = md.SideDefs[line.Right]
 		sector = md.Sectors[side.Sector]
 	)
 
-	if fseg.GetDirection() == 1 {
+	if fseg.Direction() == 1 {
 		side = md.SideDefs[line.Left]
 		sector = md.Sectors[side.Sector]
 	}
@@ -55,8 +56,8 @@ func (s *subSector) addFlats(md *goom.Map, gfx *goom.Graphics) {
 	ceilData := []float32{}
 	for _, seg := range s.ref.Segments() {
 		var (
-			s = md.Vert(seg.GetStartVert())
-			e = md.Vert(seg.GetEndVert())
+			s = md.Vert(seg.StartVert())
+			e = md.Vert(seg.EndVert())
 		)
 
 		floorData = append(floorData,
@@ -72,19 +73,23 @@ func (s *subSector) addFlats(md *goom.Map, gfx *goom.Graphics) {
 	}
 
 	s.sector = sector
-	fm := NewMesh(floorData, sector.LightLevel(), gfx.GetFlat(sector.FloorTexture()), gfx.Palette(0), sector.FloorTexture())
-	cm := NewMesh(ceilData, md.Sectors[side.Sector].LightLevel(), gfx.GetFlat(sector.CeilTexture()), gfx.Palette(0), sector.FloorTexture())
-	s.floors = AddMesh(s.floors, fm)
-	s.ceilings = AddMesh(s.ceilings, cm)
+	if len(gd.Flat(sector.FloorTexture())) > 0 {
+		fm := NewMesh(floorData, sector.LightLevel(), gd.Flat(sector.FloorTexture())[0], gd.DefaultPalette(), sector.FloorTexture())
+		s.floors = AddMesh(s.floors, fm)
+	}
+	if len(gd.Flat(sector.CeilTexture())) > 0 {
+		cm := NewMesh(ceilData, md.Sectors[side.Sector].LightLevel(), gd.Flat(sector.CeilTexture())[0], gd.DefaultPalette(), sector.FloorTexture())
+		s.ceilings = AddMesh(s.ceilings, cm)
+	}
 }
 
-func (s *subSector) addWalls(md *goom.Map, gfx *goom.Graphics) {
+func (s *subSector) addWalls(md *level.Level, gd *goom.GameData) {
 	s.walls = []*Mesh{}
 	for _, seg := range s.ref.Segments() {
-		if seg.GetLineDef() == -1 {
+		if seg.LineDef() == -1 {
 			continue
 		}
-		line := md.LinesDefs[seg.GetLineDef()]
+		line := md.LinesDefs[seg.LineDef()]
 		side := md.SideDefs[line.Right]
 
 		otherSide := md.OtherSide(&line, seg)
@@ -95,13 +100,13 @@ func (s *subSector) addWalls(md *goom.Map, gfx *goom.Graphics) {
 			end   = md.Vert(uint32(line.End))
 		)
 
-		if side.MiddleName.ToString() == "-" &&
-			side.UpperName.ToString() == "-" &&
-			side.Lowername.ToString() == "-" {
+		if side.Middle() == "-" &&
+			side.Upper() == "-" &&
+			side.Lower() == "-" {
 			continue
 		}
 
-		if side.UpperName.ToString() != "-" && otherSide != nil {
+		if side.Upper() != "-" && otherSide != nil {
 			oppositeSector := md.Sectors[otherSide.Sector]
 			wallData := []float32{
 				-start.X(), sector.CeilHeight(), start.Y(), 0.0, 1.0,
@@ -112,11 +117,13 @@ func (s *subSector) addWalls(md *goom.Map, gfx *goom.Graphics) {
 				-end.X(), sector.CeilHeight(), end.Y(), 1.0, 1.0,
 				-start.X(), sector.CeilHeight(), start.Y(), 0.0, 1.0,
 			}
-			wm := NewMesh(wallData, sector.LightLevel(), gfx.GetTexture(side.UpperName.ToString()), gfx.Palette(0), side.UpperName.ToString())
-			s.walls = AddMesh(s.walls, wm)
+			if gd.Texture(side.Upper()) != nil {
+				wm := NewMesh(wallData, sector.LightLevel(), gd.Texture(side.Upper()), gd.DefaultPalette(), side.Upper())
+				s.walls = AddMesh(s.walls, wm)
+			}
 		}
 
-		if side.Lowername.ToString() != "-" && otherSide != nil {
+		if side.Lower() != "-" && otherSide != nil {
 			oppositeSector := md.Sectors[otherSide.Sector]
 			wallData := []float32{
 				-start.X(), sector.FloorHeight(), start.Y(), 0.0, 1.0,
@@ -127,11 +134,13 @@ func (s *subSector) addWalls(md *goom.Map, gfx *goom.Graphics) {
 				-end.X(), sector.FloorHeight(), end.Y(), 1.0, 1.0,
 				-start.X(), sector.FloorHeight(), start.Y(), 0.0, 1.0,
 			}
-			wm := NewMesh(wallData, sector.LightLevel(), gfx.GetTexture(side.Lowername.ToString()), gfx.Palette(0), side.Lowername.ToString())
-			s.walls = AddMesh(s.walls, wm)
+			if gd.Texture(side.Lower()) != nil {
+				wm := NewMesh(wallData, sector.LightLevel(), gd.Texture(side.Lower()), gd.DefaultPalette(), side.Lower())
+				s.walls = AddMesh(s.walls, wm)
+			}
 		}
 
-		if side.MiddleName.ToString() != "-" {
+		if side.Middle() != "-" {
 			wallData := []float32{
 				-start.X(), sector.FloorHeight(), start.Y(), 0.0, 1.0,
 				-start.X(), sector.CeilHeight(), start.Y(), 0.0, 0.0,
@@ -141,7 +150,7 @@ func (s *subSector) addWalls(md *goom.Map, gfx *goom.Graphics) {
 				-end.X(), sector.FloorHeight(), end.Y(), 1.0, 1.0,
 				-start.X(), sector.FloorHeight(), start.Y(), 0.0, 1.0,
 			}
-			wm := NewMesh(wallData, sector.LightLevel(), gfx.GetTexture(side.MiddleName.ToString()), gfx.Palette(0), side.MiddleName.ToString())
+			wm := NewMesh(wallData, sector.LightLevel(), gd.Texture(side.Middle()), gd.DefaultPalette(), side.Middle())
 			s.walls = AddMesh(s.walls, wm)
 		}
 	}

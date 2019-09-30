@@ -1,9 +1,13 @@
-package goom
+package level
 
 import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"strings"
+
+	"github.com/tinogoehlert/goom/internal/utils"
+	"github.com/tinogoehlert/goom/wad"
 )
 
 const (
@@ -14,13 +18,25 @@ const (
 type SideDef struct {
 	X          int16
 	Y          int16
-	UpperName  DoomStr
-	Lowername  DoomStr
-	MiddleName DoomStr
+	UpperName  utils.DoomStr
+	LowerName  utils.DoomStr
+	MiddleName utils.DoomStr
 	Sector     int16
 }
 
-func newSidesDefFromLump(lump *Lump) ([]SideDef, error) {
+func (s *SideDef) Upper() string {
+	return strings.ToUpper(s.UpperName.String())
+}
+
+func (s *SideDef) Middle() string {
+	return strings.ToUpper(s.MiddleName.String())
+}
+
+func (s *SideDef) Lower() string {
+	return strings.ToUpper(s.LowerName.String())
+}
+
+func newSidesDefFromLump(lump *wad.Lump) ([]SideDef, error) {
 	if lump.Size%sidedefSize != 0 {
 		return nil, fmt.Errorf("size missmatch")
 	}

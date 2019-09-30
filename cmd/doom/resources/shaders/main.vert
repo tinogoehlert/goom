@@ -8,6 +8,7 @@ uniform mat4 view;
 uniform mat4 model;
 uniform mat4 ortho;
 uniform int draw_phase;
+uniform int billboard_flipped;
 uniform vec3 billboard_pos;
 uniform vec2 billboard_size;
 
@@ -39,6 +40,9 @@ void main()
 	fragTexCoord = vertTexCoord;
 	// things code
 	if (draw_phase == 1) {
+		if (billboard_flipped == 1) {
+			fragTexCoord.x = -fragTexCoord.x;
+		}
 		gl_Position = drawBillboard();	
 		return;
 	}

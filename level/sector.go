@@ -1,8 +1,13 @@
-package goom
+package level
 
 import (
 	"encoding/binary"
 	"fmt"
+	"strings"
+
+	"github.com/tinogoehlert/goom/internal/utils"
+
+	"github.com/tinogoehlert/goom/wad"
 )
 
 const (
@@ -44,7 +49,7 @@ func (s *Sector) FloorTexture() string { return s.floorTexture }
 // Tag sector tags for segs
 func (s *Sector) Tag() int16 { return s.tag }
 
-func newSectorsFromLump(lump *Lump) ([]Sector, error) {
+func newSectorsFromLump(lump *wad.Lump) ([]Sector, error) {
 	if lump.Size%sectorSize != 0 {
 		return nil, fmt.Errorf("size missmatch")
 	}
@@ -55,13 +60,13 @@ func newSectorsFromLump(lump *Lump) ([]Sector, error) {
 	for i := 0; i < sectorCount; i++ {
 		b := lump.Data[(i * sectorSize) : (i*sectorSize)+sectorSize]
 		sectors[i] = Sector{
-			floorHeight:    i16Tof(b[0:2]),
-			ceilingHeight:  i16Tof(b[2:4]),
-			floorTexture:   wadString(b[4:12]),
-			ceilingTexture: wadString(b[12:20]),
-			lightLevel:     i16Tof(b[20:22]),
-			sectorType:     i16(b[20:24]),
-			tag:            i16(b[20:26]),
+			floorHeight:    utils.Int16Tof32(b[0:2]),
+			ceilingHeight:  utils.Int16Tof32(b[2:4]),
+			floorTexture:   strings.TrimRight(string(b[4:12]), "\x00"),
+			ceilingTexture: strings.TrimRight(string(b[12:20]), "\x00"),
+			lightLevel:     utils.Int16Tof32(b[20:22]),
+			sectorType:     utils.I16(b[20:24]),
+			tag:            utils.I16(b[20:26]),
 		}
 	}
 	return sectors, nil
@@ -77,7 +82,7 @@ func (ssect *SubSector) Segments() []Segment {
 	return ssect.segments
 }
 
-func newSSectsFromLump(lump *Lump, segs []Segment) ([]SubSector, error) {
+func newSSectsFromLump(lump *wad.Lump, segs []Segment) ([]SubSector, error) {
 	var (
 		ssectCount = len(lump.Data) / ssectSize
 		subsectors = make([]SubSector, (lump.Size)/ssectSize)
@@ -94,7 +99,7 @@ func newSSectsFromLump(lump *Lump, segs []Segment) ([]SubSector, error) {
 	return subsectors, nil
 }
 
-func newGLSSectsV5FromLump(lump *Lump, segs []Segment) ([]SubSector, error) {
+func newGLSSectsV5FromLump(lump *wad.Lump, segs []Segment) ([]SubSector, error) {
 	var (
 		ssectCount = len(lump.Data) / glSsectSize
 		subsectors = make([]SubSector, (lump.Size)/glSsectSize)

@@ -1,9 +1,7 @@
 package opengl
 
 import (
-	"fmt"
-
-	"github.com/tinogoehlert/goom"
+	"github.com/tinogoehlert/goom/graphics"
 )
 
 type sprite struct {
@@ -15,23 +13,21 @@ type sprite struct {
 
 type spriteList map[string]sprite
 
-func BuildSpritesFromGfx(gfx *goom.Graphics) spriteList {
+func BuildSpritesFromGfx(sprites graphics.SpriteStore, palette graphics.Palette) spriteList {
 	sl := make(spriteList)
 
-	for key, sprite := range gfx.GetSprites() {
-		sl[key] = makeSprite(&sprite, gfx.Palette(0))
+	for key, sprite := range sprites {
+		sl[key] = makeSprite(&sprite, palette)
 	}
 
 	return sl
 }
 
-func makeSprite(gs *goom.Sprite, palette *goom.Palette) sprite {
+func makeSprite(gs *graphics.Sprite, palette graphics.Palette) sprite {
 	s := sprite{}
 
 	first := gs.FirstFrame()
-	if first == nil {
-		fmt.Println(gs.Name)
-	}
+
 	var (
 		w = float32(first.Image().Width())
 		h = float32(first.Image().Height())
@@ -46,11 +42,11 @@ func makeSprite(gs *goom.Sprite, palette *goom.Palette) sprite {
 		w, -h, 0, 1.0, 1.0,
 	}
 	s.mesh = NewMesh(verts, 0, first.Image(), palette, first.Name())
-	gs.Frames(func(frame *goom.SpriteFrame) {
-		s.mesh.AddTexture(frame.Image(), palette, frame.Name())
+	gs.Frames(func(frame *graphics.SpriteFrame) {
+		s.mesh.AddTexture(frame.Image(), &palette, frame.Name())
 	})
-	s.height = first.Image().Height()
-	s.width = first.Image().Width()
+	s.height = float32(first.Image().Height())
+	s.width = float32(first.Image().Width())
 	s.median = s.height / 2
 	return s
 }

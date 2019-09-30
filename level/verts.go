@@ -1,7 +1,9 @@
-package goom
+package level
 
 import (
 	"encoding/binary"
+
+	"github.com/tinogoehlert/goom/wad"
 )
 
 const (
@@ -26,7 +28,7 @@ func (v *Vertex) X() float32 { return v.x }
 func (v *Vertex) Y() float32 { return v.y }
 
 // NewVerticesFromLump loads vertices from Lump
-func newVerticesFromLump(lump *Lump) ([]Vertex, error) {
+func newVerticesFromLump(lump *wad.Lump) ([]Vertex, error) {
 	var verts []Vertex
 	switch string(lump.Data[0:4]) {
 	case glMagicV5:

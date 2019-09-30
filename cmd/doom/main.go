@@ -2,8 +2,8 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"math"
+	"strings"
 
 	"github.com/go-gl/mathgl/mgl32"
 
@@ -13,11 +13,12 @@ import (
 	"github.com/tinogoehlert/goom/cmd/doom/internal/game"
 	"github.com/tinogoehlert/goom/cmd/doom/internal/game/monsters"
 	"github.com/tinogoehlert/goom/cmd/doom/internal/opengl"
-	"github.com/ttacon/chalk"
+	"github.com/tinogoehlert/goom/level"
 )
 
 var (
 	shaderDir = "resources/shaders"
+	log       = goom.GoomConsole
 )
 
 func dist(x1, y1, x2, y2 float32) float32 {
@@ -26,7 +27,7 @@ func dist(x1, y1, x2, y2 float32) float32 {
 	return float32(math.Sqrt(first + second))
 }
 
-func tryMove(m *goom.Map, from, to mgl32.Vec3, angleX, angleY float64) mgl32.Vec3 {
+func tryMove(m *level.Level, from, to mgl32.Vec3, angleX, angleY float64) mgl32.Vec3 {
 	for _, line := range m.LinesDefs {
 		if line.Left != -1 {
 			continue
@@ -45,50 +46,46 @@ func tryMove(m *goom.Map, from, to mgl32.Vec3, angleX, angleY float64) mgl32.Vec
 	return to
 }
 
+func loadWAD(iwad, pwad string) (*goom.GameData, error) {
+	var wads = []string{}
+	wads = append(wads, iwad+".wad", iwad+".gwa")
+	if pwad != "" {
+		wads = append(wads, pwad+".wad", pwad+".gwa")
+	}
+	return goom.LoadGameData(wads...)
+}
+
 func main() {
-	wadfile := flag.String("wad", "DOOM1", "wad file to load (without extension)")
+	iwadfile := flag.String("iwad", "DOOM1", "IWAD file to load (without extension)")
+	pwadfile := flag.String("pwad", "", "PWAD file to load (without extension)")
+	level := flag.String("level", "E1M1", "Level to start e.g. E1M1")
+
 	flag.Parse()
-	fmt.Println(chalk.Green.Color("GOOM - DOOM clone written in go"))
-	fmt.Println(chalk.Green.Color(fmt.Sprintf("load %s", *wadfile)))
+	log.Green("GOOM - DOOM clone written in Go")
+	log.Green("loading %s", *iwadfile)
 
 	renderer, err := opengl.NewRenderer()
 	if err != nil {
-		fmt.Printf(chalk.Red.Color("could not init GL: %s\n"), err.Error())
+		log.Red("could not init GL: %s", err.Error())
 	}
 
-	doomWAD := goom.NewWadManager()
-	if err := doomWAD.LoadFile(*wadfile + ".wad"); err != nil {
-		fmt.Printf(chalk.Red.Color("could not load WAD: %s\n"), err.Error())
-	}
-	doomGfx, err := doomWAD.LoadGraphics()
+	gameData, err := loadWAD(*iwadfile, *pwadfile)
 	if err != nil {
-		fmt.Printf(chalk.Red.Color("could not load gfx: %s\n"), err.Error())
+		log.Red("could not load WAD: %s", err.Error())
 	}
 
-	if err := doomWAD.LoadFile(*wadfile + ".gwa"); err != nil {
-		fmt.Printf(chalk.Red.Color("could not load gwa: %s\n"), err.Error())
-	}
-
-	doomMaps, err := doomWAD.LoadMaps()
-	if err != nil {
-		fmt.Printf(chalk.Red.Color("could not load maps: %s\n"), err.Error())
-	}
 	if err := renderer.CreateWindow(800, 600, "GOOM"); err != nil {
-		fmt.Printf(chalk.Red.Color("could not load maps: %s\n"), err.Error())
+		log.Red("could not load maps: %s", err.Error())
 	}
 	if err := renderer.LoadShaderProgram("main", shaderDir+"/main.vert", shaderDir+"/main.frag"); err != nil {
-		fmt.Printf(chalk.Red.Color("could not init GL: %s\n"), err.Error())
-	}
-	if err := renderer.LoadShaderProgram("red", shaderDir+"/main.vert", shaderDir+"/simpleRed.frag"); err != nil {
-		fmt.Printf(chalk.Red.Color("could not init GL: %s\n"), err.Error())
+		log.Red("could not init GL: %s", err.Error())
 	}
 
 	renderer.SetShaderProgram("main")
 
-	m := &doomMaps[0]
-	fmt.Println(len(m.Nodes(goom.GLNodesName)))
-	renderer.BuildLevel(m, doomGfx)
-	renderer.BuildSprites(doomGfx)
+	m := gameData.Level(strings.ToUpper(*level))
+	renderer.BuildLevel(m, gameData)
+	renderer.BuildSprites(gameData)
 
 	playerPos := m.Things[0]
 	var player = game.NewPlayer(float32(playerPos.X), float32(playerPos.Y), 45, float32(playerPos.Angle))
@@ -104,6 +101,9 @@ func main() {
 			things = appendDoomThing(things, monster, m)
 		}
 	}
+	music := gameData.Music["D_E1M1"]
+	music.Loop()
+	defer music.Stop()
 	//os.Exit(0)
 	renderer.Loop(30, func() {
 		renderer.DrawThings(things)
@@ -112,10 +112,10 @@ func main() {
 	})
 }
 
-func appendDoomThing(dst []game.DoomThing, src game.DoomThing, m *goom.Map) []game.DoomThing {
-	var ssect, err = m.FindPositionInBsp(goom.GLNodesName, src.Position()[0], src.Position()[1])
+func appendDoomThing(dst []game.DoomThing, src game.DoomThing, m *level.Level) []game.DoomThing {
+	var ssect, err = m.FindPositionInBsp(level.GLNodesName, src.Position()[0], src.Position()[1])
 	if err != nil {
-		fmt.Println("could not find GLnode for pos", src.Position())
+		log.Print("could not find GLnode for pos %v", src.Position())
 	} else {
 		var sector = m.SectorFromSSect(ssect)
 		src.SetHeight(sector.FloorHeight())
@@ -124,7 +124,7 @@ func appendDoomThing(dst []game.DoomThing, src game.DoomThing, m *goom.Map) []ga
 	return append(dst, src)
 }
 
-func playerInput(m *goom.Map, cam *opengl.Camera, player *game.Player, w *glfw.Window) {
+func playerInput(m *level.Level, cam *opengl.Camera, player *game.Player, w *glfw.Window) {
 	if w.GetKey(glfw.KeyUp) == glfw.Press {
 		player.Walk(7)
 	}
@@ -138,9 +138,9 @@ func playerInput(m *goom.Map, cam *opengl.Camera, player *game.Player, w *glfw.W
 		player.Turn(3)
 	}
 
-	var ssect, err = m.FindPositionInBsp(goom.GLNodesName, player.Position()[0], player.Position()[1])
+	var ssect, err = m.FindPositionInBsp(level.GLNodesName, player.Position()[0], player.Position()[1])
 	if err != nil {
-		fmt.Println("could not find GLnode for pos", player.Position())
+		log.Print("could not find GLnode for pos %v", player.Position())
 	} else {
 		var sector = m.SectorFromSSect(ssect)
 		player.SetHeight(sector.FloorHeight() + 50)
