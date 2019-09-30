@@ -1,6 +1,8 @@
 package monsters
 
-import "github.com/tinogoehlert/goom"
+import (
+	"github.com/tinogoehlert/goom/level"
+)
 
 var (
 	walkingSeq = []byte{'A', 'B', 'C', 'D'}
@@ -12,11 +14,11 @@ type DummyMonster struct {
 	angle      float32
 	sequence   []byte
 	spriteName string
-	thing      *goom.Thing
+	thing      *level.Thing
 	height     float32
 }
 
-func NewDummyMonster(t *goom.Thing, name string) *DummyMonster {
+func NewDummyMonster(t *level.Thing, name string) *DummyMonster {
 	return &DummyMonster{
 		position:   [2]float32{t.X, t.Y},
 		angle:      t.Angle,
@@ -49,6 +51,10 @@ func (ht *DummyMonster) SetHeight(height float32) {
 	ht.height = height
 }
 
-func (ht *DummyMonster) CurrentFrame(angle int) (byte, byte) {
+func (ht *DummyMonster) Flipped() int {
+	return 0
+}
+
+func (ht *DummyMonster) CurrentFrame(dir [2]float32) (byte, byte) {
 	return '1', walkingSeq[0]
 }

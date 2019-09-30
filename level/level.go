@@ -1,8 +1,11 @@
-package goom
+package level
 
 import (
 	"fmt"
 	"regexp"
+
+	"github.com/tinogoehlert/goom/internal/utils"
+	"github.com/tinogoehlert/goom/wad"
 )
 
 const (
@@ -14,9 +17,9 @@ const (
 	SegsName     = "SEGS"
 )
 
-// Map - A map in Doom is made up of several lumps,
+// Level - A map in Doom is made up of several lumps,
 // each containing specific data required to construct and execute the map.
-type Map struct {
+type Level struct {
 	Name       string
 	Things     []Thing
 	LinesDefs  []LineDef
@@ -28,94 +31,102 @@ type Map struct {
 	nodePool   map[string][]Node
 }
 
-// LoadMaps loads all the maps
-func (wm *WadManager) LoadMaps() (maps []Map, err error) {
+// Store stores map of levels
+type Store map[string]*Level
+
+// NewStore creates new level store
+func NewStore() Store {
+	return make(Store)
+}
+
+// LoadWAD loads wad into store
+func (s Store) LoadWAD(w *wad.WAD) error {
 	var (
 		nameRegex   = regexp.MustCompile(`^E\dM\d|^MAP\d\d`)
 		glNameRegex = regexp.MustCompile(`^GL_E\dM\d|^GL_MAP\d\d`)
 	)
-	maps = make([]Map, 0)
-	tmpMaps := make(map[string]*Map)
-	for _, w := range wm.wads {
-		for i := 0; i < len(w.lumps); i++ {
-			l := w.lumps[i]
-			switch {
-			case nameRegex.Match([]byte(l.Name)):
-				m, err := loadMap(w.lumps[i+1 : i+9])
-				if err != nil {
-					return nil, fmt.Errorf("ERROR %s: %s", l.Name, err.Error())
-				}
-				m.Name = l.Name
-				maps = append(maps, *m)
-				tmpMaps[l.Name] = m
-				i += 7
-			case glNameRegex.Match([]byte(l.Name)):
-				appendGLNodes(tmpMaps[l.Name[3:]], w.lumps[i+1:i+5])
-				i += 3
+	for i := 0; i < len(w.Lumps()); i++ {
+		lump := w.Lumps()[i]
+		switch {
+		case nameRegex.Match([]byte(lump.Name)):
+			fmt.Println(lump.Name)
+			l, err := NewLevel(w.Lumps()[i+1 : i+9])
+			if err != nil {
+				return fmt.Errorf("ERROR %s: %s", lump.Name, err.Error())
 			}
+			l.Name = lump.Name
+			s[l.Name] = l
+			i += 7
+		case glNameRegex.Match([]byte(lump.Name)):
+			appendGLNodes(s[lump.Name[3:]], w.Lumps()[i+1:i+5])
+			i += 3
 		}
 	}
-	return maps, nil
+	return nil
 }
 
-func loadMap(lumps []Lump) (m *Map, err error) {
-	m = &Map{
+// NewLevel Loads a level from a list of lumps
+func NewLevel(lumps []wad.Lump) (l *Level, err error) {
+	l = &Level{
 		vertexPool: make(map[string][]Vertex),
 		segPool:    make(map[string][]Segment),
 		ssectPool:  make(map[string][]SubSector),
 		nodePool:   make(map[string][]Node),
 	}
-	m.Things, err = loadThingsFromLump(&lumps[0])
+	l.Things, err = loadThingsFromLump(&lumps[0])
 	if err != nil {
 		return nil, fmt.Errorf("could not read things from WAD: %s", err.Error())
 	}
-	m.LinesDefs, err = newLinedefsFromLump(&lumps[1])
+	l.LinesDefs, err = newLinedefsFromLump(&lumps[1])
 	if err != nil {
 		return nil, fmt.Errorf("could not read linedefs from WAD: %s", err.Error())
 	}
-	m.SideDefs, err = newSidesDefFromLump(&lumps[2])
+	l.SideDefs, err = newSidesDefFromLump(&lumps[2])
 	if err != nil {
 		return nil, fmt.Errorf("could not read sidedefs from WAD: %s", err.Error())
 	}
-	m.vertexPool[lumps[3].Name], err = newVerticesFromLump(&lumps[3])
+	l.vertexPool[lumps[3].Name], err = newVerticesFromLump(&lumps[3])
 	if err != nil {
 		return nil, fmt.Errorf("could not read vertices from WAD: %s", err.Error())
 	}
-	m.segPool[lumps[4].Name], err = newSegmentsFromLump(&lumps[4])
+	l.segPool[lumps[4].Name], err = newSegmentsFromLump(&lumps[4])
 	if err != nil {
 		return nil, fmt.Errorf("could not read segs from WAD: %s", err.Error())
 	}
-	segs := m.segPool[lumps[4].Name]
-	m.ssectPool[lumps[5].Name], err = newSSectsFromLump(&lumps[5], segs)
+	segs := l.segPool[lumps[4].Name]
+	l.ssectPool[lumps[5].Name], err = newSSectsFromLump(&lumps[5], segs)
 	if err != nil {
 		return nil, fmt.Errorf("could not read subsectors from WAD: %s", err.Error())
 	}
-	m.nodePool[lumps[6].Name], err = newNodesFromLump(&lumps[6])
+	l.nodePool[lumps[6].Name], err = newNodesFromLump(&lumps[6])
 	if err != nil {
 		return nil, fmt.Errorf("could not read nodes from WAD: %s", err.Error())
 	}
-	m.Sectors, err = newSectorsFromLump(&lumps[7])
+	l.Sectors, err = newSectorsFromLump(&lumps[7])
 	if err != nil {
 		return nil, fmt.Errorf("could not read sectors from WAD: %s", err.Error())
 	}
-	return m, nil
+	return l, nil
 }
 
-func appendGLNodes(m *Map, lumps []Lump) (err error) {
-	m.vertexPool[lumps[0].Name], err = newVerticesFromLump(&lumps[0])
+func appendGLNodes(l *Level, lumps []wad.Lump) (err error) {
+	if l == nil {
+		panic("level not found")
+	}
+	l.vertexPool[lumps[0].Name], err = newVerticesFromLump(&lumps[0])
 	if err != nil {
 		return fmt.Errorf("could not load GL_VERT: %s", err.Error())
 	}
-	m.segPool[lumps[1].Name], err = newGLSegmentsFromLump(&lumps[1])
+	l.segPool[lumps[1].Name], err = newGLSegmentsFromLump(&lumps[1])
 	if err != nil {
 		return fmt.Errorf("could not load GL_SEGS: %s", err.Error())
 	}
-	segs := m.segPool[lumps[1].Name]
-	m.ssectPool[lumps[2].Name], err = newGLSSectsV5FromLump(&lumps[2], segs)
+	segs := l.segPool[lumps[1].Name]
+	l.ssectPool[lumps[2].Name], err = newGLSSectsV5FromLump(&lumps[2], segs)
 	if err != nil {
 		return fmt.Errorf("could not load GL_SEGS: %s", err.Error())
 	}
-	m.nodePool[lumps[3].Name], err = newGLNodesFromLump(&lumps[3])
+	l.nodePool[lumps[3].Name], err = newGLNodesFromLump(&lumps[3])
 	if err != nil {
 		return fmt.Errorf("could not read GL_NODES from WAD: %s", err.Error())
 	}
@@ -123,58 +134,58 @@ func appendGLNodes(m *Map, lumps []Lump) (err error) {
 }
 
 // Vert gets a vert
-func (m *Map) Vert(id uint32) *Vertex {
-	if MagicU32(id).MagicBit() {
-		return &m.vertexPool["GL_VERT"][MagicU32(id).Uint32()]
+func (l *Level) Vert(id uint32) *Vertex {
+	if utils.MagicU32(id).MagicBit() {
+		return &l.vertexPool["GL_VERT"][utils.MagicU32(id).Uint32()]
 	}
-	return &m.vertexPool["VERTEXES"][id]
+	return &l.vertexPool["VERTEXES"][id]
 }
 
 // Segments gets segs (SEGS or GL_SEGS)
-func (m *Map) Segments(name string) []Segment {
-	return m.segPool[name]
+func (l *Level) Segments(name string) []Segment {
+	return l.segPool[name]
 }
 
 // Nodes gets BSP Nodes (NODES or GL_NODES)
-func (m *Map) Nodes(name string) []Node {
-	return m.nodePool[name]
+func (l *Level) Nodes(name string) []Node {
+	return l.nodePool[name]
 }
 
 // SubSectors gets Subsectors (GL_SSECT or SSECT)
-func (m *Map) SubSectors(name string) []SubSector {
-	return m.ssectPool[name]
+func (l *Level) SubSectors(name string) []SubSector {
+	return l.ssectPool[name]
 }
 
 // OtherSide gets the opposite side of a side / seg
-func (m *Map) OtherSide(line *LineDef, seg Segment) *SideDef {
-	if seg.GetDirection() == 0 {
+func (l *Level) OtherSide(line *LineDef, seg Segment) *SideDef {
+	if seg.Direction() == 0 {
 		if line.Left == -1 {
 			return nil
 		}
-		return &m.SideDefs[line.Left]
+		return &l.SideDefs[line.Left]
 	}
-	return &m.SideDefs[line.Right]
+	return &l.SideDefs[line.Right]
 }
 
 // SectorFromSSect gets the sector from a subsector
-func (m *Map) SectorFromSSect(ssect *SubSector) *Sector {
+func (l *Level) SectorFromSSect(ssect *SubSector) *Sector {
 	var (
 		fseg   = ssect.Segments()[0]
-		line   = m.LinesDefs[fseg.GetLineDef()]
-		side   = m.SideDefs[line.Right]
-		sector = m.Sectors[side.Sector]
+		line   = l.LinesDefs[fseg.LineDef()]
+		side   = l.SideDefs[line.Right]
+		sector = l.Sectors[side.Sector]
 	)
 
-	if fseg.GetDirection() == 1 {
-		side = m.SideDefs[line.Left]
-		sector = m.Sectors[side.Sector]
+	if fseg.Direction() == 1 {
+		side = l.SideDefs[line.Left]
+		sector = l.Sectors[side.Sector]
 	}
 	return &sector
 }
 
 // WalkBsp walks through the node tree
-func (m *Map) WalkBsp(nodeType string, fn func(index int, n *Node, b BBox)) error {
-	nodes, ok := m.nodePool[nodeType]
+func (l *Level) WalkBsp(nodeType string, fn func(index int, n *Node, b BBox)) error {
+	nodes, ok := l.nodePool[nodeType]
 	if !ok {
 		return fmt.Errorf("could not find %s", nodeType)
 	}
@@ -190,12 +201,12 @@ func (m *Map) WalkBsp(nodeType string, fn func(index int, n *Node, b BBox)) erro
 }
 
 // FindPositionInBsp finds a position in the nodeTree
-func (m *Map) FindPositionInBsp(nodeType string, x, y float32) (*SubSector, error) {
-	ssects := m.SubSectors(SSectsName)
+func (l *Level) FindPositionInBsp(nodeType string, x, y float32) (*SubSector, error) {
+	ssects := l.SubSectors(SSectsName)
 	if nodeType == GLNodesName {
-		ssects = m.SubSectors(GLSsectsName)
+		ssects = l.SubSectors(GLSsectsName)
 	}
-	nodes, ok := m.nodePool[nodeType]
+	nodes, ok := l.nodePool[nodeType]
 	if !ok {
 		return nil, fmt.Errorf("could not find %s", nodeType)
 	}
@@ -206,7 +217,7 @@ func (m *Map) FindPositionInBsp(nodeType string, x, y float32) (*SubSector, erro
 	for i := 0; i < len(nodes); i++ {
 		if nodes[i].Right.IsSubSector() {
 			if nodes[i].RightBBox.PosInBox(x, y) {
-				height := m.SectorFromSSect(&ssects[nodes[i].Right.Num()]).FloorHeight()
+				height := l.SectorFromSSect(&ssects[nodes[i].Right.Num()]).FloorHeight()
 				if height > lastHeight {
 					lastSub = &ssects[nodes[i].Right.Num()]
 					lastHeight = height
@@ -215,7 +226,7 @@ func (m *Map) FindPositionInBsp(nodeType string, x, y float32) (*SubSector, erro
 		}
 		if nodes[i].Left.IsSubSector() {
 			if nodes[i].LeftBBox.PosInBox(x, y) {
-				height := m.SectorFromSSect(&ssects[nodes[i].Left.Num()]).FloorHeight()
+				height := l.SectorFromSSect(&ssects[nodes[i].Left.Num()]).FloorHeight()
 				if height > lastHeight {
 					lastSub = &ssects[nodes[i].Left.Num()]
 					lastHeight = height

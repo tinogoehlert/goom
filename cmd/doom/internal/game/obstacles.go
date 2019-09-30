@@ -3,7 +3,7 @@ package game
 import (
 	"time"
 
-	"github.com/tinogoehlert/goom"
+	"github.com/tinogoehlert/goom/level"
 )
 
 // Obstacle - a static thing in the game
@@ -41,7 +41,11 @@ func (o *Obstacle) SetHeight(height float32) {
 	o.height = height
 }
 
-func (o *Obstacle) CurrentFrame(angle int) (byte, byte) {
+func (o *Obstacle) Flipped() int {
+	return 0
+}
+
+func (o *Obstacle) CurrentFrame(dir [2]float32) (byte, byte) {
 	if len(o.sequence) > 0 {
 		if time.Now().Sub(o.lastTick) >= 180*time.Millisecond {
 			if o.currentFrame+1 >= len(o.sequence) {
@@ -55,7 +59,7 @@ func (o *Obstacle) CurrentFrame(angle int) (byte, byte) {
 	return '0', o.sequence[o.currentFrame]
 }
 
-func NewObstacle(t *goom.Thing) *Obstacle {
+func NewObstacle(t *level.Thing) *Obstacle {
 	switch t.Type {
 	case 48:
 		return buildObstacle("ELEC", []byte{'A'}, t)
@@ -80,7 +84,7 @@ func NewObstacle(t *goom.Thing) *Obstacle {
 	return nil
 }
 
-func buildObstacle(name string, sequence []byte, t *goom.Thing) *Obstacle {
+func buildObstacle(name string, sequence []byte, t *level.Thing) *Obstacle {
 	return &Obstacle{
 		spriteName: name,
 		sequence:   sequence,

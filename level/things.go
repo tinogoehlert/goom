@@ -1,8 +1,10 @@
-package goom
+package level
 
 import (
 	"encoding/binary"
 	"fmt"
+
+	"github.com/tinogoehlert/goom/wad"
 )
 
 const (
@@ -19,7 +21,7 @@ type Thing struct {
 	SpriteName string
 }
 
-func loadThingsFromLump(lump *Lump) ([]Thing, error) {
+func loadThingsFromLump(lump *wad.Lump) ([]Thing, error) {
 	if lump.Size%thingSize != 0 {
 		return nil, fmt.Errorf("size missmatch")
 	}

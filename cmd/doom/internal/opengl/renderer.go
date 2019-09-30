@@ -2,9 +2,10 @@ package opengl
 
 import (
 	"fmt"
-	"math"
 	"runtime"
 	"time"
+
+	"github.com/tinogoehlert/goom/level"
 
 	"github.com/tinogoehlert/goom"
 	"github.com/tinogoehlert/goom/cmd/doom/internal/game"
@@ -17,7 +18,7 @@ import (
 //GLRenderer openGL renderer
 type GLRenderer struct {
 	window        *glfw.Window
-	currentLevel  *level
+	currentLevel  *doomLevel
 	shaders       map[string]*ShaderProgram
 	fbWidth       int
 	fbHeight      int
@@ -79,13 +80,13 @@ func (gr *GLRenderer) SetShaderProgram(name string) error {
 }
 
 // BuildLevel builds the level
-func (gr *GLRenderer) BuildLevel(m *goom.Map, gfx *goom.Graphics) {
-	gr.currentLevel = RegisterMap(m, gfx)
+func (gr *GLRenderer) BuildLevel(m *level.Level, gd *goom.GameData) {
+	gr.currentLevel = RegisterMap(m, gd)
 }
 
 // BuildLevel builds the level
-func (gr *GLRenderer) BuildSprites(gfx *goom.Graphics) {
-	gr.sprites = BuildSpritesFromGfx(gfx)
+func (gr *GLRenderer) BuildSprites(gd *goom.GameData) {
+	gr.sprites = BuildSpritesFromGfx(gd.Sprites, gd.DefaultPalette())
 }
 
 func (gr *GLRenderer) Camera() *Camera {
@@ -149,10 +150,10 @@ func (gr *GLRenderer) DrawSubSector(idx int) {
 	s.Draw()
 }
 
-func (gr *GLRenderer) GetSectorForSSect(ssect *goom.SubSector) goom.Sector {
+func (gr *GLRenderer) GetSectorForSSect(ssect *level.SubSector) level.Sector {
 	var (
 		fseg   = ssect.Segments()[0]
-		line   = gr.currentLevel.mapRef.LinesDefs[fseg.GetLineDef()]
+		line   = gr.currentLevel.mapRef.LinesDefs[fseg.LineDef()]
 		side   = gr.currentLevel.mapRef.SideDefs[line.Right]
 		sector = gr.currentLevel.mapRef.Sectors[side.Sector]
 	)
@@ -161,16 +162,12 @@ func (gr *GLRenderer) GetSectorForSSect(ssect *goom.SubSector) goom.Sector {
 
 func (gr *GLRenderer) DrawThings(things []game.DoomThing) {
 	gr.shaders[gr.currentShader].Uniform1i("draw_phase", 1)
-	camAngle := math.Atan2(
-		float64(gr.camera.direction.Y()),
-		float64(-gr.camera.direction.X()),
-	)
+
 	for _, t := range things {
-		a, f := t.CurrentFrame(int(camAngle * 180 / math.Pi))
+		a, f := t.CurrentFrame(gr.camera.position)
 		spr := gr.sprites[t.SpriteName()]
 		tex := spr.mesh.GetTexture(t.SpriteName() + string(f) + string(a))
 		if tex == nil {
-			fmt.Println("could not find tex: ", t.SpriteName()+string(f)+string(a))
 			continue
 		}
 		gr.shaders[gr.currentShader].Uniform3f("billboard_pos", mgl32.Vec3{
@@ -178,6 +175,7 @@ func (gr *GLRenderer) DrawThings(things []game.DoomThing) {
 			t.Height() + (tex.height / 2) + 4,
 			t.Position()[1],
 		})
+		gr.shaders[gr.currentShader].Uniform1i("billboard_flipped", t.Flipped())
 		gr.shaders[gr.currentShader].Uniform2f("billboard_size", mgl32.Vec2{tex.width / 70, tex.height / 85})
 		spr.mesh.DrawWithTexture(gl.TRIANGLES, tex)
 	}
@@ -212,7 +210,7 @@ func (gr *GLRenderer) Loop(fps int, thingPass func(), inputCB func(win *glfw.Win
 		gr.setView()
 		gr.setModel()
 
-		gr.currentLevel.mapRef.WalkBsp(goom.GLNodesName, func(i int, n *goom.Node, b goom.BBox) {
+		gr.currentLevel.mapRef.WalkBsp(level.GLNodesName, func(i int, n *level.Node, b level.BBox) {
 			gr.DrawSubSector(i)
 		})
 

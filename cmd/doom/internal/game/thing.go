@@ -8,5 +8,6 @@ type DoomThing interface {
 	Angle() float32
 	Height() float32
 	SetHeight(float32)
-	CurrentFrame(angle int) (byte, byte)
+	Flipped() int
+	CurrentFrame(dir [2]float32) (byte, byte)
 }

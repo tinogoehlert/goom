@@ -1,9 +1,11 @@
-package goom
+package level
 
 import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+
+	"github.com/tinogoehlert/goom/wad"
 )
 
 const (
@@ -21,7 +23,7 @@ type LineDef struct {
 	Left        int16
 }
 
-func newLinedefsFromLump(lump *Lump) ([]LineDef, error) {
+func newLinedefsFromLump(lump *wad.Lump) ([]LineDef, error) {
 	if lump.Size%linedefSize != 0 {
 		return nil, fmt.Errorf("size missmatch")
 	}

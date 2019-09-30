@@ -1,7 +1,12 @@
-package goom
+package level
 
 import (
 	"encoding/binary"
+
+	"github.com/tinogoehlert/goom/internal/utils"
+
+	"github.com/tinogoehlert/goom/geometry"
+	"github.com/tinogoehlert/goom/wad"
 )
 
 const (
@@ -17,10 +22,10 @@ type BBox [4]float32
 // NewBBoxFromi16 creates new BBox from i16 buffer
 func NewBBoxFromi16(buff []byte) BBox {
 	return BBox{
-		i16Tof(buff[0:2]),
-		i16Tof(buff[2:4]),
-		i16Tof(buff[4:6]),
-		i16Tof(buff[6:8]),
+		utils.Int16Tof32(buff[0:2]),
+		utils.Int16Tof32(buff[2:4]),
+		utils.Int16Tof32(buff[4:6]),
+		utils.Int16Tof32(buff[6:8]),
 	}
 }
 
@@ -64,15 +69,15 @@ func (n *NodeChild) Num() uint32 {
 
 // Node The nodes lump constitutes a binary space partition of the level.
 type Node struct {
-	position  Point
-	diff      Point
+	position  geometry.Coord
+	diff      geometry.Coord
 	RightBBox BBox
 	LeftBBox  BBox
 	Right     NodeChild
 	Left      NodeChild
 }
 
-func newNodesFromLump(lump *Lump) ([]Node, error) {
+func newNodesFromLump(lump *wad.Lump) ([]Node, error) {
 	var (
 		nodeCount = len(lump.Data) / nodeSize
 		nodes     = make([]Node, nodeCount)
@@ -80,8 +85,8 @@ func newNodesFromLump(lump *Lump) ([]Node, error) {
 	for i := 0; i < nodeCount; i++ {
 		vb := lump.Data[(i * nodeSize) : (i*nodeSize)+nodeSize]
 		nodes[i] = Node{
-			position:  Point{X: i16Tof(vb[0:2]), Y: i16Tof(vb[2:4])},
-			diff:      Point{X: i16Tof(vb[4:6]), Y: i16Tof(vb[6:8])},
+			position:  geometry.Coord{utils.Int16Tof32(vb[0:2]), utils.Int16Tof32(vb[2:4])},
+			diff:      geometry.Coord{utils.Int16Tof32(vb[4:6]), utils.Int16Tof32(vb[6:8])},
 			RightBBox: NewBBoxFromi16(vb[8:16]),
 			LeftBBox:  NewBBoxFromi16(vb[16:24]),
 			Right:     nodeChildI16(int(binary.LittleEndian.Uint16(vb[24:26]))),
@@ -91,7 +96,7 @@ func newNodesFromLump(lump *Lump) ([]Node, error) {
 	return nodes, nil
 }
 
-func newGLNodesFromLump(lump *Lump) ([]Node, error) {
+func newGLNodesFromLump(lump *wad.Lump) ([]Node, error) {
 	var (
 		nodeCount = lump.Size / glNodeSize
 		nodes     = make([]Node, nodeCount)
@@ -99,8 +104,8 @@ func newGLNodesFromLump(lump *Lump) ([]Node, error) {
 	for i := 0; i < nodeCount; i++ {
 		vb := lump.Data[(i * glNodeSize) : (i*glNodeSize)+glNodeSize]
 		nodes[i] = Node{
-			position:  Point{X: i16Tof(vb[0:2]), Y: i16Tof(vb[2:4])},
-			diff:      Point{X: i16Tof(vb[4:6]), Y: i16Tof(vb[6:8])},
+			position:  geometry.Coord{utils.Int16Tof32(vb[0:2]), utils.Int16Tof32(vb[2:4])},
+			diff:      geometry.Coord{utils.Int16Tof32(vb[4:6]), utils.Int16Tof32(vb[6:8])},
 			RightBBox: NewBBoxFromi16(vb[8:16]),
 			LeftBBox:  NewBBoxFromi16(vb[16:24]),
 			Right:     NodeChild(binary.LittleEndian.Uint32(vb[24:28])),

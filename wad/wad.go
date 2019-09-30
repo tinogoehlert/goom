@@ -1,10 +1,9 @@
-package goom
+package wad
 
 import (
 	"encoding/binary"
 	"fmt"
 	"os"
-	"strings"
 )
 
 const (
@@ -22,28 +21,17 @@ const (
 	TypePatch Type = "PWAD"
 )
 
-// Lump consists of a number of entries, each with a length of 16 bytes.
-type Lump struct {
-	Name     string
-	Size     int
-	Position int
-	Data     []byte
-}
-
-func (l *Lump) dataFromBuff(data []byte) {
-	if l.Size > 0 {
-		l.Data = data[l.Position-wadHeaderSize : l.Position-wadHeaderSize+l.Size]
-	}
-}
-
+// WadManager holds list of wads
 type WadManager struct {
 	wads []*WAD
 }
 
+// NewWadManager creates a new WAD Manager
 func NewWadManager() *WadManager {
 	return &WadManager{}
 }
 
+// LoadFile processes a WAD file
 func (wm *WadManager) LoadFile(file string) error {
 	w, err := NewWADFromFile(file)
 	if err != nil {
@@ -103,42 +91,17 @@ func NewWADFromFile(file string) (*WAD, error) {
 	return wad, wad.loadLumpsFromFD(fd, data)
 }
 
-func (w *WAD) loadLumpsFromFD(fd *os.File, data []byte) error {
-	buff := make([]byte, lumpSize)
-	w.lumps = make([]Lump, w.NumLumps)
-	for i := 0; i < w.NumLumps; i++ {
-		sz, err := fd.Read(buff)
-		if err != nil {
-			return fmt.Errorf("could read lump %d: %s", i, err.Error())
-		}
-		if sz != lumpSize {
-			return fmt.Errorf("could read lump %d: %s", i, "wrong size")
-		}
-		l := Lump{
-			Position: int(binary.LittleEndian.Uint32(buff[0:4])),
-			Size:     int(binary.LittleEndian.Uint32(buff[4:8])),
-			Name:     wadString(buff[8:16]),
-		}
-		l.dataFromBuff(data)
-		w.lumps[i] = l
-	}
-
-	return nil
-}
-
-func (w *WAD) GetLumps() []Lump {
+// Lumps gets slice of lumps
+func (w *WAD) Lumps() []Lump {
 	return w.lumps
 }
 
-func (w *WAD) GetLump(name string) *Lump {
+// Lump get lump by name
+func (w *WAD) Lump(name string) *Lump {
 	for _, l := range w.lumps {
 		if name == l.Name {
 			return &l
 		}
 	}
 	return nil
-}
-
-func wadString(buff []byte) string {
-	return strings.TrimRight(string(buff), "\x00")
 }
