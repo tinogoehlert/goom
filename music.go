@@ -57,9 +57,11 @@ func NewMusData(data []byte) (*MusData, error) {
 	if data == nil {
 		return &MusData{ID: []byte(MusID)}, nil
 	}
-	if len(data) < 16 {
+	id := string(data[:4])
+	if len(data) < 16 || id != MusID {
 		return nil, fmt.Errorf("failed to load bytes '%s' as MUS", data)
 	}
+
 	h := MusData{
 		ID:          data[:4],
 		scoreLen:    binary.LittleEndian.Uint16(data[4:]),
@@ -102,7 +104,7 @@ func (wm *WadManager) LoadMusic() (MusicSuite, error) {
 			case midiRegex.Match([]byte(l.Name)):
 				m, err := NewMusData(l.Data)
 				t := &MusicTrack{l, m}
-				if err != nil || !t.isMusic() {
+				if err != nil {
 					GoomConsole.Red("failed to load MUS track: %s, err: %s", t.Name, err)
 				}
 				suite[l.Name] = t
@@ -120,10 +122,6 @@ func (*MusicTrack) Loop() {}
 
 // Stop stops playing the MusicTrack.
 func (*MusicTrack) Stop() {}
-
-func (t MusicTrack) isMusic() bool {
-	return len(t.Data) > 0 && string(t.Data[:4]) == MusID
-}
 
 // Info shows a summary of the loaded tracks.
 func (suite MusicSuite) Info() string {
