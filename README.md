@@ -14,8 +14,13 @@ features, such as shooting, enemy behavior, sound, music, menus, and more.
 
 # Development Setup
 
-Running `make` will initialize go modules. Some of the used modules
-use C-bindings and may show compile warnings that can be ignored.
+Running `make` will initialize go modules and run the tests.
+
+For testing, it is also useful to run `make test-run`, which starts the game,
+loads the WADs, runs the event loop once, and then exits automatically.
+
+Note that some of the used modules use C-bindings and may show compile warnings.
+Please ignore them.
 
 ## Linux
 
