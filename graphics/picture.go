@@ -19,6 +19,8 @@ type Image interface {
 	ToPng(out string, palette [256]color.RGBA) error
 	Width() int
 	Height() int
+	Top() int
+	Left() int
 }
 
 // DoomPicture holds an image in the doom picture format
@@ -86,6 +88,12 @@ func (p *DoomPicture) Width() int { return int(p.width) }
 
 // Height return height of image
 func (p *DoomPicture) Height() int { return int(p.height) }
+
+// Top offset. The number of pixels above the origin; where the top row is.
+func (p *DoomPicture) Top() int { return int(p.top) }
+
+// Left offset. The number of pixels to the left of the center; where the first column gets drawn.
+func (p *DoomPicture) Left() int { return int(p.left) }
 
 // ToRGBA converts picture to go image
 func (p *DoomPicture) ToRGBA(palette [256]color.RGBA) *image.RGBA {

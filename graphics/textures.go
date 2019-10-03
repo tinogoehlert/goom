@@ -55,6 +55,12 @@ func (t *Texture) Width() int { return int(t.width) }
 // Height return height of image
 func (t *Texture) Height() int { return int(t.height) }
 
+// Top offset. The number of pixels above the origin; where the top row is.
+func (t *Texture) Top() int { return 0 }
+
+// Left offset. The number of pixels to the left of the center; where the first column gets drawn.
+func (t *Texture) Left() int { return 0 }
+
 // ToRGBA generates a go image from all patches
 func (t *Texture) ToRGBA(palette [256]color.RGBA) *image.RGBA {
 	var (

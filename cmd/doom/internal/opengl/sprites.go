@@ -1,52 +1,47 @@
 package opengl
 
 import (
-	"github.com/tinogoehlert/goom/graphics"
+	"github.com/go-gl/gl/v2.1/gl"
 )
 
-type sprite struct {
-	mesh   *Mesh
-	width  float32
-	height float32
-	median float32
+type glSpriter struct {
+	vao      uint32
+	meshSize int
 }
 
-type spriteList map[string]sprite
-
-func BuildSpritesFromGfx(sprites graphics.SpriteStore, palette graphics.Palette) spriteList {
-	sl := make(spriteList)
-
-	for key, sprite := range sprites {
-		sl[key] = makeSprite(&sprite, palette)
-	}
-
-	return sl
-}
-
-func makeSprite(gs *graphics.Sprite, palette graphics.Palette) sprite {
-	s := sprite{}
-
-	first := gs.FirstFrame()
-
-	var (
-		w = float32(first.Image().Width())
-		h = float32(first.Image().Height())
-	)
+func NewSpriter() *glSpriter {
 	verts := []float32{
-		-w, -h, 0, 0.0, 1.0,
-		-w, h, 0, 0.0, 0.0,
-		w, h, 0, 1.0, 0.0,
+		-60, -60, 0, 0.0, 1.0,
+		-60, 60, 0, 0.0, 0.0,
+		60, 60, 0, 1.0, 0.0,
 
-		-w, -h, 0, 0.0, 1.0,
-		w, h, 0, 1.0, 0.0,
-		w, -h, 0, 1.0, 1.0,
+		-60, -60, 0, 0.0, 1.0,
+		60, 60, 0, 1.0, 0.0,
+		60, -60, 0, 1.0, 1.0,
 	}
-	s.mesh = NewMesh(verts, 0, first.Image(), palette, first.Name())
-	gs.Frames(func(frame *graphics.SpriteFrame) {
-		s.mesh.AddTexture(frame.Image(), &palette, frame.Name())
-	})
-	s.height = float32(first.Image().Height())
-	s.width = float32(first.Image().Width())
-	s.median = s.height / 2
-	return s
+	gls := &glSpriter{
+		meshSize: len(verts) / 5,
+	}
+
+	var fVBO uint32
+	gl.GenVertexArrays(1, &gls.vao)
+	gl.GenBuffers(1, &fVBO)
+	// bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
+	gl.BindVertexArray(gls.vao)
+
+	gl.BindBuffer(gl.ARRAY_BUFFER, fVBO)
+	gl.BufferData(gl.ARRAY_BUFFER, len(verts)*4, gl.Ptr(verts), gl.STATIC_DRAW)
+
+	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 5*4, gl.PtrOffset(0))
+	gl.EnableVertexAttribArray(0)
+
+	gl.VertexAttribPointer(1, 2, gl.FLOAT, false, 5*4, gl.PtrOffset(3*4))
+	gl.EnableVertexAttribArray(1)
+	return gls
+}
+
+func (gls *glSpriter) Draw(method uint32, tex *glTexture) {
+	gl.BindTexture(gl.TEXTURE_2D, tex.ID)
+	gl.BindVertexArray(gls.vao)
+	gl.DrawArrays(method, 0, int32(gls.meshSize))
 }

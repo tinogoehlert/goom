@@ -8,20 +8,19 @@ import (
 
 type doomLevel struct {
 	name       string
-	walls      []*Mesh
 	subSectors []*subSector
 	mapRef     *level.Level
 }
 
 type subSector struct {
-	floors   []*Mesh
-	ceilings []*Mesh
-	walls    []*Mesh
+	floors   []*glWorldGeometry
+	ceilings []*glWorldGeometry
+	walls    []*glWorldGeometry
 	sector   level.Sector
 	ref      level.SubSector
 }
 
-func RegisterMap(m *level.Level, gd *goom.GameData) *doomLevel {
+func RegisterMap(m *level.Level, gd *goom.GameData, ts glTextureStore) *doomLevel {
 	l := doomLevel{
 		name:       m.Name,
 		mapRef:     m,
@@ -30,15 +29,15 @@ func RegisterMap(m *level.Level, gd *goom.GameData) *doomLevel {
 
 	for _, ssect := range m.SubSectors("GL_SSECT") {
 		var s = &subSector{ref: ssect}
-		s.addFlats(m, gd)
-		s.addWalls(m, gd)
+		s.addFlats(m, gd, ts)
+		s.addWalls(m, gd, ts)
 		l.subSectors = append(l.subSectors, s)
 	}
 	return &l
 }
 
-func (s *subSector) addFlats(md *level.Level, gd *goom.GameData) {
-	s.floors, s.ceilings = []*Mesh{}, []*Mesh{}
+func (s *subSector) addFlats(md *level.Level, gd *goom.GameData, ts glTextureStore) {
+	s.floors, s.ceilings = []*glWorldGeometry{}, []*glWorldGeometry{}
 	var (
 		fseg   = s.ref.Segments()[0]
 		vfs    = md.Vert(fseg.StartVert())
@@ -74,17 +73,17 @@ func (s *subSector) addFlats(md *level.Level, gd *goom.GameData) {
 
 	s.sector = sector
 	if len(gd.Flat(sector.FloorTexture())) > 0 {
-		fm := NewMesh(floorData, sector.LightLevel(), gd.Flat(sector.FloorTexture())[0], gd.DefaultPalette(), sector.FloorTexture())
-		s.floors = AddMesh(s.floors, fm)
+		fm := newGlWorldGeometry(floorData, sector.LightLevel(), ts[sector.FloorTexture()])
+		s.floors = addGlWorldGeometry(s.floors, fm)
 	}
 	if len(gd.Flat(sector.CeilTexture())) > 0 {
-		cm := NewMesh(ceilData, md.Sectors[side.Sector].LightLevel(), gd.Flat(sector.CeilTexture())[0], gd.DefaultPalette(), sector.FloorTexture())
-		s.ceilings = AddMesh(s.ceilings, cm)
+		cm := newGlWorldGeometry(ceilData, md.Sectors[side.Sector].LightLevel(), ts[sector.CeilTexture()])
+		s.ceilings = addGlWorldGeometry(s.ceilings, cm)
 	}
 }
 
-func (s *subSector) addWalls(md *level.Level, gd *goom.GameData) {
-	s.walls = []*Mesh{}
+func (s *subSector) addWalls(md *level.Level, gd *goom.GameData, ts glTextureStore) {
+	s.walls = []*glWorldGeometry{}
 	for _, seg := range s.ref.Segments() {
 		if seg.LineDef() == -1 {
 			continue
@@ -118,8 +117,8 @@ func (s *subSector) addWalls(md *level.Level, gd *goom.GameData) {
 				-start.X(), sector.CeilHeight(), start.Y(), 0.0, 1.0,
 			}
 			if gd.Texture(side.Upper()) != nil {
-				wm := NewMesh(wallData, sector.LightLevel(), gd.Texture(side.Upper()), gd.DefaultPalette(), side.Upper())
-				s.walls = AddMesh(s.walls, wm)
+				wm := newGlWorldGeometry(wallData, sector.LightLevel(), ts[side.Upper()])
+				s.walls = addGlWorldGeometry(s.walls, wm)
 			}
 		}
 
@@ -135,8 +134,8 @@ func (s *subSector) addWalls(md *level.Level, gd *goom.GameData) {
 				-start.X(), sector.FloorHeight(), start.Y(), 0.0, 1.0,
 			}
 			if gd.Texture(side.Lower()) != nil {
-				wm := NewMesh(wallData, sector.LightLevel(), gd.Texture(side.Lower()), gd.DefaultPalette(), side.Lower())
-				s.walls = AddMesh(s.walls, wm)
+				wm := newGlWorldGeometry(wallData, sector.LightLevel(), ts[side.Lower()])
+				s.walls = addGlWorldGeometry(s.walls, wm)
 			}
 		}
 
@@ -150,18 +149,18 @@ func (s *subSector) addWalls(md *level.Level, gd *goom.GameData) {
 				-end.X(), sector.FloorHeight(), end.Y(), 1.0, 1.0,
 				-start.X(), sector.FloorHeight(), start.Y(), 0.0, 1.0,
 			}
-			wm := NewMesh(wallData, sector.LightLevel(), gd.Texture(side.Middle()), gd.DefaultPalette(), side.Middle())
-			s.walls = AddMesh(s.walls, wm)
+			wm := newGlWorldGeometry(wallData, sector.LightLevel(), ts[side.Middle()])
+			s.walls = addGlWorldGeometry(s.walls, wm)
 		}
 	}
 }
 
-func (s *subSector) Draw() {
+func (s *subSector) Draw(ts glTextureStore) {
 	for i := 0; i < len(s.floors); i++ {
-		s.floors[i].DrawMesh(gl.TRIANGLE_FAN)
-		s.ceilings[i].DrawMesh(gl.TRIANGLE_FAN)
+		s.floors[i].Draw(gl.TRIANGLE_FAN)
+		s.ceilings[i].Draw(gl.TRIANGLE_FAN)
 	}
 	for _, w := range s.walls {
-		w.DrawMesh(gl.TRIANGLES)
+		w.Draw(gl.TRIANGLES)
 	}
 }

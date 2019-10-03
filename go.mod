@@ -12,4 +12,5 @@ require (
 	github.com/pkg/errors v0.8.1 // indirect
 	github.com/ttacon/chalk v0.0.0-20160626202418-22c06c80ed31
 	golang.org/x/image v0.0.0-20190910094157-69e4b8554b2a
+	gopkg.in/yaml.v2 v2.2.3
 )

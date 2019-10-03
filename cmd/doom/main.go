@@ -11,7 +11,6 @@ import (
 
 	"github.com/tinogoehlert/goom"
 	"github.com/tinogoehlert/goom/cmd/doom/internal/game"
-	"github.com/tinogoehlert/goom/cmd/doom/internal/game/monsters"
 	"github.com/tinogoehlert/goom/cmd/doom/internal/opengl"
 	"github.com/tinogoehlert/goom/level"
 )
@@ -84,27 +83,27 @@ func main() {
 	renderer.SetShaderProgram("main")
 
 	m := gameData.Level(strings.ToUpper(*level))
+	renderer.BuildGraphics(gameData)
+
 	renderer.BuildLevel(m, gameData)
-	renderer.BuildSprites(gameData)
 
 	playerPos := m.Things[0]
 	var player = game.NewPlayer(float32(playerPos.X), float32(playerPos.Y), 45, float32(playerPos.Angle))
 	renderer.Camera().SetCamera(player.Position(), player.Direction(), player.Height())
-
-	var things = []game.DoomThing{}
+	defstore := game.NewDefStore("config.yaml")
+	var things = []*game.DoomThing{}
 
 	for _, t := range m.Things {
-		if obstacle := game.NewObstacle(&t); obstacle != nil {
+		if obstacleDef := defstore.GetObstacleDef(int(t.Type)); obstacleDef != nil {
+			obstacle := game.ThingFromDef(t.X, t.Y, 0, t.Angle, obstacleDef)
 			things = appendDoomThing(things, obstacle, m)
 		}
-		if monster := monsters.NewMonster(&t); monster != nil {
-			things = appendDoomThing(things, monster, m)
+
+		if monsterDef := defstore.GetMonsterDef(int(t.Type)); monsterDef != nil {
+			monster := game.MonsterFromDef(t.X, t.Y, 0, t.Angle, monsterDef)
+			things = appendDoomThing(things, monster.DoomThing, m)
 		}
 	}
-	music := gameData.Music["D_E1M1"]
-	music.Loop()
-	defer music.Stop()
-	//os.Exit(0)
 	renderer.Loop(30, func() {
 		renderer.DrawThings(things)
 	}, func(w *glfw.Window) {
@@ -112,7 +111,7 @@ func main() {
 	})
 }
 
-func appendDoomThing(dst []game.DoomThing, src game.DoomThing, m *level.Level) []game.DoomThing {
+func appendDoomThing(dst []*game.DoomThing, src *game.DoomThing, m *level.Level) []*game.DoomThing {
 	var ssect, err = m.FindPositionInBsp(level.GLNodesName, src.Position()[0], src.Position()[1])
 	if err != nil {
 		log.Print("could not find GLnode for pos %v", src.Position())
@@ -143,7 +142,7 @@ func playerInput(m *level.Level, cam *opengl.Camera, player *game.Player, w *glf
 		log.Print("could not find GLnode for pos %v", player.Position())
 	} else {
 		var sector = m.SectorFromSSect(ssect)
-		player.SetHeight(sector.FloorHeight() + 50)
+		player.Lift(sector.FloorHeight() + 50)
 	}
 	cam.SetCamera(player.Position(), player.Direction(), player.Height())
 }

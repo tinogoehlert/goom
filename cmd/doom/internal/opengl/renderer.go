@@ -3,12 +3,15 @@ package opengl
 import (
 	"fmt"
 	"runtime"
+	"strings"
 	"time"
+
+	"github.com/tinogoehlert/goom/cmd/doom/internal/game"
+	"github.com/tinogoehlert/goom/graphics"
 
 	"github.com/tinogoehlert/goom/level"
 
 	"github.com/tinogoehlert/goom"
-	"github.com/tinogoehlert/goom/cmd/doom/internal/game"
 
 	"github.com/go-gl/gl/v2.1/gl"
 	"github.com/go-gl/glfw/v3.2/glfw"
@@ -24,7 +27,8 @@ type GLRenderer struct {
 	fbHeight      int
 	camera        *Camera
 	modelMatrix   mgl32.Mat4
-	sprites       spriteList
+	textures      glTextureStore
+	spriter       *glSpriter
 	currentShader string
 	inputCallback func(*glfw.Window)
 }
@@ -52,6 +56,7 @@ func NewRenderer() (*GLRenderer, error) {
 		camera:        NewCamera(),
 		modelMatrix:   mgl32.Ident4(),
 		currentShader: "main",
+		textures:      newGLTextureStore(),
 	}, nil
 }
 
@@ -73,7 +78,7 @@ func (gr *GLRenderer) LoadShaderProgram(name, vertFile, fragFile string) error {
 	return nil
 }
 
-// LoadShaderProgram loads a shader program
+// SetShaderProgram sets shader program
 func (gr *GLRenderer) SetShaderProgram(name string) error {
 	gr.currentShader = name
 	return nil
@@ -81,12 +86,34 @@ func (gr *GLRenderer) SetShaderProgram(name string) error {
 
 // BuildLevel builds the level
 func (gr *GLRenderer) BuildLevel(m *level.Level, gd *goom.GameData) {
-	gr.currentLevel = RegisterMap(m, gd)
+	gr.currentLevel = RegisterMap(m, gd, gr.textures)
 }
 
 // BuildLevel builds the level
-func (gr *GLRenderer) BuildSprites(gd *goom.GameData) {
-	gr.sprites = BuildSpritesFromGfx(gd.Sprites, gd.DefaultPalette())
+func (gr *GLRenderer) BuildGraphics(gd *goom.GameData) {
+	for k, v := range gd.Textures {
+		gr.textures.initTexture(k, 1)
+		gr.textures.addTexture(k, 0, v)
+	}
+
+	for k, v := range gd.Flats {
+		gr.textures.initTexture(k, 1)
+		gr.textures.addTexture(k, 0, v[0])
+	}
+
+	for _, v := range gd.Sprites {
+		v.Frames(func(f *graphics.SpriteFrame) {
+			gr.textures.initTexture(f.Name(), len(f.Angles()))
+			if strings.Contains(f.Name(), "TROO") {
+				fmt.Println(f.Name())
+			}
+			for i, img := range f.Angles() {
+				gr.textures.addTexture(f.Name(), i, img)
+			}
+		})
+	}
+	gr.spriter = NewSpriter()
+	//gr.sprites = BuildSpritesFromGfx(gd.Sprites, gd.DefaultPalette())
 }
 
 func (gr *GLRenderer) Camera() *Camera {
@@ -147,7 +174,7 @@ func (gr *GLRenderer) setModel() {
 func (gr *GLRenderer) DrawSubSector(idx int) {
 	var s = gr.currentLevel.subSectors[idx]
 	gr.setLight(s.sector.LightLevel())
-	s.Draw()
+	s.Draw(gr.textures)
 }
 
 func (gr *GLRenderer) GetSectorForSSect(ssect *level.SubSector) level.Sector {
@@ -160,24 +187,25 @@ func (gr *GLRenderer) GetSectorForSSect(ssect *level.SubSector) level.Sector {
 	return sector
 }
 
-func (gr *GLRenderer) DrawThings(things []game.DoomThing) {
+func (gr *GLRenderer) DrawThings(things []*game.DoomThing) {
 	gr.shaders[gr.currentShader].Uniform1i("draw_phase", 1)
 
 	for _, t := range things {
-		a, f := t.CurrentFrame(gr.camera.position)
-		spr := gr.sprites[t.SpriteName()]
-		tex := spr.mesh.GetTexture(t.SpriteName() + string(f) + string(a))
-		if tex == nil {
-			continue
-		}
+		f := t.NextFrame()
+		a, flipped := t.CalcAngle(gr.camera.position)
+		img := gr.textures.Get(t.SpriteName()+string(f), a)
 		gr.shaders[gr.currentShader].Uniform3f("billboard_pos", mgl32.Vec3{
 			-t.Position()[0],
-			t.Height() + (tex.height / 2) + 4,
+			t.Height() + (float32(img.image.Height()) / 2) + 4,
 			t.Position()[1],
 		})
-		gr.shaders[gr.currentShader].Uniform1i("billboard_flipped", t.Flipped())
-		gr.shaders[gr.currentShader].Uniform2f("billboard_size", mgl32.Vec2{tex.width / 70, tex.height / 85})
-		spr.mesh.DrawWithTexture(gl.TRIANGLES, tex)
+
+		gr.shaders[gr.currentShader].Uniform1i("billboard_flipped", flipped)
+		gr.shaders[gr.currentShader].Uniform2f("billboard_size", mgl32.Vec2{
+			float32(img.image.Width()) / 90,
+			float32(img.image.Height()) / 100,
+		})
+		gr.spriter.Draw(gl.TRIANGLES, img)
 	}
 	gr.shaders[gr.currentShader].Uniform1i("draw_phase", 0)
 }
@@ -189,9 +217,10 @@ func (gr *GLRenderer) DrawHUD() {
 	gl.Disable(gl.DEPTH_TEST) // Disable the Depth-testing
 	gr.shaders[gr.currentShader].UniformMatrix4fv("ortho", Ortho)
 	gr.shaders[gr.currentShader].Uniform1i("draw_phase", 2)
-	gr.shaders[gr.currentShader].Uniform2f("billboard_size", mgl32.Vec2{1.8, 1.8})
-	gr.shaders[gr.currentShader].Uniform3f("billboard_pos", mgl32.Vec3{float32(gr.fbWidth) / 2, -float32(gr.fbHeight), 0})
-	gr.sprites["CHGG"].mesh.DrawMesh(gl.TRIANGLES)
+	gr.shaders[gr.currentShader].Uniform2f("billboard_size", mgl32.Vec2{float32(gr.fbHeight) / 420, float32(gr.fbHeight) / 420})
+	gr.shaders[gr.currentShader].Uniform3f("billboard_pos", mgl32.Vec3{float32(gr.fbWidth) / 2, -float32(gr.fbHeight) + 170, 0})
+	img := gr.textures.Get("PISGA", 0)
+	gr.spriter.Draw(gl.TRIANGLES, img)
 	gr.shaders[gr.currentShader].Uniform1i("draw_phase", 0)
 }
 

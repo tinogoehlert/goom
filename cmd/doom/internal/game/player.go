@@ -41,7 +41,7 @@ func (p *Player) Strafe(steps float32) {
 
 // Lift set players height
 func (p *Player) Lift(height float32) {
-	p.height += height
+	p.height = height
 }
 
 // Turn player
@@ -64,18 +64,4 @@ func (p *Player) Direction() [2]float32 {
 // Height get players height
 func (p *Player) Height() float32 {
 	return p.height
-}
-
-func (p *Player) SetHeight(height float32) {
-	p.height = height
-}
-
-// PositionChanged callback for pos change
-func (p *Player) PositionChanged(fn func(xy [2]float32, height float32)) {
-	p.posChanged = fn
-}
-
-// AngleChanged callback for angle change
-func (p *Player) AngleChanged(fn func(angle float32, dir [2]float32)) {
-	p.angleChanged = fn
 }

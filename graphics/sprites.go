@@ -11,14 +11,20 @@ type SpriteFrames map[byte]SpriteFrame
 
 // SpriteFrame DOOM sprite frame
 type SpriteFrame struct {
-	angle byte
-	frame byte
-	name  string
-	image Image
+	angles [9]Image
+	frame  byte
+	name   string
 }
 
-func (sf *SpriteFrame) Image() Image {
-	return sf.image
+func (sf *SpriteFrame) Image(angle int) Image {
+	if sf.angles[angle] != nil && angle == 1 {
+		return sf.angles[0]
+	}
+	return sf.angles[angle]
+}
+
+func (sf *SpriteFrame) Angles() [9]Image {
+	return sf.angles
 }
 
 func (sf *SpriteFrame) FrameID() byte {
@@ -47,17 +53,22 @@ func NewSprite(name string) Sprite {
 // AddSpriteFrame Creates new sprite from lump
 func (s *Sprite) AddSpriteFrame(lump *wad.Lump) *SpriteFrame {
 	var (
-		angle = lump.Name[5] - 48
 		frame = lump.Name[4]
 	)
-	sf := &SpriteFrame{
-		angle: angle,
-		frame: frame,
-		name:  lump.Name[:6],
-		image: NewDoomPicture(lump.Data),
-	}
 
-	s.frames[lump.Name[:6]] = sf
+	sf, ok := s.frames[lump.Name[:5]]
+	if !ok {
+		sf = &SpriteFrame{
+			angles: [9]Image{},
+			frame:  frame,
+			name:   lump.Name[:5],
+		}
+		s.frames[lump.Name[:5]] = sf
+	}
+	sf.angles[lump.Name[5]-48] = NewDoomPicture(lump.Data)
+	if len(lump.Name) == 8 {
+		sf.angles[lump.Name[7]-48] = sf.angles[lump.Name[5]-48]
+	}
 	return sf
 }
 
@@ -102,13 +113,10 @@ func (ss SpriteStore) LoadWAD(w *wad.WAD) error {
 					s, ok := ss[lump.Name[:4]]
 					if !ok {
 						s = NewSprite(lump.Name[:4])
-						s.first = lump.Name[:6]
+						s.first = lump.Name[:5]
 						ss[lump.Name[:4]] = s
 					}
-					sf := s.AddSpriteFrame(lump)
-					if len(lump.Name) == 8 {
-						s.frames[lump.Name[:4]+lump.Name[6:8]] = sf
-					}
+					s.AddSpriteFrame(lump)
 				}
 				if spriteEndRegex.Match([]byte(lump.Name)) {
 					break
