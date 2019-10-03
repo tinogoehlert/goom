@@ -33,8 +33,8 @@ type MusScore struct {
 	Type    MusEvent // MusEvent type
 	Channel int      // Channel number
 	Delay   int      // computed delay in ticks
-	Byte1   byte     // first payload byte for the event
-	Byte2   byte     // second payload byte for the event
+	Byte1   *byte    // first payload byte for the event
+	Byte2   *byte    // second payload byte for the event
 }
 
 // MusData represents the header of a MUS track.
@@ -50,18 +50,23 @@ type MusData struct {
 	scores      []MusScore // The actual music notes, pauses, etc.
 }
 
-// Info returns the header information as string.
-func (h *MusData) Info() string {
-	c := MusData(*h)
-	c.instruments = nil
-	c.scores = nil
-	return fmt.Sprintf("%+v (%d scores bytes)", c, len(h.scores))
-}
-
 // MusicTrack contains a playable Music track.
 type MusicTrack struct {
 	wad.Lump
 	MusData *MusData
+}
+
+// Info returns summarized header information as string.
+func (h *MusData) Info() string {
+	// create dummy copy to safely remove not-logged data
+	c := MusData(*h)
+	c.instruments = nil
+	c.scores = nil
+	events := make([]MusEvent, len(h.scores))
+	for i, s := range h.scores {
+		events[i] = s.Type
+	}
+	return fmt.Sprintf("MusData (summary): %+v (%d scores: %v)", c, len(h.scores), events)
 }
 
 // NewMusData creates a MusHeader from the given WAD bytes.
@@ -85,15 +90,18 @@ func NewMusData(data []byte) (*MusData, error) {
 		instruments: nil,
 		scores:      nil,
 	}
-	lastInst := int(16+2*h.numInstr) - 2
-	for i := 16; i <= lastInst; i += 2 {
+	scoreStart := int(h.scoreStart)
+	for i := 16; i < scoreStart; i += 2 {
 		h.instruments = append(h.instruments, binary.LittleEndian.Uint16(data[i:]))
 	}
+	// fmt.Printf("header: %s\n", h.Info())
+
 	scores, err := LoadScores(data[h.scoreStart:])
 	if err != nil {
 		return nil, err
 	}
 	h.scores = scores
+
 	return &h, nil
 }
 
@@ -101,38 +109,82 @@ func NewMusData(data []byte) (*MusData, error) {
 func LoadScores(data []byte) ([]MusScore, error) {
 	scores := make([]MusScore, 0, len(data))
 	scoreNum := 0
-	for i := 0; i < len(data); i++ {
+	// last := len(data)
+	// if last > 10 { last = 10 }
+	// fmt.Printf("loading MUS Scores: %x...\n", data[:last])
+	for i := 0; i < len(data); {
 		// bits      int  purpose
 		// 01110000  112  MusType bit mask (requires shifting by 4 bits afterwards)
 		// 00001111  15   Channel bit mask
 		// 01111111  127  delay bit mask used for delay bytes
 		b := data[i]
-		mtype := (b & 128) >> 4 // shift and mask mus type bits
+		// fmt.Printf("event: %x, ", b)
+		event := (b & 112) >> 4 // shift and mask mus type bits
 		channel := b & 15       // mask channel
-		last := b >> 7          // get delay bytes flag
+		last := b >> 7          // check delay-bytes flag
 		delay := 0
+		mtype := MusEvent(event)
+		// fmt.Printf("event: %x, mtype: %d ", b, mtype)
 
-		// TODO: read payload bytes
+		var s MusScore
+		var p1, p2 *byte
+		np := 0
+		p1, p2, np = ReadPayload(mtype, data[i+1:])
+		// fmt.Printf(", np = %d\n", np)
+
+		// advance index by number of payload bytes
+		i += np
 
 		// read the subsequent delay bytes
 		if last == 1 {
 			var err error
-			numDelayBytes := 0
-			delay, numDelayBytes, err = ReadDelay(data[i+1:])
+			d, nd, err := ReadDelay(data[i+1:])
 			if err != nil {
 				return nil, err
 			}
-			i = i + numDelayBytes
+			delay = d
+			// advance index by number of delay bytes
+			i += nd
 		}
 
-		s := MusScore{
-			Type:    MusEvent(mtype),
+		s = MusScore{
+			Type:    mtype,
 			Channel: int(channel),
 			Delay:   delay,
+			Byte1:   p1,
+			Byte2:   p2,
 		}
+		// fmt.Printf("append data[%d...] as score[%d]: %+v\n", i, scoreNum, s)
 		scores = append(scores, s)
+		scoreNum++
+		i++
 	}
+	// fmt.Printf("scores: %+v\n", scores)
 	return scores[:scoreNum], nil
+}
+
+// ReadPayload reads the payload bytes of an event.
+func ReadPayload(ev MusEvent, data []byte) (b1, b2 *byte, numBytes int) {
+	// if len(data) > 2 { data = data[:2] }
+	// fmt.Printf("ReadPayload (%d): \\x%x", ev, sample)
+
+	switch ev {
+	case RelaseNote, PitchBend, SystemEvent:
+		return &data[0], nil, 1
+	case PlayNote:
+		if data[0]>>7 == 0 {
+			// has no volume flag and thus no volume byte
+			return &data[0], nil, 1
+		}
+		return &data[0], &data[1], 2
+	case Controller:
+		return &data[0], &data[1], 2
+	case ScoreEnd, MeasureEnd, Unused:
+		return
+	default:
+		fmt.Println(fmt.Errorf("invalid event: %d", ev))
+	}
+	return
 }
 
 // ReadDelay reads delay bytes and computes the number of delay ticks.

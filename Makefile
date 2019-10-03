@@ -10,7 +10,7 @@ clean:
 	rm $(TARGETS)
 
 test: $(TARGETS)
-	go test -v github.com/tinogoehlert/goom
+	go test -v . ./audio
 
 go.mod:
 	go mod init github.com/tinogoehlert/goom
