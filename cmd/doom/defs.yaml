@@ -1,0 +1,61 @@
+monsters:
+- id: 3004
+  sprite: "POSS"
+  anim:
+    walk: "ABCD"
+    shoot: "EF"
+    hurt: "G"
+    die: "HIJKL"
+    splash: "MNOPQRSTU"
+  health: 25
+- id: 9
+  sprite: "SPOS"
+  anim:
+    walk: "ABCD"
+    shoot: "EF"
+    hurt: "G"
+    die: "HIJKL"
+    splash: "MNOPQRSTU"
+  health: 50
+- id: 3001
+  sprite: "TROO"
+  anim:
+    walk: "ABCD"
+    shoot: "EFG"
+    hurt: "H"
+    die: "IJKLM"
+    splash: "NOPQRSTU"
+  health: 35
+- id: 3002
+  sprite: SARG
+  anim:
+    walk: "ABCD"
+    shoot: "EFG"
+    hurt: "H"
+    die: "IJKLM"
+    splash: "NOPQRSTU"
+
+obstacles:
+- id: 2019
+  sprite: "ARM2"
+  anim: "AB"
+- id: 2018
+  sprite: "ARM1"
+  anim: "AB"
+- id: 48
+  sprite: "ELEC"
+  anim: "A"
+- id: 2035
+  sprite: "BAR1"
+  anim: "AB"
+- id: 10
+  sprite: "PLAY"
+  anim: "W"
+- id: 12
+  sprite: "PLAY"
+  anim: "W"
+- id: 15
+  sprite: "PLAY"
+  anim: "N"
+
+  

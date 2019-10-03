@@ -83,7 +83,7 @@ func main() {
 	playerPos := m.Things[0]
 	var player = game.NewPlayer(float32(playerPos.X), float32(playerPos.Y), 45, float32(playerPos.Angle))
 	renderer.Camera().SetCamera(player.Position(), player.Direction(), player.Height())
-	defstore := game.NewDefStore("config.yaml")
+	defstore := game.NewDefStore("defs.yaml")
 	var things = []*game.DoomThing{}
 
 	for _, t := range m.Things {
