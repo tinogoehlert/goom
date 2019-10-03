@@ -1,6 +1,8 @@
 package goom
 
 import (
+	"sync"
+
 	"github.com/tinogoehlert/goom/audio"
 	"github.com/tinogoehlert/goom/graphics"
 	"github.com/tinogoehlert/goom/level"
@@ -17,7 +19,38 @@ type GameData struct {
 	Music    audio.MusicSuite
 }
 
-// LoadGameData Load Engine data from WAD files
+var (
+	gdCache = make(map[string]*GameData)
+	gdLock  = sync.RWMutex{}
+)
+
+// LoadWAD loads engine data from a wad and pwad file.
+// Use this function to load a specific level.
+func LoadWAD(iwad, pwad string) (*GameData, error) {
+	var wads = []string{}
+	wads = append(wads, iwad+".wad", iwad+".gwa")
+	if pwad != "" {
+		wads = append(wads, pwad+".wad", pwad+".gwa")
+	}
+	return LoadGameData(wads...)
+}
+
+// GetWAD returns cached GameData, loading WADs to cache if required.
+func GetWAD(iwadfile, pwadfile string) (*GameData, error) {
+	gdLock.Lock()
+	defer gdLock.Unlock()
+	key := iwadfile + "_" + pwadfile
+	if gd, ok := gdCache[key]; ok {
+		return gd, nil
+	}
+	wad, err := LoadWAD(iwadfile, pwadfile)
+	if err == nil {
+		gdCache[key] = wad
+	}
+	return wad, err
+}
+
+// LoadGameData loads engine data from WAD files.
 func LoadGameData(files ...string) (*GameData, error) {
 	gd := &GameData{
 		Levels:   level.NewStore(),
