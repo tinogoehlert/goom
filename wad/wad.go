@@ -58,7 +58,7 @@ type WAD struct {
 func NewWADFromFile(file string) (*WAD, error) {
 	fd, err := os.Open(file)
 	if err != nil {
-		return nil, fmt.Errorf("could not open WAD file: %s", err.Error())
+		return nil, err
 	}
 
 	// load header

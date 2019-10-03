@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"math"
+	"os"
 	"strings"
 
 	"github.com/go-gl/mathgl/mgl32"
@@ -45,19 +46,11 @@ func tryMove(m *level.Level, from, to mgl32.Vec3, angleX, angleY float64) mgl32.
 	return to
 }
 
-func loadWAD(iwad, pwad string) (*goom.GameData, error) {
-	var wads = []string{}
-	wads = append(wads, iwad+".wad", iwad+".gwa")
-	if pwad != "" {
-		wads = append(wads, pwad+".wad", pwad+".gwa")
-	}
-	return goom.LoadGameData(wads...)
-}
-
 func main() {
 	iwadfile := flag.String("iwad", "DOOM1", "IWAD file to load (without extension)")
 	pwadfile := flag.String("pwad", "", "PWAD file to load (without extension)")
 	level := flag.String("level", "E1M1", "Level to start e.g. E1M1")
+	test := flag.Bool("test", false, "Exit GOOM after loading all data.")
 
 	flag.Parse()
 	log.Green("GOOM - DOOM clone written in Go")
@@ -68,7 +61,7 @@ func main() {
 		log.Red("could not init GL: %s", err.Error())
 	}
 
-	gameData, err := loadWAD(*iwadfile, *pwadfile)
+	gameData, err := goom.LoadWAD(*iwadfile, *pwadfile)
 	if err != nil {
 		log.Red("could not load WAD: %s", err.Error())
 	}
@@ -104,10 +97,18 @@ func main() {
 			things = appendDoomThing(things, monster.DoomThing, m)
 		}
 	}
+	music := gameData.Music["D_E1M1"]
+	music.Loop()
+	defer music.Stop()
+	log.Green("Press Q to exit GOOM.")
 	renderer.Loop(30, func() {
 		renderer.DrawThings(things)
 	}, func(w *glfw.Window) {
 		playerInput(m, renderer.Camera(), player, w)
+		if *test {
+			log.Green("Test run finished. Exiting GOOM.")
+			os.Exit(0)
+		}
 	})
 }
 
@@ -135,6 +136,9 @@ func playerInput(m *level.Level, cam *opengl.Camera, player *game.Player, w *glf
 	}
 	if w.GetKey(glfw.KeyRight) == glfw.Press {
 		player.Turn(3)
+	}
+	if w.GetKey(glfw.KeyQ) == glfw.Press {
+		os.Exit(0)
 	}
 
 	var ssect, err = m.FindPositionInBsp(level.GLNodesName, player.Position()[0], player.Position()[1])
