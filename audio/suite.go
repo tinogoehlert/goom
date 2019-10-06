@@ -27,7 +27,7 @@ func (suite MusicSuite) LoadWAD(w *wad.WAD) error {
 		l := lumps[i]
 		switch {
 		case midiRegex.Match([]byte(l.Name)):
-			m, err := NewMusData(l.Data)
+			m, err := NewMidiData(l.Data)
 			t := &MusicTrack{l, m}
 			if err != nil {
 				fmt.Printf("failed to load MUS track: %s, err: %s\n", t.Name, err)
@@ -42,7 +42,7 @@ func (suite MusicSuite) LoadWAD(w *wad.WAD) error {
 func (suite MusicSuite) Info() string {
 	var text []string
 	for _, t := range suite {
-		text = append(text, fmt.Sprintf("%s (%d): %v", t.Name, t.Size, t.MusData.Info()))
+		text = append(text, fmt.Sprintf("%s (%d): %v", t.Name, t.Size, t.MidiData.Info()))
 	}
 	return strings.Join(text, "\n")
 }

@@ -3,6 +3,8 @@ package goom
 import (
 	"os"
 	"testing"
+
+	"github.com/tinogoehlert/goom/test"
 )
 
 const testWad = "DOOM1"
@@ -14,9 +16,7 @@ func loadTestWAD(t *testing.T) *GameData {
 		t.Logf("skipping WAD test for missing %s WAD.", testWad)
 		t.Skip()
 	}
-	if err != nil {
-		t.Error(err)
-	}
+	test.Check(err, t)
 	return gd
 }
 
@@ -31,9 +31,10 @@ func TestWAD(t *testing.T) {
 func TestMusic(t *testing.T) {
 	gd := loadTestWAD(t)
 	music, ok := gd.Music["D_E1M1"]
-	if !ok {
-		t.Fail()
-	}
+	test.Assert(ok, "track not found: D_E1M1", t)
 	music.Play()
 	defer music.Stop()
+
+	test.Check(music.SaveMus(), t)
+	test.Check(music.SaveMidi(), t)
 }

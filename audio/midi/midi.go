@@ -1,6 +1,8 @@
 package audio
 
 import (
+	"fmt"
+
 	mus "github.com/tinogoehlert/goom/audio/mus"
 )
 
@@ -76,6 +78,15 @@ func NewData(numChannels int) *Data {
 		channels:   make(map[int]Channel, numChannels),
 		velocities: make(map[Channel]byte, numChannels),
 	}
+}
+
+// Info returns summarized header information as string.
+func (md *Data) Info() string {
+	n := len(md.Data)
+	if n > 40 {
+		n = 40
+	}
+	return fmt.Sprintf("midi.Data: %x", md.Data[:n])
 }
 
 // InitChan initializes the given MIDI channel
