@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"testing"
 
+	mus "github.com/tinogoehlert/goom/audio/mus"
 	"github.com/tinogoehlert/goom/wad"
 )
 
@@ -46,16 +47,16 @@ func sampleTrack(t *testing.T) []byte {
 
 	data := concat(
 		// Value             Description            Bytes  Offset
-		[]byte(MusID),    // MUS ID                 4       0
-		b16(len(scores)), // score size             2       4
-		b16(20),          // score offset           2       6   <--.
-		b16(1),           // primary channels       2       8      |
-		b16(0),           // secndary channels      2      10      |
-		b16(numInst),     // number of instruments  2      12      |
-		b16(0),           // dummy                  2      14      |
-		b16(inst1),       // instrument 1           2      16      |
-		b16(inst2),       // instrument 2           2      18      |
-		scores,           // scores bytes           8      20   ---'
+		[]byte(mus.LumpID), // MUS ID                 4       0
+		b16(len(scores)),   // score size             2       4
+		b16(20),            // score offset           2       6   <--.
+		b16(1),             // primary channels       2       8      |
+		b16(0),             // secndary channels      2      10      |
+		b16(numInst),       // number of instruments  2      12      |
+		b16(0),             // dummy                  2      14      |
+		b16(inst1),         // instrument 1           2      16      |
+		b16(inst2),         // instrument 2           2      18      |
+		scores,             // scores bytes           8      20   ---'
 		// EOF                                      0      28
 	)
 
@@ -134,31 +135,31 @@ func TestLoadScores(t *testing.T) {
 
 func TestMusLoading(t *testing.T) {
 	data := sampleTrack(t)
-	mus, err := NewMusData(data)
+	md, err := NewMusData(data)
 	if err != nil {
 		t.Error(err)
 	}
-	track := MusicTrack{wad.Lump{}, mus}
+	track := MusicTrack{wad.Lump{}, md}
 	track.Play()
 	defer track.Stop()
 
 	// fmt.Println(mus.Info())
 
 	type Case struct {
-		Index    int
-		Type     MusEvent
-		Delay    int
-		StrByte1 string
+		Index int
+		Type  mus.Event
+		Delay int
+		Data  string
 	}
 
 	cases := []Case{
-		Case{0, RelaseNote, 261, "\x10"},
-		Case{1, RelaseNote, 5, "\x20"},
-		Case{2, ScoreEnd, 0, ""},
+		Case{0, mus.RelaseNote, 261, "\x10"},
+		Case{1, mus.RelaseNote, 5, "\x20"},
+		Case{2, mus.ScoreEnd, 0, ""},
 	}
 
 	for _, c := range cases {
-		s := mus.scores[c.Index]
+		s := md.Scores[c.Index]
 		// fmt.Printf("comparing score %+v with test case: %+v", s, c)
 		if s.Type != c.Type {
 			t.Errorf("invalid mus type %d, expected %d", s.Type, c.Type)
@@ -166,16 +167,26 @@ func TestMusLoading(t *testing.T) {
 		if s.Delay != c.Delay {
 			t.Errorf("wrong delay %d, expected %d", s.Delay, c.Delay)
 		}
-		if c.StrByte1 == "" && s.Byte1 != nil {
-			t.Errorf("Byte1 %x is not nil", c.StrByte1)
+		if c.Data == "" && s.Data != nil {
+			t.Errorf("Data %x is not nil", c.Data)
 		}
-		if c.StrByte1 != "" && s.Byte1 == nil {
-			t.Errorf("missing Byte1 %x", c.StrByte1)
+		if c.Data != "" && s.Data == nil {
+			t.Errorf("missing Data %x", c.Data)
 		}
-		if s.Byte1 != nil {
-			if string(*s.Byte1) != c.StrByte1 {
-				t.Errorf("invalid Byte1 %x, expected %s", s.Byte1, c.StrByte1)
+		if s.Data != nil {
+			if string(s.Data) != c.Data {
+				t.Errorf("invalid Data %x, expected %s", s.Data, c.Data)
 			}
 		}
 	}
+}
+
+func TestMus2Mid(t *testing.T) {
+	data := sampleTrack(t)
+	md, err := NewMusData(data)
+	if err != nil {
+		t.Error(err)
+	}
+	mid := Mus2Mid(md)
+	fmt.Printf("%+v", mid)
 }
