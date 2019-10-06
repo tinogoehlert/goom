@@ -22,3 +22,6 @@
 
 # External Docs
 doc/extern
+
+# Non-VCS/Experimental Code
+audio/misc
