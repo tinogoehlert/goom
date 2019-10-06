@@ -1,13 +1,17 @@
 .PHONY: all clean test test-run run
 
 export GO111MODULE=auto
+export DOOM_TEST=$(CURDIR)/.test
 
-TARGETS = DOOM1.gwa go.mod
+FILES = DOOM1.gwa go.mod
+TARGETS = $(FILES) $(DOOM_TEST)
 
 all: $(TARGETS) test
 
 clean:
-	rm $(TARGETS)
+	rm -f $(FILES)
+	rm -f $(DOOM_TEST)/*.mid
+	rm -f $(DOOM_TEST)/*.mus
 
 test: $(TARGETS)
 	go test -v . ./audio
@@ -18,6 +22,9 @@ go.mod:
 
 DOOM1.gwa: DOOM1.wad
 	glbsp -v5 DOOM1.wad
+
+$(DOOM_TEST):
+	mkdir -p $@
 
 test-run: TEST=-test
 test-run: run
