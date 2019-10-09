@@ -20,7 +20,7 @@ A MUS file is defined as follows:
         uint16    numInstr     // Number of instruments
         uint16    dummy        // Separator
         []uint16  instruments  // List of used instruments
-        []bytes   scores       // Music events
+        []bytes   events       // Music events
     }
 
 Instruments

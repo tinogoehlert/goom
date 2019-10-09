@@ -37,4 +37,5 @@ func TestMusic(t *testing.T) {
 
 	test.Check(music.SaveMus(), t)
 	test.Check(music.SaveMidi(), t)
+	test.Check(music.Validate(), t)
 }

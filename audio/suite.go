@@ -27,10 +27,11 @@ func (suite MusicSuite) LoadWAD(w *wad.WAD) error {
 		l := lumps[i]
 		switch {
 		case midiRegex.Match([]byte(l.Name)):
-			m, err := NewMidiData(l.Data)
-			t := &MusicTrack{l, m}
-			if err != nil {
-				fmt.Printf("failed to load MUS track: %s, err: %s\n", t.Name, err)
+			musData, err1 := NewMusData(l.Data)
+			midData, err2 := NewMidiData(l.Data)
+			t := &MusicTrack{l, midData, musData}
+			if err1 != nil || err2 != nil {
+				fmt.Printf("failed to load MUS track: %s, err: %s\n%s\n", t.Name, err1, err2)
 			}
 			suite[l.Name] = t
 		}

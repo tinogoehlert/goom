@@ -42,15 +42,15 @@ func sampleTrack(t *testing.T) []byte {
 
 	*/
 
-	scores := []byte("\x80\x10\x82\x05\x80\x20\x05\x60")
+	events := []byte("\x80\x10\x82\x05\x80\x20\x05\x60")
 	inst1 := 1
 	inst2 := 2
 	numInst := 2
 
 	data := concat(
-		// Value             Description            Bytes  Offset
+		// Value               Description            Bytes  Offset
 		[]byte(mus.LumpID), // MUS ID                 4       0
-		b16(len(scores)),   // score size             2       4
+		b16(len(events)),   // score size             2       4
 		b16(20),            // score offset           2       6   <--.
 		b16(1),             // primary channels       2       8      |
 		b16(0),             // secndary channels      2      10      |
@@ -58,8 +58,8 @@ func sampleTrack(t *testing.T) []byte {
 		b16(0),             // dummy                  2      14      |
 		b16(inst1),         // instrument 1           2      16      |
 		b16(inst2),         // instrument 2           2      18      |
-		scores,             // scores bytes           8      20   ---'
-		// EOF                                      0      28
+		events,             // event bytes            8      20   ---'
+		// EOF                                        0      28
 	)
 
 	hex := fmt.Sprintf("%x", data)
@@ -75,9 +75,9 @@ func sampleTrack(t *testing.T) []byte {
 		"0000" + //     0 dummy
 		"0100" + //     1 inst 1
 		"0200" + //     2 inst 2
-		"80108205" + // ReleaseNote 1, 261 ticks Delay
-		"802005" + // ReleaseNote 2, 5 ticks Delay
-		"60") // ScoresEnd
+		"80108205" + // ReleaseNote 16, 261 ticks Delay
+		"802005" + // ReleaseNote 32, 5 ticks Delay
+		"60") // ScoreEnd
 
 	if hex != expected {
 		t.Errorf("invalid sample.\nobserved: %s\nexpected: %s", hex, expected)
@@ -86,7 +86,7 @@ func sampleTrack(t *testing.T) []byte {
 }
 
 func doomSample(t *testing.T) []byte {
-	// First bytes of the scores of a track from DOOM1.
+	// First bytes of the event data of a track from DOOM1.
 	//
 	// 40 00 1e 40 03 64 40 04 22 10 a8 77
 	//
@@ -107,8 +107,12 @@ func doomSample(t *testing.T) []byte {
 	// a8    1010 1000      vol? = 1, note = 40,  play note 40 and change volume
 	// 77    0111 0111      volume = 119,         set volume to 119  (max is 127)
 
+	// To create a valid sample track, we must turn off note 40 again:
+	// 00    0000 0000    release note (ch:0, delay:0)
+	// 28    0010 1000      note = 40, release note 40
+
 	header := []byte("\x4d\x55\x53\x1a" + // MUS ID
-		"\x0c\x00" + //     12 len
+		"\x0e\x00" + //     14 len
 		"\x12\x00" + //     18 offset
 		"\x01\x00" + //      1 prim ch
 		"\x00\x00" + //      0 sec ch
@@ -117,8 +121,9 @@ func doomSample(t *testing.T) []byte {
 		"\x01\x00", //       1 inst 1
 	)
 
-	// encode partial song and append a ScoresEnd event
-	song := "\x40\x00\x1e\x40\x03\x64\x40\x04\x22\x10\xa8\x77" + "\x60"
+	// encode partial song and append a ScoreEnd event
+	song := "\x40\x00\x1e\x40\x03\x64\x40\x04\x22" +
+		"\x10\xa8\x77" + "\x00\x28" + "\x60"
 	return []byte(append(header, song...))
 }
 
@@ -148,23 +153,23 @@ func doomMidi() string {
 	return strings.ReplaceAll(strings.ReplaceAll(mid, " ", ""), "\n", "")
 }
 
-func TestParseScores(t *testing.T) {
+func TestParseEvents(t *testing.T) {
 	type Case struct {
 		Data   []byte
 		Length int
 	}
 
 	cases := []Case{
-		Case{doomSample(t)[18:], 5},
+		Case{doomSample(t)[18:], 6},
 		Case{[]byte("\x80\x10\x82\x05\x80\x20\x05\x60"), 3},
 	}
 
 	for _, c := range cases {
 		data := c.Data
-		scores, err := mus.ParseScores(data)
+		events, err := mus.ParseEvents(data)
 		test.Check(err, t)
-		if len(scores) != c.Length {
-			t.Errorf("invalid scores: %+v, expected: %d scores", scores, 3)
+		if len(events) != c.Length {
+			t.Errorf("invalid events: %+v, expected: %d events", events, 3)
 		}
 	}
 }
@@ -176,22 +181,27 @@ func TestMusLoading(t *testing.T) {
 
 	type Case struct {
 		Index int
-		Type  mus.Event
+		Type  mus.EventType
+		Note  uint8
 		Delay int
 		Data  string
 	}
 
 	cases := []Case{
-		Case{0, mus.RelaseNote, 261, "\x10"},
-		Case{1, mus.RelaseNote, 5, "\x20"},
-		Case{2, mus.ScoreEnd, 0, ""},
+		Case{0, mus.RelaseNote, 16, 261, "\x10"},
+		Case{1, mus.RelaseNote, 32, 5, "\x20"},
+		Case{2, mus.ScoreEnd, 0, 0, ""},
 	}
 
 	for _, c := range cases {
-		s := md.Scores[c.Index]
+		s := md.Events[c.Index]
 		// fmt.Printf("comparing score %+v with test case: %+v", s, c)
 		if s.Type != c.Type {
-			t.Errorf("invalid mus type %d, expected %d", s.Type, c.Type)
+			t.Errorf("invalid mus type %d, expected %d.", s.Type, c.Type)
+		}
+		if s.Type == mus.RelaseNote && s.GetNote() != c.Note {
+			t.Errorf("invalid note %d, expected %d.", s.GetNote(), c.Note)
+
 		}
 		if s.Delay != c.Delay {
 			t.Errorf("wrong delay %d, expected %d", s.Delay, c.Delay)
@@ -214,8 +224,10 @@ func TestTrackLoading(t *testing.T) {
 	for i, d := range [][]byte{sampleTrack(t), doomSample(t)} {
 		mid, err := NewMidiData(d)
 		test.Check(err, t)
+		musd, err := NewMusData(d)
+		test.Check(err, t)
 		name := fmt.Sprintf("D_TEST%d", i)
-		track := MusicTrack{wad.Lump{Name: name, Data: d}, mid}
+		track := MusicTrack{wad.Lump{Name: name, Data: d}, mid, musd}
 		track.Play()
 		defer track.Stop()
 
@@ -230,7 +242,9 @@ func TestMus2Mid(t *testing.T) {
 	for i, d := range [][]byte{sampleTrack(t), doomSample(t)} {
 		md, err := NewMusData(d)
 		test.Check(err, t)
+		err = md.Validate()
+		test.Check(err, t)
 		mid := Mus2Mid(md)
-		fmt.Printf("MID M2M_%d: %x\n", i, mid.Data)
+		fmt.Printf("MID M2M_%d: %x\n", i, mid.Bytes())
 	}
 }

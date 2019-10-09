@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	midi "github.com/tinogoehlert/goom/audio/midi"
+	mus "github.com/tinogoehlert/goom/audio/mus"
 	"github.com/tinogoehlert/goom/wad"
 )
 
@@ -34,6 +35,7 @@ func saveTestFile(file string, data []byte) (string, error) {
 type MusicTrack struct {
 	wad.Lump
 	MidiData *midi.Data
+	MusData  *mus.Data
 }
 
 // Play plays the MusicTrack.
@@ -62,11 +64,16 @@ func (t *MusicTrack) SaveMus() error {
 func (t *MusicTrack) SaveMidi() error {
 	name := strings.ReplaceAll(t.Name, " ", "_")
 	midfile := fmt.Sprintf("test_%s.mid", name)
-	data := t.MidiData.Data
+	data := t.MidiData.Bytes()
 	f, err := saveTestFile(midfile, data)
 	if err != nil {
 		return err
 	}
 	fmt.Printf("MID %s: %s\n    written as file %s\n", name, head(data), f)
 	return nil
+}
+
+// Validate checks the track for errors.
+func (t *MusicTrack) Validate() error {
+	return t.MusData.Validate()
 }
