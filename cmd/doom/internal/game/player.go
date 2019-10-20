@@ -51,6 +51,11 @@ func (p *Player) AddWeapon(weapon *Weapon) {
 	p.weapon = weapon
 }
 
+// CollidedWithThing something collides with thing
+func (p *Player) CollidedWithThing(thing *DoomThing) {
+	fmt.Println("i collided with", thing.SpriteName())
+}
+
 // SwitchWeapon switches
 func (p *Player) SwitchWeapon(name string) {
 	if w, ok := p.weaponBag[name]; ok {

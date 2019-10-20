@@ -17,6 +17,10 @@ weapons:
   anim:
     shoot: "ABCDDCBA"
     fire: "AB"
+  thing:
+    id: 2001
+    sprite: "SHOT"
+    anim: "A"
 
 monsters:
 - id: 3004
@@ -77,4 +81,3 @@ obstacles:
 - id: 15
   sprite: "PLAY"
   anim: "N"
-

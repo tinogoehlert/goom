@@ -12,9 +12,10 @@ const (
 
 // Weapon weapon
 type Weapon struct {
-	Name       string `yaml:"name"`
-	Sprite     string `yaml:"sprite"`
-	FireSprite string `yaml:"fireSprite"`
+	Name       string   `yaml:"name"`
+	Sprite     string   `yaml:"sprite"`
+	Thing      ThingDef `yaml:"thing"`
+	FireSprite string   `yaml:"fireSprite"`
 	FireOffset struct {
 		X float32 `yaml:"x"`
 		Y float32 `yaml:"y"`

@@ -73,7 +73,7 @@ func main() {
 	})
 }
 
-var speed = float32(110)
+var speed = float32(90)
 
 func playerInput(m *level.Level, cam *opengl.Camera, player *game.Player, w *glfw.Window, frameTime float32) {
 	if w.GetKey(glfw.KeyW) == glfw.Press {

@@ -26,6 +26,7 @@ type MonsterDef struct {
 type DefStore struct {
 	Monsters  []MonsterDef `yaml:"monsters"`
 	Obstacles []ThingDef   `yaml:"obstacles"`
+	Items     []ThingDef   `yaml:"items"`
 	Weapons   []Weapon     `yaml:"weapons"`
 }
 
@@ -63,10 +64,30 @@ func (ds *DefStore) GetObstacleDef(id int) *ThingDef {
 	return nil
 }
 
-// GetWeapon gets weapon definition by ID
+// GetObstacleDef gets obstacle definition by ID
+func (ds *DefStore) GetItemDef(id int) *ThingDef {
+	for _, item := range ds.Items {
+		if item.ID == id {
+			return &item
+		}
+	}
+	return nil
+}
+
+// GetWeapon gets weapon definition by Name
 func (ds *DefStore) GetWeapon(name string) *Weapon {
 	for _, w := range ds.Weapons {
 		if w.Name == name {
+			return &w
+		}
+	}
+	return nil
+}
+
+// GetWeaponByID gets weapon definition by ID
+func (ds *DefStore) GetWeaponByID(id int) *Weapon {
+	for _, w := range ds.Weapons {
+		if w.Thing.ID == id {
 			return &w
 		}
 	}

@@ -188,6 +188,9 @@ func (gr *GLRenderer) DrawThings(things []*game.DoomThing) {
 	gr.shaders[gr.currentShader].Uniform1i("draw_phase", 1)
 
 	for _, t := range things {
+		if t.WasConsumed() {
+			continue
+		}
 		f := t.NextFrame()
 		a, flipped := t.CalcAngle(gr.camera.position)
 		img := gr.textures.Get(t.SpriteName()+string(f), a)

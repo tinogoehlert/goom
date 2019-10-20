@@ -26,13 +26,14 @@ type Wall struct {
 
 //World  holds the current world
 type World struct {
-	nodes    []level.Node
-	things   []*DoomThing
-	monsters []*Monster
-	players  []*Player
-	walls    []Wall
-	me       *Player
-	levelRef *level.Level
+	nodes       []level.Node
+	things      []*DoomThing
+	monsters    []*Monster
+	players     []*Player
+	definitions *DefStore
+	walls       []Wall
+	me          *Player
+	levelRef    *level.Level
 }
 
 func newWall(line level.LineDef, lvl *level.Level) Wall {
@@ -61,9 +62,10 @@ func newWall(line level.LineDef, lvl *level.Level) Wall {
 // NewWorld creates a new world
 func NewWorld(doomLevel *level.Level, defs *DefStore) *World {
 	var w = &World{
-		nodes:    doomLevel.Nodes(level.GLNodesName),
-		walls:    make([]Wall, 0, len(doomLevel.LinesDefs)),
-		levelRef: doomLevel,
+		nodes:       doomLevel.Nodes(level.GLNodesName),
+		walls:       make([]Wall, 0, len(doomLevel.LinesDefs)),
+		levelRef:    doomLevel,
+		definitions: defs,
 	}
 
 	for _, line := range doomLevel.LinesDefs {
@@ -80,6 +82,23 @@ func NewWorld(doomLevel *level.Level, defs *DefStore) *World {
 			player.AddWeapon(defs.GetWeapon("pistol"))
 			player.SetCollision(w.doesCollide)
 		}
+		if obstacleDef := defs.GetObstacleDef(int(t.Type)); obstacleDef != nil {
+			obstacle := ThingFromDef(t.X, t.Y, 0, t.Angle, obstacleDef)
+			w.things = appendDoomThing(w.things, obstacle, doomLevel)
+		}
+
+		if itemDef := defs.GetItemDef(int(t.Type)); itemDef != nil {
+			item := ThingFromDef(t.X, t.Y, 0, t.Angle, itemDef)
+			item.consumable = true
+			w.things = appendDoomThing(w.things, item, doomLevel)
+		}
+
+		if weapon := defs.GetWeaponByID(int(t.Type)); weapon != nil {
+			item := ThingFromDef(t.X, t.Y, 0, t.Angle, &weapon.Thing)
+			item.consumable = true
+			w.things = appendDoomThing(w.things, item, doomLevel)
+		}
+
 		if obstacleDef := defs.GetObstacleDef(int(t.Type)); obstacleDef != nil {
 			obstacle := ThingFromDef(t.X, t.Y, 0, t.Angle, obstacleDef)
 			w.things = appendDoomThing(w.things, obstacle, doomLevel)
@@ -124,13 +143,44 @@ func (w *World) Update() {
 }
 
 func (w *World) doesCollide(thing *DoomThing, to mgl32.Vec2) mgl32.Vec2 {
+	w.checkThingCollision(thing, to)
+	return w.checkWallCollision(thing, to)
+}
+
+func (w *World) checkThingCollision(thing *DoomThing, to mgl32.Vec2) {
+	for _, thing2 := range w.things {
+		if thing2.wasConsumed {
+			continue
+		}
+		var (
+			x  = thing.position[0]
+			y  = thing.position[1]
+			x1 = thing2.Position()[0] - 24
+			x2 = thing2.Position()[0] + 24
+			y1 = thing2.Position()[1] - 24
+			y2 = thing2.Position()[1] + 24
+		)
+
+		if x > x1 && x < x2 && y > y1 && y < y2 {
+			if thing2.consumable {
+				thing2.wasConsumed = true
+				if weapon := w.definitions.GetWeaponByID(thing2.id); weapon != nil {
+					w.me.AddWeapon(weapon)
+				}
+			}
+		}
+	}
+
+}
+
+func (w *World) checkWallCollision(thing *DoomThing, to mgl32.Vec2) mgl32.Vec2 {
 	var (
 		collided = false
-		x        = thing.position[0]
-		y        = thing.position[1]
+		x        = to.X()
+		y        = to.Y()
 		xNudge   = float32(0.0)
 		yNudge   = float32(0.0)
-		radius   = float32(23)
+		radius   = float32(32)
 		hitWall  *Wall
 	)
 	for _, w := range w.walls {
@@ -190,8 +240,8 @@ func (w *World) doesCollide(thing *DoomThing, to mgl32.Vec2) mgl32.Vec2 {
 			}
 		}
 		return mgl32.Vec2{
-			thing.position[0] + xNudge,
-			thing.position[1] + yNudge,
+			to[0] + xNudge,
+			to[1] + yNudge,
 		}
 	}
 	return to

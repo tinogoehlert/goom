@@ -11,6 +11,7 @@ import (
 
 // DoomThing a doom thing
 type DoomThing struct {
+	id               int
 	angle            float32
 	height           float32
 	sprite           string
@@ -22,6 +23,8 @@ type DoomThing struct {
 	lastTick         time.Time
 	hasAngles        bool
 	currentSector    *level.Sector
+	consumable       bool
+	wasConsumed      bool
 }
 
 // ThingFromDef creates thing from definition
@@ -29,6 +32,7 @@ func ThingFromDef(x, y, height, angle float32, def *ThingDef) *DoomThing {
 	var m = NewDoomThing(x, y, height, angle, def.Sprite, false)
 	m.animations["idle"] = []byte(def.Animation)
 	m.currentAnimation = m.animations["idle"]
+	m.id = def.ID
 	return m
 }
 
@@ -56,6 +60,15 @@ func appendDoomThing(dst []*DoomThing, src *DoomThing, m *level.Level) []*DoomTh
 	return append(dst, src)
 }
 
+func (dt *DoomThing) ID() int {
+	return dt.id
+}
+
+// CollidedWithThing something collides with thing
+func (dt *DoomThing) CollidedWithThing(thing *DoomThing) {
+
+}
+
 // Position get XY position
 func (dt *DoomThing) Position() [2]float32 {
 	return dt.position
@@ -64,6 +77,16 @@ func (dt *DoomThing) Position() [2]float32 {
 // Direction get XY direction
 func (dt *DoomThing) Direction() [2]float32 {
 	return dt.direction
+}
+
+// WasConsumed determines if consumable was consumed
+func (dt *DoomThing) WasConsumed() bool {
+	return dt.wasConsumed
+}
+
+// IsConsumable determines if consumable was consumed
+func (dt *DoomThing) IsConsumable() bool {
+	return dt.wasConsumed
 }
 
 // Height get players height
@@ -88,7 +111,7 @@ func (dt *DoomThing) SpriteName() string {
 
 // NextFrame gets the next frame of the current animation
 func (dt *DoomThing) NextFrame() byte {
-	if time.Now().Sub(dt.lastTick) >= 200*time.Millisecond {
+	if time.Now().Sub(dt.lastTick) >= 120*time.Millisecond {
 		if dt.currentFrame+1 >= len(dt.currentAnimation) {
 			dt.currentFrame = 0
 		} else {
