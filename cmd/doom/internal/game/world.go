@@ -178,10 +178,9 @@ func (w *World) checkWallCollision(thing *DoomThing, to mgl32.Vec2) mgl32.Vec2 {
 		collided = false
 		x        = to.X()
 		y        = to.Y()
-		xNudge   = float32(0.0)
-		yNudge   = float32(0.0)
-		radius   = float32(32)
-		hitWall  *Wall
+		radius   = float32(24)
+		hitWall  Wall
+		oldTo    = to
 	)
 	for _, w := range w.walls {
 		var (
@@ -190,7 +189,6 @@ func (w *World) checkWallCollision(thing *DoomThing, to mgl32.Vec2) mgl32.Vec2 {
 			pd  = x*w.Normal.X() + y*w.Normal.Y() - d
 			mul = float32(1.0)
 		)
-		hitWall = &w
 		if pd >= -radius && pd <= radius {
 			if pd < 0 {
 				pd = -pd
@@ -199,10 +197,11 @@ func (w *World) checkWallCollision(thing *DoomThing, to mgl32.Vec2) mgl32.Vec2 {
 			psd := x*w.Tangent.X() + y*w.Tangent.Y() - sd
 			if psd >= 0.0 && psd <= w.Length {
 				toPushOut := radius - pd + 0.001
-				xNudge = w.Normal.X() * toPushOut * mul
-				yNudge = w.Normal.Y() * toPushOut * mul
+				to[0] += w.Normal.X() * toPushOut * mul
+				to[1] += w.Normal.Y() * toPushOut * mul
+				hitWall = w
 				collided = true
-				break
+
 			} else {
 				var (
 					tmpxd float32
@@ -219,10 +218,10 @@ func (w *World) checkWallCollision(thing *DoomThing, to mgl32.Vec2) mgl32.Vec2 {
 				if distSqr < radius*radius {
 					dist := float32(math.Sqrt(float64(distSqr)))
 					toPushOut := radius - dist + 0.001
-					xNudge = tmpxd / dist * toPushOut
-					yNudge = tmpyd / dist * toPushOut
+					to[0] += tmpxd / dist * toPushOut
+					to[1] += tmpyd / dist * toPushOut
+					hitWall = w
 					collided = true
-					break
 				}
 			}
 		}
@@ -232,16 +231,11 @@ func (w *World) checkWallCollision(thing *DoomThing, to mgl32.Vec2) mgl32.Vec2 {
 		if hitWall.lineDef.Left != -1 {
 			var (
 				lSector   = w.levelRef.Sectors[hitWall.Sides.Left.Sector]
-				rSector   = w.levelRef.Sectors[hitWall.Sides.Left.Sector]
 				chkHeight = thing.currentSector.FloorHeight() + 32
 			)
-			if rSector.FloorHeight() < chkHeight || lSector.FloorHeight() < chkHeight {
-				return to
+			if lSector.FloorHeight() < chkHeight {
+				return oldTo
 			}
-		}
-		return mgl32.Vec2{
-			to[0] + xNudge,
-			to[1] + yNudge,
 		}
 	}
 	return to
