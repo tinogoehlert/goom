@@ -41,7 +41,7 @@ func (ds *ClassicSegment) EndVert() uint32 { return uint32(ds.End) }
 // LineDef linedef the Segment belongs to
 func (ds *ClassicSegment) LineDef() int16 { return ds.Linedef }
 
-// Direction direction of the Segment
+// Direction 0 (same as linedef) or 1 (opposite of linedef)
 func (ds *ClassicSegment) Direction() int16 { return ds.Dir }
 
 // PartnerSeg the partnerseg, not set for classic segs

@@ -48,6 +48,7 @@ void main()
 	}
 	// hud code
 	if (draw_phase == 2) {
+		fragTexCoord.x = -fragTexCoord.x;
 		gl_Position = DrawHUD();	
 		return;
 	} 

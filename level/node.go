@@ -69,8 +69,10 @@ func (n *NodeChild) Num() uint32 {
 
 // Node The nodes lump constitutes a binary space partition of the level.
 type Node struct {
-	position  geometry.Coord
-	diff      geometry.Coord
+	position  geometry.Vec2
+	diagonal  geometry.Vec2
+	direction geometry.Vec2
+	dirDeg    float32
 	RightBBox BBox
 	LeftBBox  BBox
 	Right     NodeChild
@@ -85,13 +87,15 @@ func newNodesFromLump(lump *wad.Lump) ([]Node, error) {
 	for i := 0; i < nodeCount; i++ {
 		vb := lump.Data[(i * nodeSize) : (i*nodeSize)+nodeSize]
 		nodes[i] = Node{
-			position:  geometry.Coord{utils.Int16Tof32(vb[0:2]), utils.Int16Tof32(vb[2:4])},
-			diff:      geometry.Coord{utils.Int16Tof32(vb[4:6]), utils.Int16Tof32(vb[6:8])},
+			position:  geometry.V2(utils.Int16Tof32(vb[0:2]), utils.Int16Tof32(vb[2:4])),
+			diagonal:  geometry.V2(utils.Int16Tof32(vb[4:6]), utils.Int16Tof32(vb[6:8])),
 			RightBBox: NewBBoxFromi16(vb[8:16]),
 			LeftBBox:  NewBBoxFromi16(vb[16:24]),
 			Right:     nodeChildI16(int(binary.LittleEndian.Uint16(vb[24:26]))),
 			Left:      nodeChildI16(int(binary.LittleEndian.Uint16(vb[26:28]))),
 		}
+		nodes[i].direction = nodes[i].diagonal.CrossVec2().Normalize()
+		nodes[i].dirDeg = nodes[i].position.Dot(nodes[i].direction)
 	}
 	return nodes, nil
 }
@@ -104,13 +108,15 @@ func newGLNodesFromLump(lump *wad.Lump) ([]Node, error) {
 	for i := 0; i < nodeCount; i++ {
 		vb := lump.Data[(i * glNodeSize) : (i*glNodeSize)+glNodeSize]
 		nodes[i] = Node{
-			position:  geometry.Coord{utils.Int16Tof32(vb[0:2]), utils.Int16Tof32(vb[2:4])},
-			diff:      geometry.Coord{utils.Int16Tof32(vb[4:6]), utils.Int16Tof32(vb[6:8])},
+			position:  geometry.V2(utils.Int16Tof32(vb[0:2]), utils.Int16Tof32(vb[2:4])),
+			diagonal:  geometry.V2(utils.Int16Tof32(vb[4:6]), utils.Int16Tof32(vb[6:8])),
 			RightBBox: NewBBoxFromi16(vb[8:16]),
 			LeftBBox:  NewBBoxFromi16(vb[16:24]),
 			Right:     NodeChild(binary.LittleEndian.Uint32(vb[24:28])),
 			Left:      NodeChild(binary.LittleEndian.Uint32(vb[28:32])),
 		}
+		nodes[i].direction = nodes[i].diagonal.CrossVec2().Normalize()
+		nodes[i].dirDeg = nodes[i].position.Dot(nodes[i].direction)
 	}
 	return nodes, nil
 }

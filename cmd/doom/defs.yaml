@@ -1,3 +1,23 @@
+weapons:
+- name: pistol
+  sprite: "PISG"
+  fireSprite: "PISF"
+  fire_offset:
+    x: -19
+    y: 118
+  anim:
+    shoot: "ABCDE"
+    fire: "A"
+- name: "shotgun"
+  sprite: "SHTG"
+  fireSprite: "SHTF"
+  fire_offset:
+    x: -8
+    y: 78
+  anim:
+    shoot: "ABCDDCBA"
+    fire: "AB"
+
 monsters:
 - id: 3004
   sprite: "POSS"
@@ -58,4 +78,3 @@ obstacles:
   sprite: "PLAY"
   anim: "N"
 
-  

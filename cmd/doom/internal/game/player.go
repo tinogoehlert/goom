@@ -1,67 +1,67 @@
 package game
 
 import (
+	"fmt"
 	"math"
+	"time"
 
 	"github.com/go-gl/mathgl/mgl32"
 )
 
 // Player DOOM SLAYER!!
 type Player struct {
-	position     [2]float32
-	dir          [2]float32
-	height       float32
-	angle        float32
-	posChanged   func(xy [2]float32, height float32)
-	angleChanged func(angle float32, dir [2]float32)
+	*Movable
+	weaponBag map[string]*Weapon
+	weapon    *Weapon
+	lastTick  time.Time
 }
 
+// NewPlayer creates a new player with the given values
 func NewPlayer(x, y, height, angle float32) *Player {
 	dy, dx := math.Sincos(float64(angle) * math.Pi / 180)
 	p := &Player{
-		position: [2]float32{x, y},
-		height:   height,
-		angle:    angle,
-		dir:      mgl32.Vec2{float32(dx), float32(dy)},
+		Movable: &Movable{
+			DoomThing: &DoomThing{
+				position:  [2]float32{x, y},
+				height:    height,
+				angle:     angle,
+				direction: mgl32.Vec2{float32(dx), float32(dy)},
+			},
+		},
+		weaponBag: make(map[string]*Weapon),
 	}
 	return p
 }
 
-// Walk move player x steps back or forth
-func (p *Player) Walk(steps float32) {
-	p.position[0] += (-p.dir[0] * steps)
-	p.position[1] += (p.dir[1] * steps)
+func (p *Player) Walk(steps, passedTime float32) {
+	p.Movable.Walk(steps, passedTime)
+	p.weapon.bobbing(passedTime)
+	p.lastTick = time.Now()
 }
 
-// Strafe move player x steps to the side
-func (p *Player) Strafe(steps float32) {
-	p.position[0] += steps
-	p.position[1] += (p.dir[1] * steps)
+// AddWeapon add a new weapon into player's bag or adds ammo
+// if he weapon is already in the bag
+func (p *Player) AddWeapon(weapon *Weapon) {
+	if w, ok := p.weaponBag[weapon.Name]; ok {
+		w.ammo += 20
+		return
+	}
+	fmt.Println(len(weapon.Animations["fire"]))
+	p.weaponBag[weapon.Name] = weapon
+	p.weapon = weapon
 }
 
-// Lift set players height
-func (p *Player) Lift(height float32) {
-	p.height = height
+// SwitchWeapon switches
+func (p *Player) SwitchWeapon(name string) {
+	if w, ok := p.weaponBag[name]; ok {
+		p.weapon.PutDown(func() {
+			p.weapon = w
+			p.weapon.PutUp()
+		})
+	}
 }
 
-// Turn player
-func (p *Player) Turn(angle float32) {
-	p.angle += angle
-	y, x := math.Sincos(float64(p.angle) * math.Pi / 180)
-	p.dir = mgl32.Vec2{float32(x), float32(y)}
-}
-
-// Position get XY position
-func (p *Player) Position() [2]float32 {
-	return p.position
-}
-
-// Direction get XY direction
-func (p *Player) Direction() [2]float32 {
-	return p.dir
-}
-
-// Height get players height
-func (p *Player) Height() float32 {
-	return p.height
+// Weapon gets current weapon
+func (p *Player) Weapon() *Weapon {
+	return p.weapon
 }

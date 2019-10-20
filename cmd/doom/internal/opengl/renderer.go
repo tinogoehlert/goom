@@ -3,7 +3,6 @@ package opengl
 import (
 	"fmt"
 	"runtime"
-	"strings"
 	"time"
 
 	"github.com/tinogoehlert/goom/cmd/doom/internal/game"
@@ -29,7 +28,9 @@ type GLRenderer struct {
 	modelMatrix   mgl32.Mat4
 	textures      glTextureStore
 	spriter       *glSpriter
+	lastTick      time.Time
 	currentShader string
+	fpsCap        float32
 	inputCallback func(*glfw.Window)
 }
 
@@ -104,16 +105,12 @@ func (gr *GLRenderer) BuildGraphics(gd *goom.GameData) {
 	for _, v := range gd.Sprites {
 		v.Frames(func(f *graphics.SpriteFrame) {
 			gr.textures.initTexture(f.Name(), len(f.Angles()))
-			if strings.Contains(f.Name(), "TROO") {
-				fmt.Println(f.Name())
-			}
 			for i, img := range f.Angles() {
 				gr.textures.addTexture(f.Name(), i, img)
 			}
 		})
 	}
 	gr.spriter = NewSpriter()
-	//gr.sprites = BuildSpritesFromGfx(gd.Sprites, gd.DefaultPalette())
 }
 
 func (gr *GLRenderer) Camera() *Camera {
@@ -153,7 +150,7 @@ func (gr *GLRenderer) KeyPressed(keyPressed func(key int)) {
 	})
 }
 
-func (gr *GLRenderer) setLight(light float32) {
+func (gr *GLRenderer) SetLight(light float32) {
 	gr.shaders[gr.currentShader].Uniform1f("sectorLight", light)
 }
 
@@ -173,7 +170,7 @@ func (gr *GLRenderer) setModel() {
 
 func (gr *GLRenderer) DrawSubSector(idx int) {
 	var s = gr.currentLevel.subSectors[idx]
-	gr.setLight(s.sector.LightLevel())
+	gr.SetLight(s.sector.LightLevel())
 	s.Draw(gr.textures)
 }
 
@@ -194,6 +191,7 @@ func (gr *GLRenderer) DrawThings(things []*game.DoomThing) {
 		f := t.NextFrame()
 		a, flipped := t.CalcAngle(gr.camera.position)
 		img := gr.textures.Get(t.SpriteName()+string(f), a)
+
 		gr.shaders[gr.currentShader].Uniform3f("billboard_pos", mgl32.Vec3{
 			-t.Position()[0],
 			t.Height() + (float32(img.image.Height()) / 2) + 4,
@@ -202,7 +200,7 @@ func (gr *GLRenderer) DrawThings(things []*game.DoomThing) {
 
 		gr.shaders[gr.currentShader].Uniform1i("billboard_flipped", flipped)
 		gr.shaders[gr.currentShader].Uniform2f("billboard_size", mgl32.Vec2{
-			float32(img.image.Width()) / 90,
+			float32(img.image.Width()) / 120,
 			float32(img.image.Height()) / 100,
 		})
 		gr.spriter.Draw(gl.TRIANGLES, img)
@@ -210,23 +208,53 @@ func (gr *GLRenderer) DrawThings(things []*game.DoomThing) {
 	gr.shaders[gr.currentShader].Uniform1i("draw_phase", 0)
 }
 
+var (
+	currX = float32(1)
+	currY = float32(1)
+	angle float64
+)
+
+func (gr *GLRenderer) drawHudImage(sprite string, pos mgl32.Vec3, offsetX, offsetY float32) {
+	img := gr.textures.Get(sprite, 0)
+	gr.shaders[gr.currentShader].Uniform2f("billboard_size", mgl32.Vec2{float32(img.image.Width()) / 40, float32(img.image.Height()) / 40})
+
+	pos[1] += float32(-img.image.Top()) + offsetY
+	pos[0] += +offsetX
+	gr.shaders[gr.currentShader].Uniform3f("billboard_pos", pos)
+	gr.spriter.Draw(gl.TRIANGLES, img)
+}
+
 // DrawHUD draws the game hud
-func (gr *GLRenderer) DrawHUD() {
-	Ortho := mgl32.Ortho2D(0, float32(gr.fbWidth), float32(-gr.fbHeight), 0)
+func (gr *GLRenderer) DrawHUD(player *game.Player) {
+
+	aspect := float32(gr.fbWidth) / float32(gr.fbHeight)
+	Ortho := mgl32.Ortho2D(640*aspect, 0, 0, 640)
 
 	gl.Disable(gl.DEPTH_TEST) // Disable the Depth-testing
 	gr.shaders[gr.currentShader].UniformMatrix4fv("ortho", Ortho)
 	gr.shaders[gr.currentShader].Uniform1i("draw_phase", 2)
-	gr.shaders[gr.currentShader].Uniform2f("billboard_size", mgl32.Vec2{float32(gr.fbHeight) / 420, float32(gr.fbHeight) / 420})
-	gr.shaders[gr.currentShader].Uniform3f("billboard_pos", mgl32.Vec3{float32(gr.fbWidth) / 2, -float32(gr.fbHeight) + 170, 0})
-	img := gr.textures.Get("PISGA", 0)
-	gr.spriter.Draw(gl.TRIANGLES, img)
+
+	w := player.Weapon()
+	frame, fire := w.NextFrames(float32((1000 / 30)))
+
+	gr.drawHudImage(w.Sprite+string(frame), mgl32.Vec3{(640 * aspect) / 2, 0, 0}, +w.Offset()[0], -20-w.Offset()[1])
+	if fire != 255 {
+		gr.drawHudImage(w.FireSprite+string(fire), mgl32.Vec3{
+			(640 * aspect) / 2,
+			0, 0,
+		}, w.FireOffset.X+w.Offset()[0], w.FireOffset.Y+w.Offset()[1],
+		)
+	}
 	gr.shaders[gr.currentShader].Uniform1i("draw_phase", 0)
 }
 
+func (gr *GLRenderer) SetFPSCap(cap float32) {
+	gr.fpsCap = cap
+}
+
 // Loop starts the render loop
-func (gr *GLRenderer) Loop(fps int, thingPass func(), inputCB func(win *glfw.Window)) {
-	frameTime := time.Duration(1000 / fps)
+func (gr *GLRenderer) Loop(drawCB func(), inputCB func(win *glfw.Window, frametime float32)) {
+	frameTime := time.Duration(1000 / gr.fpsCap)
 	for !gr.window.ShouldClose() {
 		t0 := time.Now()
 		gr.fbWidth, gr.fbHeight = gr.window.GetFramebufferSize()
@@ -239,18 +267,14 @@ func (gr *GLRenderer) Loop(fps int, thingPass func(), inputCB func(win *glfw.Win
 		gr.setView()
 		gr.setModel()
 
-		gr.currentLevel.mapRef.WalkBsp(level.GLNodesName, func(i int, n *level.Node, b level.BBox) {
-			gr.DrawSubSector(i)
-		})
+		drawCB()
 
-		thingPass()
-		gr.DrawHUD()
 		gr.window.SwapBuffers()
 		glfw.PollEvents()
-		inputCB(gr.window)
-		remaining := frameTime - time.Now().Sub(t0)
-		if remaining > 0 {
-			time.Sleep(remaining)
+		inputCB(gr.window, float32(frameTime)/1000)
+		lastFrame := frameTime - time.Now().Sub(t0)
+		if lastFrame > 0 {
+			time.Sleep(lastFrame)
 		}
 	}
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"regexp"
 
+	"github.com/tinogoehlert/goom/geometry"
 	"github.com/tinogoehlert/goom/internal/utils"
 	"github.com/tinogoehlert/goom/wad"
 )
@@ -25,7 +26,7 @@ type Level struct {
 	LinesDefs  []LineDef
 	Sectors    []Sector
 	SideDefs   []SideDef
-	vertexPool map[string][]Vertex
+	vertexPool map[string][]geometry.Vec2
 	segPool    map[string][]Segment
 	ssectPool  map[string][]SubSector
 	nodePool   map[string][]Node
@@ -67,7 +68,7 @@ func (s Store) LoadWAD(w *wad.WAD) error {
 // NewLevel Loads a level from a list of lumps
 func NewLevel(lumps []wad.Lump) (l *Level, err error) {
 	l = &Level{
-		vertexPool: make(map[string][]Vertex),
+		vertexPool: make(map[string][]geometry.Vec2),
 		segPool:    make(map[string][]Segment),
 		ssectPool:  make(map[string][]SubSector),
 		nodePool:   make(map[string][]Node),
@@ -133,11 +134,11 @@ func appendGLNodes(l *Level, lumps []wad.Lump) (err error) {
 }
 
 // Vert gets a vert
-func (l *Level) Vert(id uint32) *Vertex {
+func (l *Level) Vert(id uint32) geometry.Vec2 {
 	if utils.MagicU32(id).MagicBit() {
-		return &l.vertexPool["GL_VERT"][utils.MagicU32(id).Uint32()]
+		return l.vertexPool["GL_VERT"][utils.MagicU32(id).Uint32()]
 	}
-	return &l.vertexPool["VERTEXES"][id]
+	return l.vertexPool["VERTEXES"][id]
 }
 
 // Segments gets segs (SEGS or GL_SEGS)
@@ -183,10 +184,10 @@ func (l *Level) SectorFromSSect(ssect *SubSector) *Sector {
 }
 
 // WalkBsp walks through the node tree
-func (l *Level) WalkBsp(nodeType string, fn func(index int, n *Node, b BBox)) error {
-	nodes, ok := l.nodePool[nodeType]
+func (l *Level) WalkBsp(fn func(index int, n *Node, b BBox)) error {
+	nodes, ok := l.nodePool[GLNodesName]
 	if !ok {
-		return fmt.Errorf("could not find %s", nodeType)
+		return fmt.Errorf("could not find %s", GLNodesName)
 	}
 	for i := len(nodes) - 1; i >= 0; i-- {
 		if nodes[i].Right.IsSubSector() {
@@ -209,33 +210,19 @@ func (l *Level) FindPositionInBsp(nodeType string, x, y float32) (*SubSector, er
 	if !ok {
 		return nil, fmt.Errorf("could not find %s", nodeType)
 	}
-	var (
-		lastSub    *SubSector
-		lastHeight = float32(-10000)
-	)
+	n := nodes[len(nodes)-1]
 	for i := 0; i < len(nodes); i++ {
-		if nodes[i].Right.IsSubSector() {
-			if nodes[i].RightBBox.PosInBox(x, y) {
-				height := l.SectorFromSSect(&ssects[nodes[i].Right.Num()]).FloorHeight()
-				if height > lastHeight {
-					lastSub = &ssects[nodes[i].Right.Num()]
-					lastHeight = height
-				}
+		if x*n.direction.X()+y*n.direction.Y() > n.dirDeg {
+			if n.Left.IsSubSector() {
+				return &ssects[n.Left.Num()], nil
 			}
-		}
-		if nodes[i].Left.IsSubSector() {
-			if nodes[i].LeftBBox.PosInBox(x, y) {
-				height := l.SectorFromSSect(&ssects[nodes[i].Left.Num()]).FloorHeight()
-				if height > lastHeight {
-					lastSub = &ssects[nodes[i].Left.Num()]
-					lastHeight = height
-				}
+			n = nodes[n.Left.Num()]
+		} else {
+			if n.Right.IsSubSector() {
+				return &ssects[n.Right.Num()], nil
 			}
+			n = nodes[n.Right.Num()]
 		}
 	}
-
-	if lastSub == nil {
-		return nil, fmt.Errorf("not found")
-	}
-	return lastSub, nil
+	return nil, fmt.Errorf("not found")
 }

@@ -105,16 +105,34 @@ func (s *subSector) addWalls(md *level.Level, gd *goom.GameData, ts glTextureSto
 			continue
 		}
 
+		var (
+			sLen = start.X()
+			eLen = end.X()
+		)
+
+		if start.X()-end.X() == 0 {
+			sLen = start.Y()
+			eLen = end.Y()
+		}
+
 		if side.Upper() != "-" && otherSide != nil {
 			oppositeSector := md.Sectors[otherSide.Sector]
-			wallData := []float32{
-				-start.X(), sector.CeilHeight(), start.Y(), 0.0, 1.0,
-				-start.X(), oppositeSector.CeilHeight(), start.Y(), 0.0, 0.0,
-				-end.X(), oppositeSector.CeilHeight(), end.Y(), 1.0, 0.0,
 
-				-end.X(), oppositeSector.CeilHeight(), end.Y(), 1.0, 0.0,
-				-end.X(), sector.CeilHeight(), end.Y(), 1.0, 1.0,
-				-start.X(), sector.CeilHeight(), start.Y(), 0.0, 1.0,
+			tex := ts[side.Upper()][0]
+			var (
+				tw     = float32(tex.image.Width())
+				th     = float32(tex.image.Height())
+				height = oppositeSector.CeilHeight() - sector.CeilHeight()
+			)
+
+			wallData := []float32{
+				-start.X(), sector.CeilHeight(), start.Y(), -sLen / tw, height / th,
+				-start.X(), oppositeSector.CeilHeight(), start.Y(), -sLen / tw, 0.0,
+				-end.X(), oppositeSector.CeilHeight(), end.Y(), -eLen / tw, 0.0,
+
+				-end.X(), oppositeSector.CeilHeight(), end.Y(), -eLen / tw, 0.0,
+				-end.X(), sector.CeilHeight(), end.Y(), -eLen / tw, height / th,
+				-start.X(), sector.CeilHeight(), start.Y(), -sLen / tw, height / th,
 			}
 			if gd.Texture(side.Upper()) != nil {
 				wm := newGlWorldGeometry(wallData, sector.LightLevel(), ts[side.Upper()])
@@ -124,14 +142,21 @@ func (s *subSector) addWalls(md *level.Level, gd *goom.GameData, ts glTextureSto
 
 		if side.Lower() != "-" && otherSide != nil {
 			oppositeSector := md.Sectors[otherSide.Sector]
-			wallData := []float32{
-				-start.X(), sector.FloorHeight(), start.Y(), 0.0, 1.0,
-				-start.X(), oppositeSector.FloorHeight(), start.Y(), 0.0, 0.0,
-				-end.X(), oppositeSector.FloorHeight(), end.Y(), 1.0, 0.0,
 
-				-end.X(), oppositeSector.FloorHeight(), end.Y(), 1.0, 0.0,
-				-end.X(), sector.FloorHeight(), end.Y(), 1.0, 1.0,
-				-start.X(), sector.FloorHeight(), start.Y(), 0.0, 1.0,
+			tex := ts[side.Lower()][0]
+			var (
+				tw     = float32(tex.image.Width())
+				th     = float32(tex.image.Height())
+				height = sector.FloorHeight() - oppositeSector.FloorHeight()
+			)
+			wallData := []float32{
+				-start.X(), sector.FloorHeight(), start.Y(), -sLen / tw, height / th,
+				-start.X(), oppositeSector.FloorHeight(), start.Y(), -sLen / tw, 0.0,
+				-end.X(), oppositeSector.FloorHeight(), end.Y(), -eLen / tw, 0.0,
+
+				-end.X(), oppositeSector.FloorHeight(), end.Y(), -eLen / tw, 0.0,
+				-end.X(), sector.FloorHeight(), end.Y(), -eLen / tw, height / th,
+				-start.X(), sector.FloorHeight(), start.Y(), -sLen / tw, height / th,
 			}
 			if gd.Texture(side.Lower()) != nil {
 				wm := newGlWorldGeometry(wallData, sector.LightLevel(), ts[side.Lower()])
@@ -140,14 +165,21 @@ func (s *subSector) addWalls(md *level.Level, gd *goom.GameData, ts glTextureSto
 		}
 
 		if side.Middle() != "-" {
-			wallData := []float32{
-				-start.X(), sector.FloorHeight(), start.Y(), 0.0, 1.0,
-				-start.X(), sector.CeilHeight(), start.Y(), 0.0, 0.0,
-				-end.X(), sector.CeilHeight(), end.Y(), 1.0, 0.0,
+			tex := ts[side.Middle()][0]
+			var (
+				tw     = float32(tex.image.Width())
+				th     = float32(tex.image.Height())
+				height = sector.CeilHeight() - sector.FloorHeight()
+			)
 
-				-end.X(), sector.CeilHeight(), end.Y(), 1.0, 0.0,
-				-end.X(), sector.FloorHeight(), end.Y(), 1.0, 1.0,
-				-start.X(), sector.FloorHeight(), start.Y(), 0.0, 1.0,
+			wallData := []float32{
+				-start.X(), sector.FloorHeight(), start.Y(), -sLen / tw, height / th,
+				-start.X(), sector.CeilHeight(), start.Y(), -sLen / tw, 0.0,
+				-end.X(), sector.CeilHeight(), end.Y(), -eLen / tw, 0.0,
+
+				-end.X(), sector.CeilHeight(), end.Y(), -eLen / tw, 0.0,
+				-end.X(), sector.FloorHeight(), end.Y(), -eLen / tw, height / th,
+				-start.X(), sector.FloorHeight(), start.Y(), -sLen / tw, height / th,
 			}
 			wm := newGlWorldGeometry(wallData, sector.LightLevel(), ts[side.Middle()])
 			s.walls = addGlWorldGeometry(s.walls, wm)
