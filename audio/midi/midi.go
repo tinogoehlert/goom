@@ -104,7 +104,15 @@ func (d *Data) Header() []byte {
 // Bytes returns the MIDI bytes for a mid file.
 func (d *Data) Bytes() []byte {
 	// TODO: convert events to bytes
-	return d.Header()
+	var data []byte
+	for _, ev := range d.Events {
+		md := make([]byte, 12)
+		binary.LittleEndian.PutUint32(md[0:], ev.DeltaTime)
+		binary.LittleEndian.PutUint32(md[4:], ev.StreamID)
+		binary.LittleEndian.PutUint32(md[8:], ev.Event)
+		data = append(data, md...)
+	}
+	return append(d.Header(), data...)
 }
 
 // Info returns summarized header information as string.

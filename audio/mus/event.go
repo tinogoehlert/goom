@@ -1,6 +1,7 @@
 package mus
 
 import (
+	"encoding/hex"
 	"fmt"
 )
 
@@ -34,17 +35,28 @@ var eventNames = map[EventType]string{
 
 // Event describes a generic music event.
 type Event struct {
-	Type      EventType // MUS event type
-	Index     int       // position of the event's bytes in the track
-	NextIndex int       // position of the next event's bytes in the track
-	Channel   int       // Channel number
-	Delay     int       // computed delay in ticks
-	Data      []byte    // 0-2 payload bytes
+	Type       EventType // MUS event type
+	Index      int       // position of the event's bytes in the track
+	NextIndex  int       // position of the next event's bytes in the track
+	Channel    uint8     // Channel number
+	Delay      uint16    // computed delay in ticks
+	Byte       byte      // source byte of the event
+	Data       []byte    // 0-2 payload bytes
+	DelayBytes []byte    // 0-n delay bytes
 }
 
 // Name returns the name of the event.
 func (ev *Event) Name() string {
 	return eventNames[ev.Type]
+}
+
+// Hex returns the source bytes of the event in hex-format.
+func (ev *Event) Hex() string {
+	hx := hex.EncodeToString(append([]byte{ev.Byte}, ev.Data...))
+	if len(ev.DelayBytes) > 0 {
+		hx = hx + " " + hex.EncodeToString(ev.DelayBytes)
+	}
+	return hx
 }
 
 // GetNote returns the Note value (0-127) for Play and Release events.
@@ -54,13 +66,13 @@ func (ev *Event) GetNote() uint8 {
 
 // HasVolume checks the note byte of a PlayNote event for the Volume flag.
 func (ev *Event) HasVolume() bool {
-	return ev.Type == PlayNote && ev.Data[0]>>7 == 1
+	return ev.Data[0]>>7 == 1
 }
 
 // GetVolume returns the volume value (0-127).
 func (ev *Event) GetVolume() uint8 {
 	if ev.HasVolume() {
-		return ev.Data[1] & 0x7F
+		return ev.Data[1]
 	}
 	return 0
 }
@@ -72,12 +84,12 @@ func (ev *Event) GetBend() uint8 {
 
 // GetController returns the controller number (0-127).
 func (ev *Event) GetController() uint8 {
-	return ev.Data[0] & 0x7F
+	return ev.Data[0]
 }
 
 // GetControllerValue returns the controller value (0-127).
 func (ev *Event) GetControllerValue() uint8 {
-	return ev.Data[1] & 0x7F
+	return ev.Data[1]
 }
 
 // Info descibes the event.
@@ -101,6 +113,6 @@ func (ev *Event) Info() string {
 		val = ev.GetControllerValue()
 		valueBits = 7
 	}
-	return fmt.Sprintf("MusEvent(%d, %s, %d, val=%d, bits=%d, delay=%d)\n",
-		ev.Type, ev.Name(), id, val, valueBits, ev.Delay)
+	return fmt.Sprintf("mus.Event[%d](%d, %s, %d, val=%d, bits=%d, ch=%d, delay=%d, hex=%s)",
+		ev.Index, ev.Type, ev.Name(), id, val, valueBits, ev.Channel, ev.Delay, ev.Hex())
 }

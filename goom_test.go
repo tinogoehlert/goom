@@ -30,12 +30,12 @@ func TestWAD(t *testing.T) {
 // Test loading and playing music.
 func TestMusic(t *testing.T) {
 	gd := loadTestWAD(t)
-	music, ok := gd.Music["D_E1M1"]
-	test.Assert(ok, "track not found: D_E1M1", t)
+	music, ok := gd.Music["D_INTRO"]
+	test.Assert(ok, "track not found: D_INTRO", t)
 	music.Play()
 	defer music.Stop()
 
-	test.Check(music.SaveMus(), t)
-	test.Check(music.SaveMidi(), t)
 	test.Check(music.Validate(), t)
+	// test.Check(music.SaveMus(), t)
+	// test.Check(music.SaveMidi(), t)
 }

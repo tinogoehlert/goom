@@ -30,8 +30,11 @@ func (suite MusicSuite) LoadWAD(w *wad.WAD) error {
 			musData, err1 := NewMusData(l.Data)
 			midData, err2 := NewMidiData(l.Data)
 			t := &MusicTrack{l, midData, musData}
-			if err1 != nil || err2 != nil {
-				fmt.Printf("failed to load MUS track: %s, err: %s\n%s\n", t.Name, err1, err2)
+			if err1 != nil {
+				fmt.Printf("failed to load MUS track: %s, err: %s\n", t.Name, err1)
+			}
+			if err2 != nil {
+				fmt.Printf("failed to load MID track: %s, err: %s\n", t.Name, err2)
 			}
 			suite[l.Name] = t
 		}

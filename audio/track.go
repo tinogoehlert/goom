@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"path/filepath"
+	"path"
 	"strings"
 
 	midi "github.com/tinogoehlert/goom/audio/midi"
@@ -12,6 +12,7 @@ import (
 	"github.com/tinogoehlert/goom/wad"
 )
 
+// ellips dumps the first `limit` bytes of the data in hex format.
 func ellips(data []byte, limit int) string {
 	if len(data) <= limit {
 		return fmt.Sprintf("%x", data)
@@ -19,6 +20,7 @@ func ellips(data []byte, limit int) string {
 	return fmt.Sprintf("%x...", data[:limit])
 }
 
+// head dumps the first 100 bytes of the data in hex format.
 func head(data []byte) string { return ellips(data, 100) }
 
 func saveTestFile(file string, data []byte) (string, error) {
@@ -26,7 +28,7 @@ func saveTestFile(file string, data []byte) (string, error) {
 	if dir == "" {
 		dir = "."
 	}
-	f := filepath.Join(dir, file)
+	f := path.Join(dir, file)
 	os.Remove(f)
 	return f, ioutil.WriteFile(f, data, 0644)
 }
@@ -75,5 +77,5 @@ func (t *MusicTrack) SaveMidi() error {
 
 // Validate checks the track for errors.
 func (t *MusicTrack) Validate() error {
-	return t.MusData.Validate()
+	return t.MusData.Simulate()
 }

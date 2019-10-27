@@ -21,6 +21,10 @@ func TestHexConversion(t *testing.T) {
 	for _, c := range []Case{
 		Case{"D_INTROA.mid", 871},
 		Case{"D_INTROA.mus", 631},
+		Case{"D_INTRO.mid", 2002},
+		Case{"D_INTRO.mus", 1485},
+		Case{"D_E1M1.mid", 23322},
+		Case{"D_E1M1.mus", 17283},
 	} {
 		name := c.name
 		n := c.len

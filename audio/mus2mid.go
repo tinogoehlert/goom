@@ -41,10 +41,10 @@ func Mus2Mid(in *mus.Data) *midi.Data {
 	p := midi.NewParser(numChans)
 
 	for _, ev := range in.Events {
-		ch := p.GetChannel(ev.Channel)
+		ch := p.GetChannel(int(ev.Channel))
 
-		//fmt.Printf("converting event: %s", ev.Info())
-		continue
+		// fmt.Printf("converting event: %s", ev.Info())
+		// continue
 
 		switch ev.Type {
 		case mus.RelaseNote:
@@ -81,7 +81,7 @@ func Mus2Mid(in *mus.Data) *midi.Data {
 		case mus.MeasureEnd:
 		case mus.ScoreEnd:
 		}
-		p.SetTime(ev.Delay)
+		p.SetTime(int(ev.Delay))
 	}
 	p.CompleteTrack()
 
