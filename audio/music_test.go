@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/tinogoehlert/goom/audio"
@@ -29,23 +30,59 @@ func concat(values ...[]byte) []byte {
 
 func sampleTrack(t *testing.T) []byte {
 	/*
-		Example Track
+		Artifical Example Track
 
-		Based on example from: http://www.shikadi.net/moddingwiki/MUS_Format
+		Composed using ModdingWiki MUS spec: http://www.shikadi.net/moddingwiki/MUS_Format
 
-		80  # ReleaseNote                   Delay = 0 (inital value)       High-bit is set, delay byte follows
-		10  # ReleaseNote payload (note 16) Delay = 0
-		82  # First byte of delay           Delay = 2 (0x82 & 0x7F)        High-bit is set, delay byte follows
-		05  # Second byte of delay          Delay = Delay * 128 + 5 = 261  High-bit is unset, delay is complete
-		80  # RelaseNote after 261 ticks    Delay = 0 (value reset)
-		20  # ReleaseNote payload (note 32) Delay = 0
-		05  # First byte of second delay    Delay = Delay * 128 + 5 = 5    High-bit is unset, delay is complete
-		60  # ScoreEnd after 5 ticks        Delay = 0                      High-bin must be unset
+		30  # System Controller     Delay = 0, Channel = 0
+		0A  # AllNotesOff
+
+		40  # Controller            Delay = 0, Channel = 0
+		30  # Volume
+		64  # VolumeLevel           Volume = 100
+
+		90  # PlayNote              Delay = 0, Channel = 0         High-bit is set,   delay byte follows
+		10  # PlayNote Payload      Note  = 16
+		0F  # First byte of delay   Delay = Delay * 128 + 15 = 15  High-bit is unset, delay is complete
+			# 15 Ticks delay
+		90  # PlayNote              Delay = 0, Channel = 0
+		20  # PlayNote Payload      Note  = 32
+		0F  # First byte of delay   Delay = Delay * 128 + 15 = 15  High-bit is unset, delay is complete
+			# 15 Ticks delay
+		80  # ReleaseNote           Delay = 0, Channel = 0         High-bit is set,   delay byte follows
+		10  # ReleaseNote payload   Note  = 16
+		82  # First byte of delay   Delay = 2 (0x82 & 0x7F)        High-bit is set,   delay byte follows
+		05  # Second byte of delay  Delay = Delay * 128 + 5 = 261  High-bit is unset, delay is complete
+			# 261 Ticks delay
+		80  # RelaseNote            Delay = 0, Channel = 0         High-bit is set,   delay byte follows
+		20  # ReleaseNote payload   Note  = 32
+		05  # First byte of delay   Delay = Delay * 128 + 5 = 5    High-bit is unset, delay is complete
+			# 5 Ticks delay
+		60  # ScoreEnd              Delay = 0                      High-bit must be unset
+
+		Channels:       0
+		NumChannels:    1
+		Intruments:     16, 32
+		NumInstruments: 2
+		NumScores:      7
+		NumBytes:       19
+
+		This track should be fully MIDI-convertible.
+		The result should be playable using any MID-file player.
 	*/
 
-	events := []byte("\x80\x10\x82\x05\x80\x20\x05\x60")
-	inst1 := 1
-	inst2 := 2
+	eventsHex := strings.Join([]string{
+		"300a",     // all notes off
+		"400364",   // volume 100
+		"90100f",   // play 16 + delay
+		"90200f",   // play 32 + delay
+		"80108205", // release 16 + delay
+		"802005",   // release 32 + delay
+		"60",       // end
+	}, "")
+	events, _ := hex.DecodeString(eventsHex)
+	inst1 := 16
+	inst2 := 32
 	numInst := 2
 
 	// create header and append events
@@ -69,17 +106,15 @@ func sampleTrack(t *testing.T) []byte {
 	// fmt.Println("sampleData:", hex)
 
 	expected := ("4d55531a" + // MUS ID
-		"0800" + //     8 len
+		"1300" + //    19 len
 		"1400" + //    20 offset
 		"0100" + //     1 prim ch
 		"0000" + //     0 sec ch
 		"0200" + //     2 num inst
 		"0000" + //     0 dummy
-		"0100" + //     1 inst 1
-		"0200" + //     2 inst 2
-		"80108205" + // ReleaseNote 16, 261 ticks Delay
-		"802005" + // ReleaseNote 32, 5 ticks Delay
-		"60") // ScoreEnd
+		"1000" + //    16 first inst
+		"2000" + //    32 second inst
+		eventsHex)
 
 	bf := &files.BinFile{
 		"test",
@@ -121,20 +156,24 @@ func doomSample(t *testing.T) []byte {
 	// 00    0000 0000    release note (ch:0, delay:0)
 	// 28    0010 1000      note = 40,   release note 40
 
-	header := []byte("\x4d\x55\x53\x1a" + // MUS ID
-		"\x0e\x00" + //     14 len
-		"\x12\x00" + //     18 offset
-		"\x01\x00" + //      1 prim ch
-		"\x00\x00" + //      0 sec ch
-		"\x02\x00" + //      1 num inst
-		"\x00\x00" + //      0 dummy
-		"\x01\x00", //       1 inst 1
-	)
-
-	// encode partial song and append a ScoreEnd event
-	song := "\x40\x00\x1e\x40\x03\x64\x40\x04\x22" +
-		"\x10\xa8\x77" + "\x00\x28" + "\x60"
-	return []byte(append(header, song...))
+	v := []string{
+		"4d55531a", // MUS ID
+		"0e00",     // 14 len
+		"1200",     // 18 offset
+		"0100",     //  1 prim ch
+		"0000",     //  0 sec ch
+		"0200",     //  1 num inst
+		"0000",     //  0 dummy
+		"0100",     //  1 inst 1
+		"40001e",   // ChangeInst 30
+		"400364",   // Volume 100
+		"400422",   // Balance 22
+		"10a877",   // Play Note 40, Volume 119
+		"0028",     // Release Note 40
+		"60",       // ScoreEnd
+	}
+	data, _ := hex.DecodeString(strings.Join(v, ""))
+	return data
 }
 
 func doomFile(name string, t *testing.T) *files.BinFile {
@@ -154,7 +193,7 @@ func TestParseEvents(t *testing.T) {
 	}
 
 	cases := []Case{
-		Case{sampleTrack(t), 3},
+		Case{sampleTrack(t), 7},
 		Case{doomSample(t), 6},
 		Case{introaMus(t).Data, 214},
 		Case{introMus(t).Data, 498},
@@ -181,13 +220,17 @@ func TestMusLoading(t *testing.T) {
 		Type  mus.EventType
 		Note  uint8
 		Delay uint16
-		Data  string
+		Hex   string
 	}
 
 	cases := []Case{
-		Case{0, mus.RelaseNote, 16, 261, "\x10"},
-		Case{1, mus.RelaseNote, 32, 5, "\x20"},
-		Case{2, mus.ScoreEnd, 0, 0, ""},
+		Case{0, mus.System, 10, 0, "0a"},
+		Case{1, mus.Controller, 3, 0, "0364"},
+		Case{2, mus.PlayNote, 16, 15, "10"},
+		Case{3, mus.PlayNote, 32, 15, "20"},
+		Case{4, mus.RelaseNote, 16, 261, "10"},
+		Case{5, mus.RelaseNote, 32, 5, "20"},
+		Case{6, mus.ScoreEnd, 0, 0, ""},
 	}
 
 	for _, c := range cases {
@@ -198,20 +241,20 @@ func TestMusLoading(t *testing.T) {
 		}
 		if s.Type == mus.RelaseNote && s.GetNote() != c.Note {
 			t.Errorf("invalid note %d, expected %d.", s.GetNote(), c.Note)
-
 		}
 		if s.Delay != c.Delay {
 			t.Errorf("wrong delay %d, expected %d", s.Delay, c.Delay)
 		}
-		if c.Data == "" && s.Data != nil {
-			t.Errorf("Data %x is not nil", c.Data)
+		if c.Hex == "" && s.Data != nil {
+			t.Errorf("Data %x is not nil", c.Hex)
 		}
-		if c.Data != "" && s.Data == nil {
-			t.Errorf("missing Data %x", c.Data)
+		if c.Hex != "" && s.Data == nil {
+			t.Errorf("missing Data %x", c.Hex)
 		}
 		if s.Data != nil {
-			if string(s.Data) != c.Data {
-				t.Errorf("invalid Data %x, expected %s", s.Data, c.Data)
+			hx := hex.EncodeToString(s.Data)
+			if hx != c.Hex {
+				t.Errorf("invalid Data %x, expected %s", hx, c.Hex)
 			}
 		}
 	}

@@ -1,4 +1,4 @@
-package audio
+package convert_test
 
 import (
 	"encoding/binary"

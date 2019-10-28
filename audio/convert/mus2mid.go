@@ -1,4 +1,4 @@
-package audio
+package convert
 
 import (
 	midi "github.com/tinogoehlert/goom/audio/midi"

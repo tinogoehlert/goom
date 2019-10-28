@@ -3,6 +3,7 @@ package audio
 import (
 	"fmt"
 
+	"github.com/tinogoehlert/goom/audio/convert"
 	midi "github.com/tinogoehlert/goom/audio/midi"
 	mus "github.com/tinogoehlert/goom/audio/mus"
 )
@@ -50,5 +51,5 @@ func NewMidiData(data []byte) (*midi.Data, error) {
 	if err != nil {
 		return nil, err
 	}
-	return Mus2Mid(md), nil
+	return convert.Mus2Mid(md), nil
 }
