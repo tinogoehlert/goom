@@ -77,10 +77,10 @@ func main() {
 var speed = float32(120)
 
 func playerInput(m *level.Level, cam *opengl.Camera, player *game.Player, w *glfw.Window, frameTime float32) {
-	if w.GetKey(glfw.KeyW) == glfw.Press {
+	if w.GetKey(glfw.KeyW) == glfw.Press || w.GetKey(glfw.KeyUp) == glfw.Press {
 		player.Walk(speed, frameTime)
 	}
-	if w.GetKey(glfw.KeyS) == glfw.Press {
+	if w.GetKey(glfw.KeyS) == glfw.Press || w.GetKey(glfw.KeyDown) == glfw.Press {
 		player.Walk(-speed, frameTime)
 	}
 	if w.GetKey(glfw.KeyLeft) == glfw.Press {

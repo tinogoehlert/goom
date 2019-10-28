@@ -1,23 +1,25 @@
 package audio
 
 import (
+	"encoding/binary"
 	"fmt"
 
 	mus "github.com/tinogoehlert/goom/audio/mus"
 )
 
-// Event defines a MIDI event type.
-type Event byte
+// EventType defines a MIDI event type.
+type EventType byte
 
-// Event types:
+// EventTypes:
 const (
-	ReleaseKey        = Event(0x80)
-	PressKey          = Event(0x90)
-	AfterTouchKey     = Event(0xA0)
-	ChangeController  = Event(0xB0)
-	ChangePatch       = Event(0xC0)
-	AfterTouchChannel = Event(0xD0)
-	PitchWheel        = Event(0xE0)
+	Noop              = EventType(0x02)
+	ReleaseKey        = EventType(0x80)
+	PressKey          = EventType(0x90)
+	AfterTouchKey     = EventType(0xA0)
+	ChangeController  = EventType(0xB0)
+	ChangePatch       = EventType(0xC0)
+	AfterTouchChannel = EventType(0xD0)
+	PitchWheel        = EventType(0xE0)
 )
 
 // Control defines a MIDI controller type.
@@ -32,18 +34,26 @@ const (
 	ModulationWheel = Control(0x01)
 	Volume          = Control(0x07)
 	PanPot          = Control(0x0A)
-	ExpressionPot   = Control(0x0B)
-	ReverbPot       = Control(0x5B)
+	ExpressionCtrl  = Control(0x0B)
+	ReverbDepth     = Control(0x5B)
 	ChorusDepth     = Control(0x5D)
-	SustainPedal    = Control(0x40)
+	DamperPedal     = Control(0x40)
 	SoftPedal       = Control(0x43)
 	AllSoundsOff    = Control(0x78)
 	AllNotesOff     = Control(0x7B)
-	Mono            = Control(0x7E)
-	Poly            = Control(0x7F)
-	Reset           = Control(0x79)
+	MonoOn          = Control(0x7E)
+	PolyOn          = Control(0x7F)
+	ResetAllCtrl    = Control(0x79)
 	Undefined       = Control(0x0F)
 )
+
+// Event defines a MIDI event.
+type Event struct {
+	DeltaTime uint32   // MIDI ticks between previous and current event
+	StreamID  uint32   // Reserved (0).
+	Event     uint32   // Encoded event including event code and parameters
+	Params    []uint32 // Additional parameters (not used)
+}
 
 // Channel is the integer number of a MIDI channel.
 type Channel int
@@ -52,77 +62,135 @@ type Channel int
 // used for percussion events.
 const PercussionChannel = Channel(9)
 
-// Data describes MIDI data.
+// Data stores parsed MIDI events.
 type Data struct {
+	Delay  int
+	Events []Event
+}
+
+// Parser describes MIDI data.
+type Parser struct {
+	Data
 	// Channels provides an index for the used MIDI channels.
 	channels   map[int]Channel
 	velocities map[Channel]byte
-	Delay      int
-	Data       []byte
+	volumes    map[Channel]byte
+	time       uint32
 }
 
-// NewData creates a MIDI data stub.
-func NewData(numChannels int) *Data {
+// NewParser returns a MIDI parser.
+func NewParser(numChannels int) *Parser {
+	return &Parser{
+		channels:   make(map[int]Channel, numChannels),
+		velocities: make(map[Channel]byte, numChannels),
+		volumes:    make(map[Channel]byte, numChannels),
+	}
+}
 
-	midiHeader := []byte("MThd" + // Header start
+// Header returns the MIDI header of the parsed Track.
+func (d *Data) Header() []byte {
+	h := []byte("MThd" + // Header start
 		"\x00\x00\x00\x06" + // Header size
 		"\x00\x00" + // MIDI type (0, single track)
 		"\x00\x01" + // Number of tracks
 		"\x00\x46" + // Resolution
 		"MTrk" + // Track start
-		"\x00\x00\x00\x00", // Track length placeholder
+		"\x00\x00\x00\x00", // Track length
 	)
+	binary.LittleEndian.PutUint32(h[18:], uint32(len(d.Events)))
+	return h
+}
 
-	return &Data{
-		Data:       midiHeader,
-		channels:   make(map[int]Channel, numChannels),
-		velocities: make(map[Channel]byte, numChannels),
+// Bytes returns the MIDI bytes for a mid file.
+func (d *Data) Bytes() []byte {
+	// TODO: convert events to bytes
+	var data []byte
+	for _, ev := range d.Events {
+		md := make([]byte, 12)
+		binary.LittleEndian.PutUint32(md[0:], ev.DeltaTime)
+		binary.LittleEndian.PutUint32(md[4:], ev.StreamID)
+		binary.LittleEndian.PutUint32(md[8:], ev.Event)
+		data = append(data, md...)
 	}
+	return append(d.Header(), data...)
 }
 
 // Info returns summarized header information as string.
-func (md *Data) Info() string {
-	n := len(md.Data)
-	if n > 40 {
-		n = 40
+func (d *Data) Info() string {
+	n := len(d.Events)
+	if n > 10 {
+		n = 10
 	}
-	return fmt.Sprintf("midi.Data: %x", md.Data[:n])
+	return fmt.Sprintf("midi Events: %x", d.Events[:n])
 }
 
 // InitChan initializes the given MIDI channel
 // and resets all instruments.
-func (md *Data) InitChan(ch Channel) {
-	md.velocities[ch] = 127
-	// turn all notes off, write 0x7b, 0
-	md.WriteController(ch, AllNotesOff, 0)
+func (p *Parser) InitChan(ch Channel) {
+	p.velocities[ch] = 100
+	p.volumes[ch] = 127
+	// turn all notes off on channel, write 0x7b, 0
+	p.Add(ChangeController, ch, byte(AllNotesOff))
 }
 
 // GetChannel acquires and returns a (new) MIDI channel.
 // If the channel is not used yet, the channel is initialized.
-func (md *Data) GetChannel(num int) Channel {
-	ch, ok := md.channels[num]
+func (p *Parser) GetChannel(num int) Channel {
+	ch, ok := p.channels[num]
 	if !ok {
 		if num == mus.PercussionChannel {
 			ch = PercussionChannel
 		} else {
-			ch = Channel(len(md.channels))
+			ch = Channel(len(p.channels))
 		}
-		md.channels[num] = ch
-		md.InitChan(ch)
+		p.channels[num] = ch
+		p.InitChan(ch)
 	}
 	return ch
 }
 
 // GetVelocity returns the velocity byte for a channel.
-func (md *Data) GetVelocity(ch Channel) byte {
-	return md.velocities[ch]
+func (p *Parser) GetVelocity(ch Channel) byte {
+	return p.velocities[ch]
 }
 
 // SetVelocity sets the velocity byte for a channel.
-func (md *Data) SetVelocity(ch Channel, vel byte) {
-	md.velocities[ch] = vel
+func (p *Parser) SetVelocity(ch Channel, vel byte) {
+	p.velocities[ch] = vel
 }
 
+// SetTime sets the delay for the next event.
+func (p *Parser) SetTime(time int) {
+	p.time = uint32(time)
+}
+
+// CompleteTrack completes a track using a Noop event if required.
+func (p *Parser) CompleteTrack() {
+	if p.time > 0 {
+		p.Events = append(p.Events, Event{
+			DeltaTime: p.time,
+			Event:     uint32(Noop) << 24,
+		})
+	}
+	p.time = 0
+}
+
+// Add encodes and adds a MIDI event to the MIDI data.
+// Supports upto two payload values `mid1` (required) and `mid2` (optional).
+// Additional values are ignored.
+func (p *Parser) Add(ev EventType, ch Channel, mid1 uint8, mid2 ...uint8) {
+	event := uint32(ev) | uint32(ch) | uint32(mid1)<<8
+	if len(mid2) > 0 {
+		event |= uint32(mid2[0]) << 16
+	}
+	p.Events = append(p.Events, Event{
+		DeltaTime: p.time,
+		Event:     event,
+	})
+	p.time = 0
+}
+
+/*
 // WriteData append the data to the MIDI data.
 func (md *Data) WriteData(data []byte) {
 	md.Data = append(md.Data, data...)
@@ -134,7 +202,7 @@ func (md *Data) WriteByte(b byte) {
 }
 
 // WriteEventByte writes an events byte.
-func (md *Data) WriteEventByte(ev Event, ch Channel) {
+func (md *Data) WriteEventByte(ev EventType, ch Channel) {
 	md.WriteByte(byte(ev) | byte(ch))
 }
 
@@ -172,7 +240,6 @@ func (md *Data) WriteTime(time int) (resetTime bool, bytesWritten int) {
 			return
 		}
 	}
-	return
 }
 
 // WriteReleaseKey writes a release note.
@@ -229,3 +296,4 @@ func (md *Data) WriteEndTrack() {
 	md.Data[18+2] = byte(n>>8) & 0xff
 	md.Data[18+3] = byte(n) & 0xff
 }
+*/

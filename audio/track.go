@@ -4,13 +4,15 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"path/filepath"
+	"path"
 	"strings"
 
 	midi "github.com/tinogoehlert/goom/audio/midi"
+	mus "github.com/tinogoehlert/goom/audio/mus"
 	"github.com/tinogoehlert/goom/wad"
 )
 
+// ellips dumps the first `limit` bytes of the data in hex format.
 func ellips(data []byte, limit int) string {
 	if len(data) <= limit {
 		return fmt.Sprintf("%x", data)
@@ -18,6 +20,7 @@ func ellips(data []byte, limit int) string {
 	return fmt.Sprintf("%x...", data[:limit])
 }
 
+// head dumps the first 100 bytes of the data in hex format.
 func head(data []byte) string { return ellips(data, 100) }
 
 func saveTestFile(file string, data []byte) (string, error) {
@@ -25,7 +28,7 @@ func saveTestFile(file string, data []byte) (string, error) {
 	if dir == "" {
 		dir = "."
 	}
-	f := filepath.Join(dir, file)
+	f := path.Join(dir, file)
 	os.Remove(f)
 	return f, ioutil.WriteFile(f, data, 0644)
 }
@@ -34,6 +37,7 @@ func saveTestFile(file string, data []byte) (string, error) {
 type MusicTrack struct {
 	wad.Lump
 	MidiData *midi.Data
+	MusData  *mus.Data
 }
 
 // Play plays the MusicTrack.
@@ -62,11 +66,16 @@ func (t *MusicTrack) SaveMus() error {
 func (t *MusicTrack) SaveMidi() error {
 	name := strings.ReplaceAll(t.Name, " ", "_")
 	midfile := fmt.Sprintf("test_%s.mid", name)
-	data := t.MidiData.Data
+	data := t.MidiData.Bytes()
 	f, err := saveTestFile(midfile, data)
 	if err != nil {
 		return err
 	}
 	fmt.Printf("MID %s: %s\n    written as file %s\n", name, head(data), f)
 	return nil
+}
+
+// Validate checks the track for errors.
+func (t *MusicTrack) Validate() error {
+	return t.MusData.Simulate()
 }

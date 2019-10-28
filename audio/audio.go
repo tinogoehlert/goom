@@ -12,6 +12,7 @@ func NewMusData(data []byte) (*mus.Data, error) {
 	if data == nil {
 		return &mus.Data{ID: mus.LumpID}, nil
 	}
+	data = data[mus.HeaderStart(data):]
 	id := string(data[:4])
 	if len(data) < 16 || id != mus.LumpID {
 		return nil, fmt.Errorf("failed to load bytes '%s' as MUS", data)
@@ -26,19 +27,19 @@ func NewMusData(data []byte) (*mus.Data, error) {
 		NumInstr:    mus.ParseInt(data[12:]),
 		Dummy:       mus.ParseInt(data[14:]),
 		Instruments: nil,
-		Scores:      nil,
+		Events:      nil,
 	}
-	inst, err := mus.ParseIntruments(data[16:], md.NumInstr)
+	inst, err := mus.ParseInstruments(data[16:], md.NumInstr)
 	if err != nil {
 		return nil, err
 	}
 	md.Instruments = inst
 
-	scores, err := mus.ParseScores(data[md.ScoreStart:])
+	events, err := mus.ParseEvents(data[md.ScoreStart:])
 	if err != nil {
 		return nil, err
 	}
-	md.Scores = scores
+	md.Events = events
 
 	return md, nil
 }
