@@ -52,7 +52,7 @@ func main() {
 
 	renderer.BuildLevel(m, gameData)
 
-	world := game.NewWorld(m, game.NewDefStore("defs.yaml"))
+	world := game.NewWorld(m, game.NewDefStore("defs.yaml"), gameData)
 	log.Green("Press Q to exit GOOM.")
 
 	renderer.SetFPSCap(30)
@@ -65,6 +65,7 @@ func main() {
 
 		renderer.DrawHUD(world.Me())
 	}, func(w *glfw.Window, frameTime float32) {
+		world.Update(frameTime)
 		playerInput(m, renderer.Camera(), world.Me(), w, frameTime)
 		if *test {
 			log.Green("Test run finished. Exiting GOOM.")
@@ -73,7 +74,7 @@ func main() {
 	})
 }
 
-var speed = float32(90)
+var speed = float32(120)
 
 func playerInput(m *level.Level, cam *opengl.Camera, player *game.Player, w *glfw.Window, frameTime float32) {
 	if w.GetKey(glfw.KeyW) == glfw.Press {
@@ -95,13 +96,19 @@ func playerInput(m *level.Level, cam *opengl.Camera, player *game.Player, w *glf
 		player.Strafe(-speed, frameTime)
 	}
 	if w.GetKey(glfw.KeySpace) == glfw.Press {
-		player.Weapon().Fire()
+		player.FireWeapon()
 	}
 	if w.GetKey(glfw.Key1) == glfw.Press {
 		player.SwitchWeapon("pistol")
 	}
 	if w.GetKey(glfw.Key2) == glfw.Press {
 		player.SwitchWeapon("shotgun")
+	}
+	if w.GetKey(glfw.Key8) == glfw.Press {
+		player.SwitchWeapon("super-shotgun")
+	}
+	if w.GetKey(glfw.Key0) == glfw.Press {
+		player.SwitchWeapon("chainsaw")
 	}
 	if w.GetKey(glfw.KeyQ) == glfw.Press {
 		os.Exit(0)
@@ -112,7 +119,7 @@ func playerInput(m *level.Level, cam *opengl.Camera, player *game.Player, w *glf
 		log.Print("could not find GLnode for pos %v", player.Position())
 	} else {
 		var sector = m.SectorFromSSect(ssect)
-		player.EnterSector(sector)
+		player.SetSector(sector)
 		player.Lift(sector.FloorHeight()+50, frameTime)
 	}
 	cam.SetCamera(player.Position(), player.Direction(), player.Height())
