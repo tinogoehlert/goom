@@ -28,9 +28,9 @@ var (
 // Use this function to load a specific level.
 func LoadWAD(iwad, pwad string) (*GameData, error) {
 	var wads = []string{}
-	wads = append(wads, iwad+".wad", iwad+".gwa")
+	wads = append(wads, iwad+".WAD", iwad+".gwa")
 	if pwad != "" {
-		wads = append(wads, pwad+".wad", pwad+".gwa")
+		wads = append(wads, pwad+".WAD", pwad+".gwa")
 	}
 	return LoadGameData(wads...)
 }
