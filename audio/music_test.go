@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/tinogoehlert/goom/audio"
+	midi "github.com/tinogoehlert/goom/audio/midi"
 	mus "github.com/tinogoehlert/goom/audio/mus"
 	"github.com/tinogoehlert/goom/files"
 	"github.com/tinogoehlert/goom/test"
@@ -28,7 +29,7 @@ func concat(values ...[]byte) []byte {
 	return data
 }
 
-func sampleTrack(t *testing.T) []byte {
+func sampleMus(t *testing.T) []byte {
 	/*
 		Artifical Example Track
 
@@ -130,6 +131,120 @@ func sampleTrack(t *testing.T) []byte {
 	return data
 }
 
+func introMid(t *testing.T) {
+	/*
+		bytes total:  2002
+		bytes header:   22
+		bytes track:  1980
+
+		4D 54 68 64 00 00 00 06    Mthd + header size
+		00 00 00 01 00 46          number of tracks and resolution
+		4D 54 72 6B 00 00 07 BC    Mtrk + track size
+
+		00 C0 00
+		00 B0 07 64
+		00 B0 0A 40
+		00 90 08 7F
+		00 C1 2F
+		00 B1 07 64
+		00 B1 0A 40
+		00 91 20 7F
+		00 C2 33
+		00 B2 07 64
+		00 B2 0A 0E
+		00 92 20 7F
+		00 B2 07 64
+		00 B2 0A 0E
+		00 C3 33
+		00 B3 07 64
+		00 B3 0A 72
+		00 93 26 7F
+		00 B3 07 64
+		00 B3 0A 72
+		00 C4 5E
+		00 B4 07 64
+		00 B4 0A 0E
+		00 94 2F 7C
+		00 B4 07 64
+		00 B4 0A 0E
+		00 C5 5E
+		00 B5 07 64
+		00 B5 0A 72
+		00 95 35 5C
+		00 B5 07 64
+		00 B5 0A 72
+		00 C6 75
+		00 B6 07 7F
+		00 B6 0A 40
+		00 96 26 7F
+		00 C7 66
+		00 B7 07 64
+		00 B7 0A 40
+		00 97 26 57
+		00 B7 07 64
+		00 B7 0A 40
+		00 C9 00
+		00 B9 07 64
+		00 B9 0A 40
+		00 99 23 7F
+		00 99 28 7F
+		00 C8 12
+		00 B8 07 64
+		00 B8 0A 7C
+		00 98 11 7F
+		00 CA 0B
+		00 BA 07 64
+		...
+	*/
+}
+
+// Hand-coded, playable MIDI file, tested using aplaymidi and Timidity.
+// This MIDI file encodes the same notes as sampleMus.
+// Converting sampleMus should produce this MIDI file.
+func sampleMid(t *testing.T) []byte {
+	/*
+		                                    	MIDI  MIDI
+			MUS                                 DELAY EVENT
+			"300a",     // all notes off        00    B0 78 00  // controller 120, notes off
+			"400364",   // volume 100           00    B0 07 64  // controller 7,
+			"90100f",   // play 16 + delay      00    90 10 64  // play note 16 with volume 100
+			"90200f",   // play 32 + delay      0f       20 64  // play note 32 with volume 100 after 15 ticks
+			"80108205", // release 16 + delay   0f       10 00  // play note 16 with volume 0   after 15 ticks
+			"802005",   // release 32 + delay   82 05    20 00  // play note 31 with volume 0   after 261 ticks
+			"60",       // end                  00    FF 2F 00  // end track
+	*/
+	h := midi.MidHeader()
+	data, _ := hex.DecodeString(strings.Join([]string{
+		"00b07800", // controller 120, value = 0
+		"00b00764", // controller 7, volume = 100
+		"00901064", // play 16, volume = 100
+		"0f2064",   // play 32, volume = 100 after 15 ticks
+		"0f1000",   // release 16 after 15 ticks
+		"82052000", // release 32 after 261 ticks
+		"00ff2f00", // end track
+	}, ""))
+	tl := midi.TrackLength(data)
+	return append(append(h, tl...), data...)
+}
+
+func TestSampleTrackMus2Mid(t *testing.T) {
+	dmid := sampleMid(t)
+	f := &files.BinFile{"expected.mid", dmid}
+	f.Dump()
+
+	samus := sampleMus(t)
+	_, err := audio.NewMusData(samus)
+	test.Check(err, t)
+
+	samid, err := audio.NewMidiData(samus)
+	test.Check(err, t)
+	f2 := &files.BinFile{"observed.mid", samid.Bytes()}
+	f2.Dump()
+
+	// test.Assert(f.Compare(f2) == 0, "invalid MIDI output", t)
+	// TODO: fix msu2mid conversion and compare bytes instead of dumping.
+}
+
 func doomSample(t *testing.T) []byte {
 	// First bytes of the event data of a track from DOOM1.
 	//
@@ -193,7 +308,7 @@ func TestParseEvents(t *testing.T) {
 	}
 
 	cases := []Case{
-		Case{sampleTrack(t), 7},
+		Case{sampleMus(t), 7},
 		Case{doomSample(t), 6},
 		Case{introaMus(t).Data, 214},
 		Case{introMus(t).Data, 498},
@@ -211,7 +326,7 @@ func TestParseEvents(t *testing.T) {
 }
 
 func TestMusLoading(t *testing.T) {
-	data := sampleTrack(t)
+	data := sampleMus(t)
 	md, err := audio.NewMusData(data)
 	test.Check(err, t)
 
@@ -262,7 +377,7 @@ func TestMusLoading(t *testing.T) {
 
 func TestTrackLoading(t *testing.T) {
 	for i, d := range [][]byte{
-		sampleTrack(t),
+		sampleMus(t),
 		doomSample(t),
 		introMus(t).Data,
 		introaMus(t).Data,

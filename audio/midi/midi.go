@@ -87,18 +87,22 @@ func NewParser(numChannels int) *Parser {
 	}
 }
 
-// Header returns the MIDI header of the parsed Track.
-func (d *Data) Header() []byte {
-	h := []byte("MThd" + // Header start
+// MidHeader returns the generic MIDI header bytes.
+func MidHeader() []byte {
+	return []byte("MThd" + // Header start
 		"\x00\x00\x00\x06" + // Header size
 		"\x00\x00" + // MIDI type (0, single track)
 		"\x00\x01" + // Number of tracks
 		"\x00\x46" + // Resolution
-		"MTrk" + // Track start
-		"\x00\x00\x00\x00", // Track length
+		"MTrk", // Track start
 	)
-	binary.LittleEndian.PutUint32(h[18:], uint32(len(d.Events)))
-	return h
+}
+
+// TrackLength returns the length of a track as MIDI bytes.
+func TrackLength(data []byte) []byte {
+	tl := make([]byte, 4)
+	binary.BigEndian.PutUint32(tl, uint32(len(data)))
+	return tl
 }
 
 // Bytes returns the MIDI bytes for a mid file.
@@ -112,7 +116,7 @@ func (d *Data) Bytes() []byte {
 		binary.LittleEndian.PutUint32(md[8:], ev.Event)
 		data = append(data, md...)
 	}
-	return append(d.Header(), data...)
+	return append(append(MidHeader(), TrackLength(data)...), data...)
 }
 
 // Info returns summarized header information as string.
