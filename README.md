@@ -43,3 +43,7 @@ TBD
 ## Windows
 
 TBD
+
+## DOOM1.WAD
+
+This project includes a copy of the [shareware version of DOOM](https://doomwiki.org/wiki/DOOM1.WAD) licensed under the [Original DOOM1 Shareware License](DOOM1.LICENSE).
