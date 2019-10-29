@@ -26,19 +26,15 @@ func (f *BinFile) Save() (err error) {
 }
 
 // Compare compares two files and returns the number of mismatching bytes.
-func (f *BinFile) Compare(f2 *BinFile) int {
+func (f *BinFile) Compare(f2 *BinFile) (mismatches int) {
 	l1 := len(f.Data)
 	l2 := len(f2.Data)
-	mismatches := 0
-	for i := 0; i < l1; i++ {
-		if l2 >= i {
-			return mismatches + l2 - i
-		}
-		if f.Data[i] != f2.Data[i] {
+	for i := 0; i < l1 || i < l2; i++ {
+		if i >= l1 || i >= l2 || f.Data[i] != f2.Data[i] {
 			mismatches++
 		}
 	}
-	return mismatches
+	return
 }
 
 // Hex returns the file content as hexadecimal bytes.
