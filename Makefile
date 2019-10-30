@@ -14,7 +14,7 @@ clean:
 	rm -f $(DOOM_TEST)/*.mus
 
 test: $(TARGETS)
-	go test -v . ./audio
+	go test -v . ./audio ./audio/convert
 
 go.mod:
 	go mod init github.com/tinogoehlert/goom
