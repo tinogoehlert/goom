@@ -36,8 +36,8 @@ func saveTestFile(file string, data []byte) (string, error) {
 // MusicTrack contains a playable Music track.
 type MusicTrack struct {
 	wad.Lump
-	MidiData *midi.Data
-	MusData  *mus.Data
+	MidiStream *midi.Stream
+	MusStream  *mus.Stream
 }
 
 // Play plays the MusicTrack.
@@ -66,16 +66,16 @@ func (t *MusicTrack) SaveMus() error {
 func (t *MusicTrack) SaveMidi() error {
 	name := strings.ReplaceAll(t.Name, " ", "_")
 	midfile := fmt.Sprintf("test_%s.mid", name)
-	data := t.MidiData.Bytes()
+	data := t.MidiStream.Bytes()
 	f, err := saveTestFile(midfile, data)
 	if err != nil {
 		return err
 	}
-	fmt.Printf("MID %s: %s\n    written as file %s\n", name, head(data), f)
+	fmt.Printf("MIDataD %s: %s\n    written as file %s\n", name, head(data), f)
 	return nil
 }
 
 // Validate checks the track for errors.
 func (t *MusicTrack) Validate() error {
-	return t.MusData.Simulate()
+	return t.MusStream.Simulate()
 }
