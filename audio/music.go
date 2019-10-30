@@ -8,10 +8,10 @@ import (
 	mus "github.com/tinogoehlert/goom/audio/mus"
 )
 
-// NewMusData creates a MUS data from the given WAD bytes.
-func NewMusData(data []byte) (*mus.Data, error) {
+// NewMusStream creates a MUS data from the given WAD bytes.
+func NewMusStream(data []byte) (*mus.Stream, error) {
 	if data == nil {
-		return &mus.Data{ID: mus.LumpID}, nil
+		return &mus.Stream{ID: mus.LumpID}, nil
 	}
 	data = data[mus.HeaderStart(data):]
 	id := string(data[:4])
@@ -19,7 +19,7 @@ func NewMusData(data []byte) (*mus.Data, error) {
 		return nil, fmt.Errorf("failed to load bytes '%s' as MUS", data)
 	}
 
-	md := &mus.Data{
+	md := &mus.Stream{
 		ID:          string(data[:4]),
 		ScoreLen:    mus.ParseInt(data[4:]),
 		ScoreStart:  mus.ParseInt(data[6:]),
@@ -45,11 +45,11 @@ func NewMusData(data []byte) (*mus.Data, error) {
 	return md, nil
 }
 
-// NewMidiData creates MIDI data from the given WAD bytes.
-func NewMidiData(data []byte) (*midi.Data, error) {
-	md, err := NewMusData(data)
+// NewMidiStream creates MIDI data from the given WAD bytes.
+func NewMidiStream(data []byte) (*midi.Stream, error) {
+	md, err := NewMusStream(data)
 	if err != nil {
 		return nil, err
 	}
-	return convert.Mus2Mid(md), nil
+	return convert.Mus2Mid(md)
 }

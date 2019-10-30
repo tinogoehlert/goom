@@ -5,14 +5,8 @@ import (
 	"strings"
 )
 
-// LumpID identifies MUS data.
-var LumpID = "MUS\x1a"
-
-// PercussionChannel is the channel used for perscussion events.
-const PercussionChannel = 15
-
-// Data represents the header of a MUS track.
-type Data struct {
+// Stream represents the header of a MUS track.
+type Stream struct {
 	ID          string  // 4-byte Music identifier "MUS" 0x1A
 	ScoreLen    int     // size of the MUS body
 	ScoreStart  int     // start of the MUS body
@@ -24,21 +18,37 @@ type Data struct {
 	Events      []Event // The actual music notes, pauses, etc.
 }
 
+// ParseEvents parses the given bytes and converts them to a slice of MusScores.
+func ParseEvents(data []byte) ([]Event, error) {
+	events := make([]Event, 0, len(data)/2)
+	for i := 0; i < len(data); {
+		ev, err := NewEvent(i, data)
+		if err != nil {
+			return nil, err
+		}
+		events = append(events, *ev)
+		i = ev.NextIndex
+	}
+
+	// fmt.Printf("events: %+v\n", events)
+	return events, nil
+}
+
 // Info returns summarized header information as string.
-func (h *Data) Info() string {
-	// create dummy copy to safely remove not-logged data
-	c := Data(*h)
+func (s *Stream) Info() string {
+	// create shallow copy to safely remove unlogged data
+	c := Stream(*s)
 	c.Events = nil
-	events := make([]EventType, len(h.Events))
-	for i, s := range h.Events {
+	events := make([]EventType, len(s.Events))
+	for i, s := range s.Events {
 		events[i] = s.Type
 	}
-	return fmt.Sprintf("mus.Data: %+v (%d events: %v)", c, len(h.Events), events)
+	return fmt.Sprintf("mus.Data: %+v (%d events: %v)", c, len(c.Events), events)
 }
 
 // Simulate simulates Playback and checks the validity
 // of all played Events.
-func (h *Data) Simulate() error {
+func (s *Stream) Simulate() error {
 	var on map[uint8]bool
 	var errs []string
 	// turn off all notes
@@ -48,7 +58,7 @@ func (h *Data) Simulate() error {
 		err := fmt.Sprintf("%s[%d](%s): %s", ev.Name(), ev.Index, ev.Hex(), fmt.Sprintf(format, v...))
 		errs = append(errs, err)
 	}
-	for _, ev := range h.Events {
+	for _, ev := range s.Events {
 		// fmt.Println(ev.Info())
 		if verr := ev.Validate(); verr != nil {
 			err(ev, "validation failed: %s", verr.Error())

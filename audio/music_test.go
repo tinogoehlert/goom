@@ -228,18 +228,20 @@ func sampleMid(t *testing.T) []byte {
 }
 
 func TestSampleTrackMus2Mid(t *testing.T) {
-	dmid := sampleMid(t)
-	f := &files.BinFile{"expected.mid", dmid}
+	f := e1m1Mid(t)
+	f.Load()
 	f.Dump()
 
-	samus := sampleMus(t)
-	_, err := audio.NewMusData(samus)
+	e1 := e1m1Mus(t)
+	e1.Load()
+	_, err := audio.NewMusStream(e1.Data)
 	test.Check(err, t)
 
-	samid, err := audio.NewMidiData(samus)
+	s, err := audio.NewMidiStream(e1.Data)
 	test.Check(err, t)
-	f2 := &files.BinFile{"observed.mid", samid.Bytes()}
+	f2 := &files.BinFile{"../files/converted-e1m1.mid", s.Bytes()}
 	f2.Dump()
+	//f2.Save()
 
 	// test.Assert(f.Compare(f2) == 0, "invalid MIDI output", t)
 	// TODO: fix msu2mid conversion and compare bytes instead of dumping.
@@ -300,6 +302,7 @@ func doomFile(name string, t *testing.T) *files.BinFile {
 func introMus(t *testing.T) *files.BinFile  { return doomFile("D_INTRO.mus", t) }
 func introaMus(t *testing.T) *files.BinFile { return doomFile("D_INTROA.mus", t) }
 func e1m1Mus(t *testing.T) *files.BinFile   { return doomFile("D_E1M1.mus", t) }
+func e1m1Mid(t *testing.T) *files.BinFile   { return doomFile("D_E1M1.mid", t) }
 
 func TestParseEvents(t *testing.T) {
 	type Case struct {
@@ -317,7 +320,7 @@ func TestParseEvents(t *testing.T) {
 
 	for _, c := range cases {
 		data := c.Data
-		dmus, err := audio.NewMusData(data)
+		dmus, err := audio.NewMusStream(data)
 		test.Check(err, t)
 		if len(dmus.Events) != c.Length {
 			t.Errorf("invalid number of MUS events: %d, expected: %d events", len(dmus.Events), c.Length)
@@ -327,7 +330,7 @@ func TestParseEvents(t *testing.T) {
 
 func TestMusLoading(t *testing.T) {
 	data := sampleMus(t)
-	md, err := audio.NewMusData(data)
+	md, err := audio.NewMusStream(data)
 	test.Check(err, t)
 
 	type Case struct {
@@ -383,9 +386,9 @@ func TestTrackLoading(t *testing.T) {
 		introaMus(t).Data,
 		e1m1Mus(t).Data,
 	} {
-		musd, err := audio.NewMusData(d)
+		musd, err := audio.NewMusStream(d)
 		test.Check(err, t)
-		mid, err := audio.NewMidiData(d)
+		mid, err := audio.NewMidiStream(d)
 		test.Check(err, t)
 		name := fmt.Sprintf("D_TEST%d", i)
 		track := audio.MusicTrack{wad.Lump{Name: name, Data: d}, mid, musd}

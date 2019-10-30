@@ -2,7 +2,11 @@ package convert_test
 
 import (
 	"encoding/binary"
+	"fmt"
 	"testing"
+
+	"github.com/tinogoehlert/goom/audio/midi"
+	"github.com/tinogoehlert/goom/test"
 )
 
 type I uint32
@@ -31,5 +35,14 @@ func TestLittleEndian(t *testing.T) {
 		if n != v {
 			t.Errorf("%d != %v", n, v)
 		}
+	}
+}
+
+func TestVarInt(t *testing.T) {
+	for _, v := range []uint32{0, 127, 128, 255, 1000, 100000} {
+		data := midi.EncodeVarInt(v)
+		fmt.Printf("%d -> %x\n", v, data)
+		dec := midi.DecodeVarInt(data)
+		test.Assert(v == dec, fmt.Sprintf("%d != %d", v, dec), t)
 	}
 }

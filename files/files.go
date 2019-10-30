@@ -44,7 +44,7 @@ func (f *BinFile) Hex() string {
 
 // Dump dumps the file in a readable line-numbered hex-format.
 func (f *BinFile) Dump() string {
-	return hex.Dump(f.Data)
+	return f.Path + ":\n" + hex.Dump(f.Data)
 }
 
 // FromHex load file content from hexadecimal bytes.

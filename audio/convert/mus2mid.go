@@ -1,6 +1,8 @@
 package convert
 
 import (
+	"fmt"
+
 	midi "github.com/tinogoehlert/goom/audio/midi"
 	mus "github.com/tinogoehlert/goom/audio/mus"
 )
@@ -36,9 +38,18 @@ var midControls = []midi.Control{
 // https://github.com/sirjuddington/SLADE/tree/master/thirdparty/mus2mid
 // https://github.com/madame-rachelle/qzdoom/blob/newmaster/src/sound/midisources/midisource_mus.cpp
 
+// ClampVolume limits MUS volume values to 127 and logs all clamps.
+func ClampVolume(vol uint8) uint8 {
+	if vol > 127 {
+		fmt.Printf("clamping MUS volume = %d to max MIDI volume = 127", vol)
+		vol = 127
+	}
+	return vol
+}
+
 // Mus2Mid converst MUS data to MIDI data.
-func Mus2Mid(in *mus.Data) *midi.Data {
-	p := midi.NewParser(numChans)
+func Mus2Mid(in *mus.Stream) (*midi.Stream, error) {
+	p := midi.NewStream(numChans)
 
 	for _, ev := range in.Events {
 		ch := p.GetChannel(int(ev.Channel))
@@ -48,36 +59,47 @@ func Mus2Mid(in *mus.Data) *midi.Data {
 
 		switch ev.Type {
 		case mus.RelaseNote:
-			p.Add(midi.ReleaseKey, ch, ev.GetNote())
+			p.Add(midi.ReleaseKey, ch, ev.GetNote(), 0)
 		case mus.PlayNote:
-			p.Add(midi.PressKey, ch, ev.GetNote(), ev.GetVolume())
+			p.Add(midi.PressKey, ch, ev.GetNote(), ClampVolume(ev.GetVolume()))
 		case mus.PitchBend:
-			v := ev.GetBend()
-			mid1 := (v & 1) << 6
-			mid2 := (v >> 1) & 0x7F
+			bend := ev.GetBend()
+			// Allowed MUS Bend Values:
+			//   0  one tone down
+			//  64  half-tone down
+			// 128  normal (no bend)
+			// 192  half-tone up
+			// 255  one tone up
+
+			// Scale up to MIDI Bend Range: [0:16384]
+			wheel := uint16(bend) * 64
+			// encode LSB and MSB of pitch value
+			mid1 := byte(wheel & 127)
+			mid2 := byte(wheel >> 7 & 127)
+			if w := uint16(mid2)<<7 | uint16(mid1); w != wheel {
+				return nil, fmt.Errorf("invalid wheel=%d, expected=%d", w, wheel)
+			}
 			p.Add(midi.PitchWheel, ch, mid1, mid2)
 		case mus.System:
 			ctrl := ev.GetController()
-			mid1 := uint8(midControls[ctrl])
-			mid2 := uint8(0)
-			if ctrl == 12 {
-				mid2 = uint8(in.Channels)
+			mid1 := byte(midControls[ctrl])
+			mid2 := byte(0)
+			if mus.Control(ctrl) == mus.MonoOn {
+				mid2 = byte(in.Channels)
 			}
 			p.Add(midi.ChangeController, ch, mid1, mid2)
 		case mus.Controller:
 			ctrl := ev.GetController()
+			mctrl := byte(midControls[ctrl])
 			val := ev.GetControllerValue()
-			if ctrl == 0 {
+			if mus.Control(ctrl) == mus.Volume {
+				val = ClampVolume(val)
+			}
+			if mus.Control(ctrl) == mus.BankSelect {
 				p.Add(midi.ChangePatch, ch, val)
 				break
 			}
-			midCtrl := midControls[ctrl]
-			if midCtrl == midi.Volume {
-				// TODO: Check if clamp volume to 127 is required.
-				// see https://github.com/madame-rachelle/qzdoom/blob/5fa7520fd7b499aa3b7e3b939deb72920a294a6b/src/sound/midisources/midisource_mus.cpp#L324
-			}
-			p.Add(midi.ChangeController, ch, uint8(midCtrl), val)
-
+			p.Add(midi.ChangeController, ch, mctrl, val)
 		case mus.MeasureEnd:
 		case mus.ScoreEnd:
 		}
@@ -85,5 +107,5 @@ func Mus2Mid(in *mus.Data) *midi.Data {
 	}
 	p.CompleteTrack()
 
-	return &p.Data
+	return p, nil
 }
