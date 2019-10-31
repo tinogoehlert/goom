@@ -13,10 +13,10 @@ type FontName int
 
 const (
 	// font names
-	fnNumGreySmall FontName = iota
-	fnNumYellowSmall
-	fnNumRedBig
-	fnCompositeRed
+	FnNumGreySmall FontName = iota
+	FnNumYellowSmall
+	FnNumRedBig
+	FnCompositeRed
 
 	// WAD identifiers
 	ptNumGreySmall   = `^STGNUM(\d)$`
@@ -32,14 +32,14 @@ const (
 	// TODO: check, how "small" and "big" actually look on screen. 15 for medium seemed to be OK
 	spSmall  = 13
 	spMedium = 15
-	spBig    = 32
+	spBig    = 25
 )
 
 var (
-	numGreySmallRe   = regexp.MustCompile(ptNumGreySmall)
-	numYellowSmallRe = regexp.MustCompile(ptNumYellowSmall)
-	numRedBigRe      = regexp.MustCompile(ptNumRedBig)
-	compositeRedRe   = regexp.MustCompile(ptCompositeRed)
+	reNumGreySmall   = regexp.MustCompile(ptNumGreySmall)
+	reNumYellowSmall = regexp.MustCompile(ptNumYellowSmall)
+	reNumRedBig      = regexp.MustCompile(ptNumRedBig)
+	reCompositeRed   = regexp.MustCompile(ptCompositeRed)
 )
 
 // Glyph is a DoomPicture with some font identifying meta data
@@ -57,50 +57,81 @@ func newGlyph(name string, char rune, buff []byte) glyph {
 	}
 }
 
-// Font is a collection of glyphs
-type Font struct {
+func (g *glyph) GetName() string {
+	return g.name
+}
+
+// font is a collection of glyphs
+type font struct {
 	name         FontName
 	spacing      int
+	fallback     rune
 	glyphNameMap map[string]glyph
 	glyphRuneMap map[rune]*glyph
 }
 
-func newFont(name FontName, spacing int) Font {
-	return Font{
+func newFont(name FontName, spacing int, fallback rune) font {
+	return font{
 		name:         name,
 		spacing:      spacing,
+		fallback:     fallback,
 		glyphNameMap: make(map[string]glyph),
 		glyphRuneMap: make(map[rune]*glyph),
 	}
 }
 
-func (f Font) addGlyph(g glyph) {
+func (f font) addGlyph(g glyph) {
 	f.glyphNameMap[g.name] = g
 	f.glyphRuneMap[g.char] = &g
 }
 
-// FontBook is a collection of fonts
-type FontBook map[FontName]Font
+func (f *font) GetSpacing() int {
+	return f.spacing
+}
 
-// NewFontBook initializes a new Fontbook with the defined fonts
+func (f *font) GetGlyph(r rune) *glyph {
+	g := f.glyphRuneMap[r]
+	if g == nil {
+		return f.glyphRuneMap[f.fallback]
+	}
+
+	return g
+}
+
+// FontBook is a collection of fonts
+type FontBook map[FontName]font
+
+// NewFontBook initializes a new fontBook with the defined fonts
 func NewFontBook() FontBook {
 	fb := make(FontBook)
-	fb[fnNumGreySmall] = newFont(fnNumGreySmall, spSmall)
-	fb[fnNumYellowSmall] = newFont(fnNumYellowSmall, spSmall)
-	fb[fnNumRedBig] = newFont(fnNumRedBig, spBig)
-	fb[fnCompositeRed] = newFont(fnCompositeRed, spMedium)
+	fb[FnNumGreySmall] = newFont(FnNumGreySmall, spSmall, rune('0'))
+	fb[FnNumYellowSmall] = newFont(FnNumYellowSmall, spSmall, rune('0'))
+	fb[FnNumRedBig] = newFont(FnNumRedBig, spBig, rune('-'))
+	fb[FnCompositeRed] = newFont(FnCompositeRed, spMedium, rune('?'))
 
 	return fb
 }
 
-// GetFont returns a Font from the fontbook
-func (fb *FontBook) GetFont(name FontName) (*Font, error) {
+// getFont returns a font from the fontBook
+func (fb *FontBook) getFont(name FontName) (*font, error) {
 	f, ok := (*fb)[name]
 	if !ok {
-		return &Font{}, fmt.Errorf("font not found: %v", FontName(name))
+		return &font{}, fmt.Errorf("font not found: %v", FontName(name))
 	}
 
 	return &f, nil
+}
+
+// GetAllGraphics return a map of all DoomGraphics contained in the Fontbook
+func (fb *FontBook) GetAllGraphics() map[string]*DoomPicture {
+	gMap := make(map[string]*DoomPicture)
+	for _, font := range *fb {
+		for name, glyph := range font.glyphNameMap {
+			gMap[name] = glyph.DoomPicture
+		}
+	}
+
+	return gMap
 }
 
 func (fb *FontBook) tryAddExtra(lump wad.Lump) (added bool) {
@@ -108,13 +139,13 @@ func (fb *FontBook) tryAddExtra(lump wad.Lump) (added bool) {
 
 	if lump.Name == exNumRedBigMinus {
 		g := newGlyph(lump.Name, rune('-'), lump.Data)
-		(*fb)[fnNumRedBig].addGlyph(g)
+		(*fb)[FnNumRedBig].addGlyph(g)
 		return
 	}
 
 	if lump.Name == exNumRedBigPercent {
 		g := newGlyph(lump.Name, rune('%'), lump.Data)
-		(*fb)[fnNumRedBig].addGlyph(g)
+		(*fb)[FnNumRedBig].addGlyph(g)
 		return
 	}
 
@@ -124,28 +155,28 @@ func (fb *FontBook) tryAddExtra(lump wad.Lump) (added bool) {
 func (fb *FontBook) tryAdd(lump wad.Lump) (added bool, err error) {
 	added = true
 
-	if m := numGreySmallRe.FindStringSubmatch(lump.Name); m != nil {
+	if m := reNumGreySmall.FindStringSubmatch(lump.Name); m != nil {
 		// parse the actual digit-char from the first match group
 		g := newGlyph(lump.Name, rune(m[1][0]), lump.Data)
-		(*fb)[fnNumGreySmall].addGlyph(g)
+		(*fb)[FnNumGreySmall].addGlyph(g)
 		return
 	}
 
-	if m := numYellowSmallRe.FindStringSubmatch(lump.Name); m != nil {
+	if m := reNumYellowSmall.FindStringSubmatch(lump.Name); m != nil {
 		// parse the actual digit-char from the first match group
 		g := newGlyph(lump.Name, rune(m[1][0]), lump.Data)
-		(*fb)[fnNumYellowSmall].addGlyph(g)
+		(*fb)[FnNumYellowSmall].addGlyph(g)
 		return
 	}
 
-	if m := numRedBigRe.FindStringSubmatch(lump.Name); m != nil {
+	if m := reNumRedBig.FindStringSubmatch(lump.Name); m != nil {
 		// parse the actual digit-char from the first match group
 		g := newGlyph(lump.Name, rune(m[1][0]), lump.Data)
-		(*fb)[fnNumRedBig].addGlyph(g)
+		(*fb)[FnNumRedBig].addGlyph(g)
 		return
 	}
 
-	if m := compositeRedRe.FindStringSubmatch(lump.Name); m != nil {
+	if m := reCompositeRed.FindStringSubmatch(lump.Name); m != nil {
 		// here, the matched group actually is decimal ascii mapping of the char
 		ascii, err := strconv.Atoi(m[1])
 		if err != nil {
@@ -158,7 +189,7 @@ func (fb *FontBook) tryAdd(lump wad.Lump) (added bool, err error) {
 		}
 
 		g := newGlyph(lump.Name, rune(ascii), lump.Data)
-		(*fb)[fnNumRedBig].addGlyph(g)
+		(*fb)[FnCompositeRed].addGlyph(g)
 		return added, err
 	}
 
@@ -178,7 +209,7 @@ func (fb *FontBook) LoadWAD(w *wad.WAD) error {
 			continue
 		}
 
-		// >>> match patterns of the glyp groups ("fonts")
+		// match patterns of the glyp groups ("fonts")
 		_, err := (*fb).tryAdd(lump)
 		if err != nil {
 			return err

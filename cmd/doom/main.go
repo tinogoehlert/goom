@@ -10,6 +10,7 @@ import (
 	"github.com/tinogoehlert/goom"
 	"github.com/tinogoehlert/goom/cmd/doom/internal/game"
 	"github.com/tinogoehlert/goom/cmd/doom/internal/opengl"
+	"github.com/tinogoehlert/goom/graphics"
 	"github.com/tinogoehlert/goom/level"
 )
 
@@ -64,6 +65,11 @@ func main() {
 		renderer.DrawThings(world.Things())
 
 		renderer.DrawHUD(world.Me())
+
+		drawText(gameData.Fonts, graphics.FnNumRedBig, "012", 100, 100, 1, renderer)
+		drawText(gameData.Fonts, graphics.FnNumGreySmall, "012", 100, 140, 1, renderer)
+		drawText(gameData.Fonts, graphics.FnNumYellowSmall, "012", 100, 180, 1, renderer)
+		drawText(gameData.Fonts, graphics.FnCompositeRed, "012", 100, 220, 1, renderer)
 	}, func(w *glfw.Window, frameTime float32) {
 		playerInput(m, renderer.Camera(), world.Me(), w, frameTime)
 		if *test {
@@ -116,4 +122,25 @@ func playerInput(m *level.Level, cam *opengl.Camera, player *game.Player, w *glf
 		player.Lift(sector.FloorHeight()+50, frameTime)
 	}
 	cam.SetCamera(player.Position(), player.Direction(), player.Height())
+}
+
+// DrawText draws a string on the screen
+func drawText(fonts graphics.FontBook, fontName graphics.FontName, text string, xpos, ypos float32, scaleFactor float32, gr *opengl.GLRenderer) {
+	font := fonts[fontName]
+	spacing := float32(font.GetSpacing()) * scaleFactor
+
+	for _, r := range text {
+		if r == ' ' {
+			xpos -= spacing
+			continue
+		}
+
+		glyph := font.GetGlyph(r)
+		if glyph == nil {
+			panic("gl missing for " + string(r))
+		}
+
+		gr.DrawHudChar(glyph.GetName(), xpos, ypos, scaleFactor)
+		xpos -= spacing + float32(glyph.Width())*scaleFactor
+	}
 }

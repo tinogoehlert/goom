@@ -5,16 +5,14 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/tinogoehlert/goom/cmd/doom/internal/game"
-	"github.com/tinogoehlert/goom/graphics"
-
-	"github.com/tinogoehlert/goom/level"
-
-	"github.com/tinogoehlert/goom"
-
 	"github.com/go-gl/gl/v2.1/gl"
 	"github.com/go-gl/glfw/v3.2/glfw"
 	"github.com/go-gl/mathgl/mgl32"
+
+	"github.com/tinogoehlert/goom"
+	"github.com/tinogoehlert/goom/cmd/doom/internal/game"
+	"github.com/tinogoehlert/goom/graphics"
+	"github.com/tinogoehlert/goom/level"
 )
 
 //GLRenderer openGL renderer
@@ -90,7 +88,7 @@ func (gr *GLRenderer) BuildLevel(m *level.Level, gd *goom.GameData) {
 	gr.currentLevel = RegisterMap(m, gd, gr.textures)
 }
 
-// BuildLevel builds the level
+// BuildGraphics adds defined graphics to the texture store and initializes the spriter
 func (gr *GLRenderer) BuildGraphics(gd *goom.GameData) {
 	for k, v := range gd.Textures {
 		gr.textures.initTexture(k, 1)
@@ -102,6 +100,11 @@ func (gr *GLRenderer) BuildGraphics(gd *goom.GameData) {
 		gr.textures.addTexture(k, 0, v[0])
 	}
 
+	for k, v := range gd.Fonts.GetAllGraphics() {
+		gr.textures.initTexture(k, 1)
+		gr.textures.addTexture(k, 0, v)
+	}
+
 	for _, v := range gd.Sprites {
 		v.Frames(func(f *graphics.SpriteFrame) {
 			gr.textures.initTexture(f.Name(), len(f.Angles()))
@@ -110,6 +113,7 @@ func (gr *GLRenderer) BuildGraphics(gd *goom.GameData) {
 			}
 		})
 	}
+
 	gr.spriter = NewSpriter()
 }
 
@@ -217,9 +221,15 @@ var (
 	angle float64
 )
 
-func (gr *GLRenderer) drawHudImage(sprite string, pos mgl32.Vec3, offsetX, offsetY float32) {
+func (gr *GLRenderer) drawHudImage(sprite string, pos mgl32.Vec3, offsetX, offsetY float32, scaleFactor float32) {
 	img := gr.textures.Get(sprite, 0)
-	gr.shaders[gr.currentShader].Uniform2f("billboard_size", mgl32.Vec2{float32(img.image.Width()) / 40, float32(img.image.Height()) / 40})
+	gr.shaders[gr.currentShader].Uniform2f(
+		"billboard_size",
+		mgl32.Vec2{
+			float32(img.image.Width()) / 40 * scaleFactor,
+			float32(img.image.Height()) / 40 * scaleFactor,
+		},
+	)
 
 	pos[1] += float32(-img.image.Top()) + offsetY
 	pos[0] += +offsetX
@@ -240,14 +250,27 @@ func (gr *GLRenderer) DrawHUD(player *game.Player) {
 	w := player.Weapon()
 	frame, fire := w.NextFrames(float32((1000 / 30)))
 
-	gr.drawHudImage(w.Sprite+string(frame), mgl32.Vec3{(640 * aspect) / 2, 0, 0}, +w.Offset()[0], -20-w.Offset()[1])
+	pos := mgl32.Vec3{(640 * aspect) / 2, 0, 0}
+	scaleFactor := float32(1)
+
+	gr.drawHudImage(w.Sprite+string(frame), pos, +w.Offset()[0], -20-w.Offset()[1], scaleFactor)
+
 	if fire != 255 {
-		gr.drawHudImage(w.FireSprite+string(fire), mgl32.Vec3{
-			(640 * aspect) / 2,
-			0, 0,
-		}, w.FireOffset.X+w.Offset()[0], w.FireOffset.Y+w.Offset()[1],
-		)
+		gr.drawHudImage(w.FireSprite+string(fire), pos, w.FireOffset.X+w.Offset()[0], w.FireOffset.Y+w.Offset()[1], scaleFactor)
 	}
+	gr.shaders[gr.currentShader].Uniform1i("draw_phase", 0)
+}
+
+// DrawHudChar draws a single character of text to the HUD
+func (gr *GLRenderer) DrawHudChar(name string, xpos, ypos float32, scaleFactor float32) {
+	gl.Disable(gl.DEPTH_TEST) // Disable the Depth-testing
+
+	aspect := float32(gr.fbWidth) / float32(gr.fbHeight)
+	Ortho := mgl32.Ortho2D(640*aspect, 0, 0, 640)
+	gr.shaders[gr.currentShader].UniformMatrix4fv("ortho", Ortho)
+	gr.shaders[gr.currentShader].Uniform1i("draw_phase", 2)
+
+	gr.drawHudImage(name, mgl32.Vec3{xpos, ypos, 0}, 0, 0, scaleFactor)
 	gr.shaders[gr.currentShader].Uniform1i("draw_phase", 0)
 }
 
