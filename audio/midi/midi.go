@@ -2,6 +2,7 @@ package midi
 
 import (
 	"encoding/binary"
+	"encoding/hex"
 )
 
 // EventType defines a MIDI event type.
@@ -53,6 +54,16 @@ type Event struct {
 // Bytes returns the event data as MIDI bytes.
 func (ev *Event) Bytes() []byte {
 	return append(EncodeVarInt(ev.Delay), ev.Data...)
+}
+
+// Raw returns the event data as MIDI bytes.
+func (ev Event) Raw() []byte {
+	return ev.Bytes()
+}
+
+// String returns the MIDI event data as hex string.
+func (ev Event) String() string {
+	return hex.EncodeToString(ev.Bytes())
 }
 
 // Channel is the integer number of a MIDI channel.

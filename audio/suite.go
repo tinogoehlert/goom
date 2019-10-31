@@ -50,3 +50,12 @@ func (suite MusicSuite) Info() string {
 	}
 	return strings.Join(text, "\n")
 }
+
+// Track returns a specific MusicTrack.
+func (suite MusicSuite) Track(name string) *MusicTrack {
+	if t, ok := suite["D_"+name]; ok {
+		return t
+	}
+	fmt.Println("invalid music track", name)
+	return nil
+}

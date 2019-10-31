@@ -1,4 +1,4 @@
-package convert_test
+package midi_test
 
 import (
 	"fmt"

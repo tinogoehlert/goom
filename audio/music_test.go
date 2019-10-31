@@ -8,8 +8,8 @@ import (
 	"testing"
 
 	"github.com/tinogoehlert/goom/audio"
-	midi "github.com/tinogoehlert/goom/audio/midi"
-	mus "github.com/tinogoehlert/goom/audio/mus"
+	gmidi "github.com/tinogoehlert/goom/audio/midi"
+	gmus "github.com/tinogoehlert/goom/audio/mus"
 	"github.com/tinogoehlert/goom/files"
 	"github.com/tinogoehlert/goom/test"
 	"github.com/tinogoehlert/goom/wad"
@@ -89,16 +89,16 @@ func sampleMus(t *testing.T) []byte {
 	// create header and append events
 	data := concat(
 		// Value               Description            Bytes  ByteIndex
-		[]byte(mus.LumpID), // MUS ID                 4       0
-		b16(len(events)),   // score size             2       4
-		b16(20),            // score offset           2       6   <--.
-		b16(1),             // primary channels       2       8      |
-		b16(0),             // secndary channels      2      10      |
-		b16(numInst),       // number of instruments  2      12      |
-		b16(0),             // dummy                  2      14      |
-		b16(inst1),         // instrument 1           2      16      |
-		b16(inst2),         // instrument 2           2      18      |
-		events,             // event bytes            8      20   ---'
+		[]byte(gmus.LumpID), // MUS ID                 4       0
+		b16(len(events)),    // score size             2       4
+		b16(20),             // score offset           2       6   <--.
+		b16(1),              // primary channels       2       8      |
+		b16(0),              // secndary channels      2      10      |
+		b16(numInst),        // number of instruments  2      12      |
+		b16(0),              // dummy                  2      14      |
+		b16(inst1),          // instrument 1           2      16      |
+		b16(inst2),          // instrument 2           2      18      |
+		events,              // event bytes            8      20   ---'
 		// EOF                                        0      28
 	)
 
@@ -213,7 +213,7 @@ func sampleMid(t *testing.T) []byte {
 			"802005",   // release 32 + delay   82 05    20 00  // play note 31 with volume 0   after 261 ticks
 			"60",       // end                  00    FF 2F 00  // end track
 	*/
-	h := midi.MidHeader()
+	h := gmidi.MidHeader()
 	data, _ := hex.DecodeString(strings.Join([]string{
 		"00b07800", // controller 120, value = 0
 		"00b00764", // controller 7, volume = 100
@@ -223,28 +223,8 @@ func sampleMid(t *testing.T) []byte {
 		"82052000", // release 32 after 261 ticks
 		"00ff2f00", // end track
 	}, ""))
-	tl := midi.TrackLength(data)
+	tl := gmidi.TrackLength(data)
 	return append(append(h, tl...), data...)
-}
-
-func TestSampleTrackMus2Mid(t *testing.T) {
-	f := e1m1Mid(t)
-	f.Load()
-	f.Dump()
-
-	e1 := e1m1Mus(t)
-	e1.Load()
-	_, err := audio.NewMusStream(e1.Data)
-	test.Check(err, t)
-
-	s, err := audio.NewMidiStream(e1.Data)
-	test.Check(err, t)
-	f2 := &files.BinFile{"../files/converted-e1m1.mid", s.Bytes()}
-	f2.Dump()
-	//f2.Save()
-
-	// test.Assert(f.Compare(f2) == 0, "invalid MIDI output", t)
-	// TODO: fix msu2mid conversion and compare bytes instead of dumping.
 }
 
 func doomSample(t *testing.T) []byte {
@@ -335,20 +315,20 @@ func TestMusLoading(t *testing.T) {
 
 	type Case struct {
 		Index int
-		Type  mus.EventType
+		Type  gmus.EventType
 		Note  uint8
 		Delay uint16
 		Hex   string
 	}
 
 	cases := []Case{
-		Case{0, mus.System, 10, 0, "0a"},
-		Case{1, mus.Controller, 3, 0, "0364"},
-		Case{2, mus.PlayNote, 16, 15, "10"},
-		Case{3, mus.PlayNote, 32, 15, "20"},
-		Case{4, mus.RelaseNote, 16, 261, "10"},
-		Case{5, mus.RelaseNote, 32, 5, "20"},
-		Case{6, mus.ScoreEnd, 0, 0, ""},
+		Case{0, gmus.System, 10, 0, "0a"},
+		Case{1, gmus.Controller, 3, 0, "0364"},
+		Case{2, gmus.PlayNote, 16, 15, "10"},
+		Case{3, gmus.PlayNote, 32, 15, "20"},
+		Case{4, gmus.RelaseNote, 16, 261, "10"},
+		Case{5, gmus.RelaseNote, 32, 5, "20"},
+		Case{6, gmus.ScoreEnd, 0, 0, ""},
 	}
 
 	for _, c := range cases {
@@ -357,7 +337,7 @@ func TestMusLoading(t *testing.T) {
 		if s.Type != c.Type {
 			t.Errorf("invalid mus type %d, expected %d.", s.Type, c.Type)
 		}
-		if s.Type == mus.RelaseNote && s.GetNote() != c.Note {
+		if s.Type == gmus.RelaseNote && s.GetNote() != c.Note {
 			t.Errorf("invalid note %d, expected %d.", s.GetNote(), c.Note)
 		}
 		if s.Delay != c.Delay {
@@ -376,6 +356,26 @@ func TestMusLoading(t *testing.T) {
 			}
 		}
 	}
+}
+
+func TestSampleTrackMus2Mid(t *testing.T) {
+	f := e1m1Mid(t)
+	f.Load()
+	f.Dump()
+
+	e1 := e1m1Mus(t)
+	e1.Load()
+	_, err := audio.NewMusStream(e1.Data)
+	test.Check(err, t)
+
+	s, err := audio.NewMidiStream(e1.Data)
+	test.Check(err, t)
+	f2 := &files.BinFile{"../files/converted-e1m1.mid", s.Bytes()}
+	f2.Dump()
+	//f2.Save()
+
+	// test.Assert(f.Compare(f2) == 0, "invalid MIDI output", t)
+	// TODO: fix msu2mid conversion and compare bytes instead of dumping.
 }
 
 func TestTrackLoading(t *testing.T) {
@@ -405,5 +405,33 @@ func TestTrackLoading(t *testing.T) {
 		// test the info methods
 		test.Assert(musd.Info()[0:8] == "mus.Data", "invalid mus info", t)
 		test.Assert(ev.Info()[0:9] == "mus.Event", "invalid event info", t)
+	}
+}
+
+func TestPlaybackProviders(t *testing.T) {
+	allProviders := []gmidi.Provider{gmidi.RTMidi, gmidi.PortMidi, gmidi.Any}
+	type musGetter func(t *testing.T) *files.BinFile
+	getters := []musGetter{
+		introaMus,
+		introMus,
+		e1m1Mus,
+	}
+	gmidi.TestMode()
+
+	for _, provider := range allProviders {
+		fmt.Println("starting player with provider: ", provider)
+		p, err := gmidi.NewPlayer(provider)
+		test.Check(err, t)
+		test.Assert(p != nil, "no midi device found cannot test playback", t)
+		defer p.Close()
+
+		for _, g := range getters {
+			f := g(t)
+			song, err := audio.NewMidiStream(f.Data)
+			test.Check(err, t)
+			fmt.Println("playing song", f.Path, "using provider", provider)
+			p.Play(song)
+		}
+		p.Close()
 	}
 }

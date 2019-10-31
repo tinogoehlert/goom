@@ -13,6 +13,7 @@ require (
 	github.com/ttacon/chalk v0.0.0-20160626202418-22c06c80ed31
 	gitlab.com/gomidi/midi v1.13.1
 	gitlab.com/gomidi/portmididrv v0.3.0
+	gitlab.com/gomidi/rtmididrv v0.4.2
 	golang.org/x/image v0.0.0-20190910094157-69e4b8554b2a
 	gopkg.in/yaml.v2 v2.2.4
 )

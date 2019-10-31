@@ -5,6 +5,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/tinogoehlert/goom/audio/midi"
+
 	"github.com/go-gl/glfw/v3.2/glfw"
 
 	"github.com/tinogoehlert/goom"
@@ -46,13 +48,25 @@ func main() {
 	}
 
 	renderer.SetShaderProgram("main")
-
-	m := gameData.Level(strings.ToUpper(*levelName))
 	renderer.BuildGraphics(gameData)
 
-	renderer.BuildLevel(m, gameData)
+	mission := strings.ToUpper(*levelName)
+	m := gameData.Level(mission)
 
+	renderer.BuildLevel(m, gameData)
 	world := game.NewWorld(m, game.NewDefStore("defs.yaml"))
+
+	track := gameData.Music.Track(mission)
+	mPlayer, err := midi.NewPlayer(midi.Any)
+	if err != nil {
+		log.Red("failed to start MIDI player: %s", err.Error())
+	}
+
+	if mPlayer != nil && track != nil {
+		defer mPlayer.Close()
+		go mPlayer.Loop(track.MidiStream)
+	}
+
 	log.Green("Press Q to exit GOOM.")
 
 	renderer.SetFPSCap(30)
