@@ -3,12 +3,12 @@ DOOM engine written in Go
 
 ![GOOM](/misc/goom.png?raw=true "GOOM")
 
-Place a `DOOM1.wad` in the root dir and type `make run` to run GOOM.
+Make sure you have `DOOM1.WAD` in the root dir. Then type `make run` to run GOOM.
 
 # Development Status
 
 The project is an experiment and is still lacking a lot of
-features, such as shooting, enemy behavior, sound, music, menus, and more.
+features, such as shooting, enemy behavior, sound, menus, and more.
 
 ![DEMO](/misc/goom-preview.gif?raw=true "DEMO")
 
@@ -33,6 +33,9 @@ On Ubuntu, install the following system packages:
 - libxinerama-dev
 - libxi-dev
 - glbsp
+- timidity
+- libportmidi-dev
+- librtmidi-dev
 
 For other systems, please check the Debian/Ubuntu requirements and use your corresponding packages.
 
