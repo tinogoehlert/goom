@@ -221,6 +221,15 @@ var (
 	angle float64
 )
 
+func (gr *GLRenderer) setUpHudShader(aspect float32) {
+
+	ortho := mgl32.Ortho2D(640*aspect, 0, 0, 640)
+
+	gl.Disable(gl.DEPTH_TEST) // Disable the Depth-testing
+	gr.shaders[gr.currentShader].UniformMatrix4fv("ortho", ortho)
+	gr.shaders[gr.currentShader].Uniform1i("draw_phase", 2)
+}
+
 func (gr *GLRenderer) drawHudImage(sprite string, pos mgl32.Vec3, offsetX, offsetY float32, scaleFactor float32) {
 	img := gr.textures.Get(sprite, 0)
 	gr.shaders[gr.currentShader].Uniform2f(
@@ -239,13 +248,9 @@ func (gr *GLRenderer) drawHudImage(sprite string, pos mgl32.Vec3, offsetX, offse
 
 // DrawHUD draws the game hud
 func (gr *GLRenderer) DrawHUD(player *game.Player) {
-
 	aspect := float32(gr.fbWidth) / float32(gr.fbHeight)
-	Ortho := mgl32.Ortho2D(640*aspect, 0, 0, 640)
 
-	gl.Disable(gl.DEPTH_TEST) // Disable the Depth-testing
-	gr.shaders[gr.currentShader].UniformMatrix4fv("ortho", Ortho)
-	gr.shaders[gr.currentShader].Uniform1i("draw_phase", 2)
+	gr.setUpHudShader(aspect)
 
 	w := player.Weapon()
 	frame, fire := w.NextFrames(float32((1000 / 30)))
@@ -261,14 +266,11 @@ func (gr *GLRenderer) DrawHUD(player *game.Player) {
 	gr.shaders[gr.currentShader].Uniform1i("draw_phase", 0)
 }
 
-// DrawHudChar draws a single character of text to the HUD
-func (gr *GLRenderer) DrawHudChar(name string, xpos, ypos float32, scaleFactor float32) {
-	gl.Disable(gl.DEPTH_TEST) // Disable the Depth-testing
-
+// DrawHUdElement draws a single element to the HUD
+func (gr *GLRenderer) DrawHUdElement(name string, xpos, ypos float32, scaleFactor float32) {
 	aspect := float32(gr.fbWidth) / float32(gr.fbHeight)
-	Ortho := mgl32.Ortho2D(640*aspect, 0, 0, 640)
-	gr.shaders[gr.currentShader].UniformMatrix4fv("ortho", Ortho)
-	gr.shaders[gr.currentShader].Uniform1i("draw_phase", 2)
+
+	gr.setUpHudShader(aspect)
 
 	gr.drawHudImage(name, mgl32.Vec3{xpos, ypos, 0}, 0, 0, scaleFactor)
 	gr.shaders[gr.currentShader].Uniform1i("draw_phase", 0)
@@ -279,8 +281,8 @@ func (gr *GLRenderer) SetFPSCap(cap float32) {
 }
 
 // Loop starts the render loop
-func (gr *GLRenderer) Loop(drawCB func(), inputCB func(win *glfw.Window, frametime float32)) {
-	frameTime := time.Duration(1000 / gr.fpsCap)
+func (gr *GLRenderer) Loop(drawCB func(), inputCB func(win *glfw.Window, frametime float32), statsCB func(recordedFrameTime time.Duration)) {
+	targetFrameTime := time.Second / time.Duration(gr.fpsCap)
 	for !gr.window.ShouldClose() {
 		t0 := time.Now()
 		gr.fbWidth, gr.fbHeight = gr.window.GetFramebufferSize()
@@ -297,10 +299,14 @@ func (gr *GLRenderer) Loop(drawCB func(), inputCB func(win *glfw.Window, frameti
 
 		gr.window.SwapBuffers()
 		glfw.PollEvents()
-		inputCB(gr.window, float32(frameTime)/1000)
-		lastFrame := frameTime - time.Now().Sub(t0)
-		if lastFrame > 0 {
-			time.Sleep(lastFrame)
+		inputCB(gr.window, float32(targetFrameTime)/float32(time.Second))
+
+		frameTime := time.Now().Sub(t0)
+		waitTime := targetFrameTime - frameTime
+		if waitTime > 0 {
+			time.Sleep(waitTime)
 		}
+
+		statsCB(frameTime)
 	}
 }
