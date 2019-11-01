@@ -24,7 +24,8 @@ Please ignore them.
 
 ## Linux
 
-On Arch/Manjaro, just install `glbsp`, the rest should be present.
+On Arch/Manjaro install `glbsp`
+and setup [TiMidity](https://wiki.archlinux.org/index.php/Timidity#Installation).
 
 On Ubuntu, install the following system packages:
 
@@ -37,7 +38,7 @@ On Ubuntu, install the following system packages:
 - libportmidi-dev
 - librtmidi-dev
 
-For other systems, please check the Debian/Ubuntu requirements and use your corresponding packages.
+For other systems, please check the above requirements and use your corresponding packages.
 
 ## OSX
 

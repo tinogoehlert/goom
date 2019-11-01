@@ -16,14 +16,20 @@ import (
 	"gitlab.com/gomidi/rtmididrv"
 )
 
+// TicksPerSecond defines the number of MIDI ticks per second used for playback.
+// Most DOOM titles use 140Hz.
+const TicksPerSecond = 140
+
+// TODO: add support for 70Hz-titles.
+
 // FixedMessage wraps a MIDI message and fixes bytes for portmididrv.
 type FixedMessage struct {
-	src midi.Message
+	midi.Message
 }
 
 // Raw returns the fixed bytes.
 func (m FixedMessage) Raw() []byte {
-	b := m.src.Raw()
+	b := m.Message.Raw()
 	if len(b) == 2 {
 		fmt.Println("fixing ProgramChange message for portmididrv")
 		b = append(b, 0)
@@ -32,7 +38,7 @@ func (m FixedMessage) Raw() []byte {
 }
 
 func (m FixedMessage) String() string {
-	return m.src.String()
+	return m.Message.String()
 }
 
 // Player defines a MIDI port and driver ana allows
@@ -111,7 +117,7 @@ func NewPlayer(providers ...Provider) (*Player, error) {
 	expPortTimidity := regexp.MustCompile(`TiMidity.*port.*[0-9]`)
 
 	d := &Player{
-		TickTime: time.Second / 140,
+		TickTime: time.Second / TicksPerSecond,
 	}
 	if err := d.initDriver(providers...); err != nil {
 		return nil, err
