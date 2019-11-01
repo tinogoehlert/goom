@@ -90,7 +90,7 @@ func (a Vec2) CrossVec2() Vec2 {
 }
 
 // Dot Inner product.
-func (a *Vec2) Dot(b Vec2) float32 {
+func (a Vec2) Dot(b Vec2) float32 {
 	return a.x*b.x + a.y*b.y
 }
 

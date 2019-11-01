@@ -3,6 +3,7 @@ module github.com/tinogoehlert/goom
 go 1.13
 
 require (
+	github.com/SolarLune/resolv v0.0.0-20190821203317-2f6176d8d107
 	github.com/faiface/glhf v0.0.0-20181018222622-82a6317ac380 // indirect
 	github.com/faiface/mainthread v0.0.0-20171120011319-8b78f0a41ae3 // indirect
 	github.com/faiface/pixel v0.8.0

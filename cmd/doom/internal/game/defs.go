@@ -22,11 +22,20 @@ type MonsterDef struct {
 	Animations map[string]string `yaml:"anim"`
 }
 
+// ItemDef monster definitions
+type ItemDef struct {
+	ID        int    `yaml:"id"`
+	Sprite    string `yaml:"sprite"`
+	Animation string `yaml:"anim"`
+	Category  string `yaml:"category"`
+	Reference string `yaml:"ref"`
+}
+
 // DefStore holds DOOM definitions e.g. monsters, weapons and obstacles
 type DefStore struct {
 	Monsters  []MonsterDef `yaml:"monsters"`
 	Obstacles []ThingDef   `yaml:"obstacles"`
-	Items     []ThingDef   `yaml:"items"`
+	Items     []ItemDef    `yaml:"items"`
 	Weapons   []Weapon     `yaml:"weapons"`
 }
 
@@ -64,8 +73,8 @@ func (ds *DefStore) GetObstacleDef(id int) *ThingDef {
 	return nil
 }
 
-// GetObstacleDef gets obstacle definition by ID
-func (ds *DefStore) GetItemDef(id int) *ThingDef {
+// GetItemDef gets obstacle definition by ID
+func (ds *DefStore) GetItemDef(id int) *ItemDef {
 	for _, item := range ds.Items {
 		if item.ID == id {
 			return &item
@@ -78,16 +87,6 @@ func (ds *DefStore) GetItemDef(id int) *ThingDef {
 func (ds *DefStore) GetWeapon(name string) *Weapon {
 	for _, w := range ds.Weapons {
 		if w.Name == name {
-			return &w
-		}
-	}
-	return nil
-}
-
-// GetWeaponByID gets weapon definition by ID
-func (ds *DefStore) GetWeaponByID(id int) *Weapon {
-	for _, w := range ds.Weapons {
-		if w.Thing.ID == id {
 			return &w
 		}
 	}

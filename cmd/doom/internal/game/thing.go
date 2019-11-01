@@ -9,6 +9,22 @@ import (
 	"github.com/tinogoehlert/goom/level"
 )
 
+// Thingable is a type that behaves like a thing
+type Thingable interface {
+	GetID() int
+	CollidedWithThing(thing *DoomThing)
+	Position() [2]float32
+	Direction() [2]float32
+	Height() float32
+	NextFrame() byte
+	SetHeight(height float32)
+	CalcAngle(origin mgl32.Vec2) (int, int)
+	SpriteName() string
+	IsShown() bool
+	GetSector() *level.Sector
+	SetSector(sector *level.Sector)
+}
+
 // DoomThing a doom thing
 type DoomThing struct {
 	id               int
@@ -22,9 +38,8 @@ type DoomThing struct {
 	currentFrame     int
 	lastTick         time.Time
 	hasAngles        bool
+	freeze           bool
 	currentSector    *level.Sector
-	consumable       bool
-	wasConsumed      bool
 }
 
 // ThingFromDef creates thing from definition
@@ -48,26 +63,36 @@ func NewDoomThing(x, y, height, angle float32, sprite string, hasAngles bool) *D
 	}
 }
 
-func appendDoomThing(dst []*DoomThing, src *DoomThing, m *level.Level) []*DoomThing {
+func appendDoomThing(dst []Thingable, src Thingable, m *level.Level) []Thingable {
 	var ssect, err = m.FindPositionInBsp(level.GLNodesName, src.Position()[0], src.Position()[1])
 	if err != nil {
 		log.Print("could not find GLnode for pos %v", src.Position())
 	} else {
 		var sector = m.SectorFromSSect(ssect)
+		src.SetSector(sector)
 		src.SetHeight(sector.FloorHeight())
 	}
 
 	return append(dst, src)
 }
 
-func (dt *DoomThing) ID() int {
+// GetSector returns the current sector
+func (dt *DoomThing) GetSector() *level.Sector {
+	return dt.currentSector
+}
+
+// SetSector returns the current sector
+func (dt *DoomThing) SetSector(sector *level.Sector) {
+	dt.currentSector = sector
+}
+
+// GetID returns the THing ID
+func (dt *DoomThing) GetID() int {
 	return dt.id
 }
 
 // CollidedWithThing something collides with thing
-func (dt *DoomThing) CollidedWithThing(thing *DoomThing) {
-
-}
+func (dt *DoomThing) CollidedWithThing(thing *DoomThing) {}
 
 // Position get XY position
 func (dt *DoomThing) Position() [2]float32 {
@@ -79,14 +104,9 @@ func (dt *DoomThing) Direction() [2]float32 {
 	return dt.direction
 }
 
-// WasConsumed determines if consumable was consumed
-func (dt *DoomThing) WasConsumed() bool {
-	return dt.wasConsumed
-}
-
-// IsConsumable determines if consumable was consumed
-func (dt *DoomThing) IsConsumable() bool {
-	return dt.wasConsumed
+// IsShown determines if consumable was consumed
+func (dt *DoomThing) IsShown() bool {
+	return true
 }
 
 // Height get players height
@@ -111,6 +131,9 @@ func (dt *DoomThing) SpriteName() string {
 
 // NextFrame gets the next frame of the current animation
 func (dt *DoomThing) NextFrame() byte {
+	if dt.freeze {
+		return dt.currentAnimation[dt.currentFrame]
+	}
 	if time.Now().Sub(dt.lastTick) >= 120*time.Millisecond {
 		if dt.currentFrame+1 >= len(dt.currentAnimation) {
 			dt.currentFrame = 0

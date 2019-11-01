@@ -12,10 +12,11 @@ const (
 
 // Weapon weapon
 type Weapon struct {
-	Name       string   `yaml:"name"`
-	Sprite     string   `yaml:"sprite"`
-	Thing      ThingDef `yaml:"thing"`
-	FireSprite string   `yaml:"fireSprite"`
+	Name       string `yaml:"name"`
+	Sprite     string `yaml:"egoSprite"`
+	FireSprite string `yaml:"fireSprite"`
+	Damage     int    `yaml:"damage"`
+	Range      int    `yaml:"range"`
 	FireOffset struct {
 		X float32 `yaml:"x"`
 		Y float32 `yaml:"y"`
@@ -35,11 +36,13 @@ func (w *Weapon) Offset() [2]float32 {
 }
 
 // Fire fires the weapon
-func (w *Weapon) Fire() {
+func (w *Weapon) Fire() bool {
 	if w.state == 0 {
 		w.state = 1
 		w.lastTick = time.Now()
+		return true
 	}
+	return false
 }
 
 // PutDown puts the weapon down
@@ -57,11 +60,11 @@ func (w *Weapon) PutUp() {
 
 func (w *Weapon) pull(frameTime float32) {
 	w.offset[1] += frameTime / 2.5
-	if frameTime >= 0 && w.offset[1] > 200 {
+	if w.offset[1] > 200 {
 		w.pulledDown()
 		w.state = 0
 	}
-	if frameTime < 0 && w.offset[1] <= 0 {
+	if w.offset[1] <= 0 {
 		w.offset[1] = 0
 		w.state = 0
 	}
@@ -80,25 +83,27 @@ func (w *Weapon) bobbing(passedTime float32) {
 
 // NextFrames gets weapon and fire frame. if no fire, value will be 255
 func (w *Weapon) NextFrames(frameTime float32) (byte, byte) {
-	if w.state == 0 {
-		return 'A', 255
-	}
 	var (
-		fire  byte = 255
-		frame      = w.Animations["shoot"][w.currentFrame]
+		anim      = w.Animations["idle"]
+		fire byte = 255
 	)
 	if w.state == 1 && w.currentFrame+1 <= len(w.Animations["fire"]) {
 		fire = w.Animations["fire"][w.currentFrame]
 	}
+	if w.state == 1 {
+		anim = w.Animations["shoot"]
+	}
+	var frame = anim[w.currentFrame]
 	if w.state == 2 {
 		w.pull((frameTime))
+		return frame, fire
 	}
 	if w.state == 3 {
 		w.pull(-(frameTime))
-
+		return frame, fire
 	}
-	if w.state == 1 && time.Now().Sub(w.lastTick) >= 70*time.Millisecond {
-		if w.currentFrame+1 < len(w.Animations["shoot"]) {
+	if time.Now().Sub(w.lastTick) >= 70*time.Millisecond {
+		if w.currentFrame+1 < len(anim) {
 			w.currentFrame++
 		} else {
 			w.currentFrame = 0

@@ -1,26 +1,47 @@
 weapons:
+- name: chainsaw
+  egoSprite: "SAWG"
+  damage: 15
+  range: 40
+  anim:
+    idle: "CD"
+    shoot: "AB"
 - name: pistol
-  sprite: "PISG"
+  egoSprite: "PISG"
   fireSprite: "PISF"
+  damage: 10
+  range: 10000
   fire_offset:
     x: -19
     y: 118
   anim:
+    idle: "A"
     shoot: "ABCDE"
     fire: "A"
 - name: "shotgun"
-  sprite: "SHTG"
+  egoSprite: "SHTG"
   fireSprite: "SHTF"
+  damage: 20
+  range: 10000
   fire_offset:
     x: -8
     y: 78
   anim:
-    shoot: "ABCDDCBA"
+    idle: "A"
+    shoot: "ABCDCBA"
     fire: "AB"
-  thing:
-    id: 2001
-    sprite: "SHOT"
-    anim: "A"
+- name: "super-shotgun"
+  egoSprite: "SHT2"
+  fireSprite: "SHT2"
+  damage: 30
+  range: 10000
+  fire_offset:
+    x: 0
+    y: 60
+  anim:
+    idle: "A"
+    shoot: "ABCDEFGH"
+    fire: "IJ"
 
 monsters:
 - id: 3004
@@ -31,6 +52,8 @@ monsters:
     hurt: "G"
     die: "HIJKL"
     splash: "MNOPQRSTU"
+  height: 90
+  width: 60
   health: 25
 - id: 9
   sprite: "SPOS"
@@ -49,7 +72,7 @@ monsters:
     hurt: "H"
     die: "IJKLM"
     splash: "NOPQRSTU"
-  health: 35
+  health: 45
 - id: 3002
   sprite: SARG
   anim:
@@ -81,3 +104,21 @@ obstacles:
 - id: 15
   sprite: "PLAY"
   anim: "N"
+
+items:
+- id: 2001
+  sprite: "SHOT"
+  category: "weapon"
+  ref: "shotgun"
+  anim: "A"
+- id: 2005
+  sprite: "CSAW"
+  category: "weapon"
+  ref: "chainsaw"
+  anim: "A"
+- id: 82
+  sprite: "SGN2"
+  category: "weapon"
+  ref: "super-shotgun"
+  anim: "A"
+  

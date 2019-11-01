@@ -184,17 +184,17 @@ func (gr *GLRenderer) GetSectorForSSect(ssect *level.SubSector) level.Sector {
 	return sector
 }
 
-func (gr *GLRenderer) DrawThings(things []*game.DoomThing) {
+func (gr *GLRenderer) DrawThings(things []game.Thingable) {
 	gr.shaders[gr.currentShader].Uniform1i("draw_phase", 1)
 
 	for _, t := range things {
-		if t.WasConsumed() {
+		if !t.IsShown() {
 			continue
 		}
 		f := t.NextFrame()
 		a, flipped := t.CalcAngle(gr.camera.position)
 		img := gr.textures.Get(t.SpriteName()+string(f), a)
-
+		gr.SetLight(t.GetSector().LightLevel())
 		gr.shaders[gr.currentShader].Uniform3f("billboard_pos", mgl32.Vec3{
 			-t.Position()[0],
 			t.Height() + (float32(img.image.Height()) / 2) + 4,
@@ -220,7 +220,6 @@ var (
 func (gr *GLRenderer) drawHudImage(sprite string, pos mgl32.Vec3, offsetX, offsetY float32) {
 	img := gr.textures.Get(sprite, 0)
 	gr.shaders[gr.currentShader].Uniform2f("billboard_size", mgl32.Vec2{float32(img.image.Width()) / 40, float32(img.image.Height()) / 40})
-
 	pos[1] += float32(-img.image.Top()) + offsetY
 	pos[0] += +offsetX
 	gr.shaders[gr.currentShader].Uniform3f("billboard_pos", pos)
@@ -236,10 +235,11 @@ func (gr *GLRenderer) DrawHUD(player *game.Player) {
 	gl.Disable(gl.DEPTH_TEST) // Disable the Depth-testing
 	gr.shaders[gr.currentShader].UniformMatrix4fv("ortho", Ortho)
 	gr.shaders[gr.currentShader].Uniform1i("draw_phase", 2)
-
+	if player.GetSector() != nil {
+		gr.SetLight(player.GetSector().LightLevel())
+	}
 	w := player.Weapon()
 	frame, fire := w.NextFrames(float32((1000 / 30)))
-
 	gr.drawHudImage(w.Sprite+string(frame), mgl32.Vec3{(640 * aspect) / 2, 0, 0}, +w.Offset()[0], -20-w.Offset()[1])
 	if fire != 255 {
 		gr.drawHudImage(w.FireSprite+string(fire), mgl32.Vec3{
