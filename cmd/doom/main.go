@@ -7,11 +7,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/tinogoehlert/goom/audio/midi"
-
 	"github.com/go-gl/glfw/v3.2/glfw"
 
 	"github.com/tinogoehlert/goom"
+	"github.com/tinogoehlert/goom/audio/midi"
 	"github.com/tinogoehlert/goom/cmd/doom/internal/game"
 	"github.com/tinogoehlert/goom/cmd/doom/internal/opengl"
 	"github.com/tinogoehlert/goom/graphics"

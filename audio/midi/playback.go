@@ -16,14 +16,19 @@ import (
 	"gitlab.com/gomidi/rtmididrv"
 )
 
+// TicksPerSecond defines the default number of MIDI ticks per second used for playback.
+// Most DOOM titles use 140Hz. Raptor uses 70Hz.
+// The value can be adjusted by setting `Player.TicksPerSecond` before playback.
+const TicksPerSecond = 140
+
 // FixedMessage wraps a MIDI message and fixes bytes for portmididrv.
 type FixedMessage struct {
-	src midi.Message
+	midi.Message
 }
 
 // Raw returns the fixed bytes.
 func (m FixedMessage) Raw() []byte {
-	b := m.src.Raw()
+	b := m.Message.Raw()
 	if len(b) == 2 {
 		fmt.Println("fixing ProgramChange message for portmididrv")
 		b = append(b, 0)
@@ -32,7 +37,7 @@ func (m FixedMessage) Raw() []byte {
 }
 
 func (m FixedMessage) String() string {
-	return m.src.String()
+	return m.Message.String()
 }
 
 // Player defines a MIDI port and driver ana allows
@@ -41,7 +46,7 @@ type Player struct {
 	out              mid.Out
 	drv              mid.Driver
 	wr               *mid.Writer
-	TickTime         time.Duration
+	TicksPerSecond   int
 	useFixedMessages bool
 }
 
@@ -109,9 +114,10 @@ func NewPlayer(providers ...Provider) (*Player, error) {
 	}()
 
 	expPortTimidity := regexp.MustCompile(`TiMidity.*port.*[0-9]`)
+	expPortMacSynth := regexp.MustCompile(`SimpleSynth virtual.*`)
 
 	d := &Player{
-		TickTime: time.Second / 140,
+		TicksPerSecond: TicksPerSecond,
 	}
 	if err := d.initDriver(providers...); err != nil {
 		return nil, err
@@ -125,8 +131,10 @@ func NewPlayer(providers ...Provider) (*Player, error) {
 	var out mid.Out
 
 	for _, o := range outs {
-		match := expPortTimidity.Find([]byte(o.String()))
-		if match != nil {
+		name := []byte(o.String())
+		mtmy := expPortTimidity.Find(name)
+		mmac := expPortMacSynth.Find(name)
+		if mtmy != nil || mmac != nil {
 			fmt.Printf("using device #%d: %s\n", o.Number(), o.String())
 			out = o
 			break
@@ -139,8 +147,12 @@ func NewPlayer(providers ...Provider) (*Player, error) {
 	}
 
 	if out == nil && len(outs) > 0 {
-		fmt.Printf("fallback to first MIDI device #%d: %s\n", out.Number(), out.String())
-		out = outs[0]
+		i := 0
+		if len(outs) > 1 {
+			i = 1
+		}
+		out = outs[i]
+		fmt.Printf("fallback to output #%d, MIDI device #%d: %s\n", i, out.Number(), out.String())
 	}
 
 	if out == nil {
@@ -186,7 +198,8 @@ func (d *Player) HandleMessage(pos *mid.Position, msg midi.Message) {
 	if test {
 		time.Sleep(time.Nanosecond)
 	} else {
-		time.Sleep(time.Duration(pos.DeltaTicks) * d.TickTime)
+		delay := time.Second / time.Duration(d.TicksPerSecond) * time.Duration(pos.DeltaTicks)
+		time.Sleep(delay)
 	}
 	var err error
 	switch msg.(type) {

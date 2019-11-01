@@ -51,17 +51,31 @@ func ClampVolume(vol uint8) uint8 {
 func Mus2Mid(in *mus.Stream) (*midi.Stream, error) {
 	p := midi.NewStream(numChans)
 
-	for _, ev := range in.Events {
-		ch := p.GetChannel(int(ev.Channel))
+	if len(in.Events) == 0 {
+		fmt.Println("skiping to parse empty MUS stream:", in.ID)
+		return nil, nil
+	}
 
-		// fmt.Printf("converting event: %s", ev.Info())
-		// continue
+	var ev mus.Event
+
+	for _, ev = range in.Events {
+		ch := p.GetChannel(int(ev.Channel))
 
 		switch ev.Type {
 		case mus.RelaseNote:
 			p.Add(midi.ReleaseKey, ch, ev.GetNote(), 0)
 		case mus.PlayNote:
-			p.Add(midi.PressKey, ch, ev.GetNote(), ClampVolume(ev.GetVolume()))
+			var vol byte
+			if ev.HasVolume() {
+				// use event volume (overriding the channel volume)
+				vol = ev.GetVolume()
+			} else {
+				// use the channel volume for playing the note
+				// (channel volumes can be set via a Volume Controller event)
+				vol = p.GetVelocity(ch)
+			}
+			vol = ClampVolume(ev.GetVolume())
+			p.Add(midi.PressKey, ch, ev.GetNote(), vol)
 		case mus.PitchBend:
 			bend := ev.GetBend()
 			// Allowed MUS Bend Values:
@@ -93,6 +107,9 @@ func Mus2Mid(in *mus.Stream) (*midi.Stream, error) {
 			mctrl := byte(midControls[ctrl])
 			val := ev.GetControllerValue()
 			if mus.Control(ctrl) == mus.Volume {
+				// track the channel volumes as given
+				p.SetVelocity(ch, val)
+				// only clamp volumes when sending them to the MIDI out
 				val = ClampVolume(val)
 			}
 			if mus.Control(ctrl) == mus.BankSelect {
@@ -102,10 +119,17 @@ func Mus2Mid(in *mus.Stream) (*midi.Stream, error) {
 			p.Add(midi.ChangeController, ch, mctrl, val)
 		case mus.MeasureEnd:
 		case mus.ScoreEnd:
+			p.CompleteTrack()
+		default:
+			return nil, fmt.Errorf("uknown event: %s", ev.Info())
 		}
 		p.SetTime(int(ev.Delay))
 	}
-	p.CompleteTrack()
 
+	if ev.Type != mus.ScoreEnd {
+		fmt.Println("MUS stream does not end with ScoreEnd, but with:", ev.Info())
+		fmt.Println("forcefully completing track")
+		p.CompleteTrack()
+	}
 	return p, nil
 }
