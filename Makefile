@@ -20,8 +20,8 @@ go.mod:
 	go mod init github.com/tinogoehlert/goom
 	go get -u ./...
 
-DOOM1.gwa: DOOM1.wad
-	glbsp -v5 DOOM1.wad
+DOOM1.gwa: DOOM1.WAD
+	glbsp -v5 DOOM1.WAD
 
 $(DOOM_TEST):
 	mkdir -p $@

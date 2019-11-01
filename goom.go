@@ -17,6 +17,7 @@ type GameData struct {
 	Sprites  graphics.SpriteStore
 	Palettes *graphics.Palettes
 	Music    audio.MusicSuite
+	Fonts    graphics.FontBook
 }
 
 var (
@@ -28,9 +29,9 @@ var (
 // Use this function to load a specific level.
 func LoadWAD(iwad, pwad string) (*GameData, error) {
 	var wads = []string{}
-	wads = append(wads, iwad+".wad", iwad+".gwa")
+	wads = append(wads, iwad+".WAD", iwad+".gwa")
 	if pwad != "" {
-		wads = append(wads, pwad+".wad", pwad+".gwa")
+		wads = append(wads, pwad+".WAD", pwad+".gwa")
 	}
 	return LoadGameData(wads...)
 }
@@ -58,6 +59,7 @@ func LoadGameData(files ...string) (*GameData, error) {
 		Flats:    graphics.NewFlatStore(),
 		Sprites:  graphics.NewSpriteStore(),
 		Music:    audio.NewMusicSuite(),
+		Fonts:    graphics.NewFontBook(),
 	}
 	for _, file := range files {
 		wad, err := wad.NewWADFromFile(file)
@@ -72,6 +74,9 @@ func LoadGameData(files ...string) (*GameData, error) {
 		}
 		if p, _ := graphics.NewPalettes(wad); p != nil {
 			gd.Palettes = p
+		}
+		if err := gd.Fonts.LoadWAD(wad); err != nil {
+			return nil, err
 		}
 		gd.Sprites.LoadWAD(wad)
 		gd.Flats.LoadWAD(wad)
