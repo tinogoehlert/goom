@@ -14,10 +14,11 @@ type Player struct {
 	weaponBag map[string]*Weapon
 	weapon    *Weapon
 	lastTick  time.Time
+	world     *World
 }
 
 // NewPlayer creates a new player with the given values
-func NewPlayer(x, y, height, angle float32) *Player {
+func NewPlayer(x, y, height, angle float32, w *World) *Player {
 	dy, dx := math.Sincos(float64(angle) * math.Pi / 180)
 	p := &Player{
 		Movable: &Movable{
@@ -28,6 +29,7 @@ func NewPlayer(x, y, height, angle float32) *Player {
 				direction: mgl32.Vec2{float32(dx), float32(dy)},
 			},
 		},
+		world:     w,
 		weaponBag: make(map[string]*Weapon),
 	}
 	return p
@@ -46,9 +48,8 @@ func (p *Player) AddWeapon(weapon *Weapon) {
 		w.ammo += 20
 		return
 	}
-	fmt.Println(len(weapon.Animations["fire"]))
 	p.weaponBag[weapon.Name] = weapon
-	p.weapon = weapon
+	p.SwitchWeapon(weapon.Name)
 }
 
 // CollidedWithThing something collides with thing
@@ -56,8 +57,21 @@ func (p *Player) CollidedWithThing(thing *DoomThing) {
 	fmt.Println("i collided with", thing.SpriteName())
 }
 
+func (p *Player) FireWeapon() {
+	if p.weapon.Fire() {
+		p.world.spawnShot(p)
+	}
+}
+
 // SwitchWeapon switches
 func (p *Player) SwitchWeapon(name string) {
+	if p.weapon == nil {
+		p.weapon = p.weaponBag[name]
+		p.weapon.PutUp()
+	}
+	if name == p.weapon.Name {
+		return
+	}
 	if w, ok := p.weaponBag[name]; ok {
 		p.weapon.PutDown(func() {
 			p.weapon = w

@@ -97,7 +97,7 @@ func NewSpriteStore() SpriteStore {
 	return make(SpriteStore)
 }
 
-func (ss SpriteStore) LoadWAD(w *wad.WAD) error {
+func (ss SpriteStore) LoadWAD(w *wad.WAD) {
 	var (
 		spriteStartRegex = regexp.MustCompile(`^S?_START`)
 		spriteEndRegex   = regexp.MustCompile(`^S?_END`)
@@ -125,6 +125,4 @@ func (ss SpriteStore) LoadWAD(w *wad.WAD) error {
 			}
 		}
 	}
-
-	return nil
 }

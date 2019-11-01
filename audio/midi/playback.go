@@ -7,18 +7,13 @@ import (
 	"strings"
 	"time"
 
-	"gitlab.com/gomidi/rtmididrv"
-
-	"gitlab.com/gomidi/midi/gm"
-
-	"gitlab.com/gomidi/midi/midimessage/channel"
-
-	"gitlab.com/gomidi/midi/midimessage/meta"
-
 	"gitlab.com/gomidi/midi"
-
+	"gitlab.com/gomidi/midi/gm"
 	"gitlab.com/gomidi/midi/mid"
+	"gitlab.com/gomidi/midi/midimessage/channel"
+	"gitlab.com/gomidi/midi/midimessage/meta"
 	"gitlab.com/gomidi/portmididrv"
+	"gitlab.com/gomidi/rtmididrv"
 )
 
 // FixedMessage wraps a MIDI message and fixes bytes for portmididrv.

@@ -1,3 +1,5 @@
+github.com/SolarLune/resolv v0.0.0-20190821203317-2f6176d8d107 h1:KoCYURMjGLT9kHA9pzFWMRqvpzGuR1Ws+tHyErI1qGs=
+github.com/SolarLune/resolv v0.0.0-20190821203317-2f6176d8d107/go.mod h1:Ov0hOC/Xa1bCjByZrz5muPSE8pNZQZioXYMXxgx+K80=
 github.com/faiface/glhf v0.0.0-20181018222622-82a6317ac380 h1:FvZ0mIGh6b3kOITxUnxS3tLZMh7yEoHo75v3/AgUqg0=
 github.com/faiface/glhf v0.0.0-20181018222622-82a6317ac380/go.mod h1:zqnPFFIuYFFxl7uH2gYByJwIVKG7fRqlqQCbzAnHs9g=
 github.com/faiface/mainthread v0.0.0-20171120011319-8b78f0a41ae3 h1:baVdMKlASEHrj19iqjARrPbaRisD7EuZEVJj6ZMLl1Q=

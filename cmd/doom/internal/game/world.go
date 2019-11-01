@@ -1,11 +1,13 @@
 package game
 
 import (
+	"container/list"
 	"fmt"
 	"math"
 
 	"github.com/go-gl/mathgl/mgl32"
 
+	"github.com/tinogoehlert/goom"
 	"github.com/tinogoehlert/goom/geometry"
 	"github.com/tinogoehlert/goom/level"
 )
@@ -27,11 +29,13 @@ type Wall struct {
 //World  holds the current world
 type World struct {
 	nodes       []level.Node
-	things      []*DoomThing
+	things      []Thingable
+	items       []*Item
 	monsters    []*Monster
 	players     []*Player
 	definitions *DefStore
 	walls       []Wall
+	projectiles *list.List
 	me          *Player
 	levelRef    *level.Level
 }
@@ -60,12 +64,13 @@ func newWall(line level.LineDef, lvl *level.Level) Wall {
 }
 
 // NewWorld creates a new world
-func NewWorld(doomLevel *level.Level, defs *DefStore) *World {
+func NewWorld(doomLevel *level.Level, defs *DefStore, data *goom.GameData) *World {
 	var w = &World{
 		nodes:       doomLevel.Nodes(level.GLNodesName),
 		walls:       make([]Wall, 0, len(doomLevel.LinesDefs)),
 		levelRef:    doomLevel,
 		definitions: defs,
+		projectiles: list.New(),
 	}
 
 	for _, line := range doomLevel.LinesDefs {
@@ -74,7 +79,7 @@ func NewWorld(doomLevel *level.Level, defs *DefStore) *World {
 
 	for _, t := range doomLevel.Things {
 		if t.Type < 5 {
-			player := NewPlayer(t.X, t.Y, 0, t.Angle)
+			player := NewPlayer(t.X, t.Y, 0, t.Angle, w)
 			w.players = append(w.players, player)
 			if t.Type == 1 {
 				w.me = player
@@ -88,14 +93,7 @@ func NewWorld(doomLevel *level.Level, defs *DefStore) *World {
 		}
 
 		if itemDef := defs.GetItemDef(int(t.Type)); itemDef != nil {
-			item := ThingFromDef(t.X, t.Y, 0, t.Angle, itemDef)
-			item.consumable = true
-			w.things = appendDoomThing(w.things, item, doomLevel)
-		}
-
-		if weapon := defs.GetWeaponByID(int(t.Type)); weapon != nil {
-			item := ThingFromDef(t.X, t.Y, 0, t.Angle, &weapon.Thing)
-			item.consumable = true
+			item := ItemFromDef(t.X, t.Y, 0, t.Angle, itemDef)
 			w.things = appendDoomThing(w.things, item, doomLevel)
 		}
 
@@ -105,9 +103,21 @@ func NewWorld(doomLevel *level.Level, defs *DefStore) *World {
 		}
 
 		if monsterDef := defs.GetMonsterDef(int(t.Type)); monsterDef != nil {
-			monster := MonsterFromDef(t.X, t.Y, 0, t.Angle, monsterDef)
+			sprite := data.Sprite(monsterDef.Sprite)
+			img := sprite.FirstFrame().Angles()[1]
+			fmt.Println(img.Width(), img.Height())
+
+			monster := MonsterFromDef(
+				t.X,
+				t.Y,
+				float32(img.Width()),
+				float32(img.Height()),
+				0,
+				t.Angle,
+				monsterDef,
+			)
 			w.monsters = append(w.monsters, monster)
-			w.things = appendDoomThing(w.things, monster.DoomThing, doomLevel)
+			w.things = appendDoomThing(w.things, monster, doomLevel)
 		}
 	}
 	return w
@@ -119,7 +129,7 @@ func (w *World) Me() *Player {
 }
 
 // Things returns things
-func (w *World) Things() []*DoomThing {
+func (w *World) Things() []Thingable {
 	return w.things
 }
 
@@ -138,8 +148,37 @@ func (w *World) SetPlayer(num int) error {
 }
 
 // Update updates the world (monster think and player position)
-func (w *World) Update() {
+func (w *World) Update(t float32) {
+	ppos := geometry.V2(w.me.position[0], w.me.position[1])
+	for _, m := range w.monsters {
+		if !m.IsCorpse() {
+			m.Update()
+			m.Think(w.me, t)
+		}
+	}
 
+	for e := w.projectiles.Front(); e != nil; e = e.Next() {
+		var (
+			p       = e.Value.(*Projectile)
+			projPos = geometry.V2(p.position[0], p.position[1])
+		)
+		for _, m := range w.monsters {
+			if m.IsCorpse() {
+				continue
+			}
+			if w.hitThing(m, p, m.sizeX, m.sizeY) {
+				mpos := geometry.V2(m.position[0], m.position[1])
+				dist := ppos.DistanceTo(mpos)
+				w.projectiles.Remove(e)
+				m.Hit(p.damage, dist)
+				break
+			}
+		}
+		if int(ppos.DistanceTo(projPos)) > p.maxRange {
+			w.projectiles.Remove(e)
+		}
+		p.Walk(1000, t)
+	}
 }
 
 func (w *World) doesCollide(thing *DoomThing, to mgl32.Vec2) mgl32.Vec2 {
@@ -147,25 +186,43 @@ func (w *World) doesCollide(thing *DoomThing, to mgl32.Vec2) mgl32.Vec2 {
 	return w.checkWallCollision(thing, to)
 }
 
+func (w *World) spawnShot(player *Player) {
+	w.projectiles.PushBack(NewProjectile(
+		player.Position(),
+		player.Direction(),
+		player.weapon.Damage,
+		player.weapon.Range,
+	))
+}
+
+func (w *World) hitThing(t1, t2 Thingable, sx, sy float32) bool {
+	var (
+		x  = t1.Position()[0]
+		y  = t1.Position()[1]
+		x1 = t2.Position()[0] - (sx)
+		x2 = t2.Position()[0] + (sx)
+		y1 = t2.Position()[1] - (sy)
+		y2 = t2.Position()[1] + (sy)
+	)
+
+	if x > x1 && x < x2 && y > y1 && y < y2 {
+		return true
+	}
+	return false
+}
+
 func (w *World) checkThingCollision(thing *DoomThing, to mgl32.Vec2) {
 	for _, thing2 := range w.things {
-		if thing2.wasConsumed {
+		if !thing2.IsShown() {
 			continue
 		}
-		var (
-			x  = thing.position[0]
-			y  = thing.position[1]
-			x1 = thing2.Position()[0] - 24
-			x2 = thing2.Position()[0] + 24
-			y1 = thing2.Position()[1] - 24
-			y2 = thing2.Position()[1] + 24
-		)
 
-		if x > x1 && x < x2 && y > y1 && y < y2 {
-			if thing2.consumable {
-				thing2.wasConsumed = true
-				if weapon := w.definitions.GetWeaponByID(thing2.id); weapon != nil {
-					w.me.AddWeapon(weapon)
+		if w.hitThing(thing, thing2, 24, 24) {
+			switch t := thing2.(type) {
+			case *Item:
+				if t.category == "weapon" {
+					w.me.AddWeapon(w.definitions.GetWeapon(t.ref))
+					t.consumed = true
 				}
 			}
 		}
@@ -182,11 +239,11 @@ func (w *World) checkWallCollision(thing *DoomThing, to mgl32.Vec2) mgl32.Vec2 {
 		hitWall  Wall
 		oldTo    = to
 	)
-	for _, w := range w.walls {
+	for _, wall := range w.walls {
 		var (
-			d   = w.Start.Dot(w.Normal)
-			sd  = w.Start.Dot(w.Tangent)
-			pd  = x*w.Normal.X() + y*w.Normal.Y() - d
+			d   = wall.Start.Dot(wall.Normal)
+			sd  = wall.Start.Dot(wall.Tangent)
+			pd  = x*wall.Normal.X() + y*wall.Normal.Y() - d
 			mul = float32(1.0)
 		)
 		if pd >= -radius && pd <= radius {
@@ -194,12 +251,12 @@ func (w *World) checkWallCollision(thing *DoomThing, to mgl32.Vec2) mgl32.Vec2 {
 				pd = -pd
 				mul = -1.0
 			}
-			psd := x*w.Tangent.X() + y*w.Tangent.Y() - sd
-			if psd >= 0.0 && psd <= w.Length {
+			psd := x*wall.Tangent.X() + y*wall.Tangent.Y() - sd
+			if psd >= 0.0 && psd <= wall.Length {
 				toPushOut := radius - pd + 0.001
-				to[0] += w.Normal.X() * toPushOut * mul
-				to[1] += w.Normal.Y() * toPushOut * mul
-				hitWall = w
+				to[0] += wall.Normal.X() * toPushOut * mul
+				to[1] += wall.Normal.Y() * toPushOut * mul
+				hitWall = wall
 				collided = true
 
 			} else {
@@ -207,11 +264,11 @@ func (w *World) checkWallCollision(thing *DoomThing, to mgl32.Vec2) mgl32.Vec2 {
 					tmpxd float32
 					tmpyd float32
 				)
-				tmpxd = x - w.Start.X()
-				tmpyd = y - w.Start.Y()
+				tmpxd = x - wall.Start.X()
+				tmpyd = y - wall.Start.Y()
 				if psd > 0.0 {
-					tmpxd = x - w.End.X()
-					tmpyd = y - w.End.Y()
+					tmpxd = x - wall.End.X()
+					tmpyd = y - wall.End.Y()
 				}
 
 				distSqr := tmpxd*tmpxd + tmpyd*tmpyd
@@ -220,7 +277,7 @@ func (w *World) checkWallCollision(thing *DoomThing, to mgl32.Vec2) mgl32.Vec2 {
 					toPushOut := radius - dist + 0.001
 					to[0] += tmpxd / dist * toPushOut
 					to[1] += tmpyd / dist * toPushOut
-					hitWall = w
+					hitWall = wall
 					collided = true
 				}
 			}

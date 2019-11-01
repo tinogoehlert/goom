@@ -18,6 +18,7 @@ func NewMovable(x, y, height, angle float32, sprite string) *Movable {
 	var m = &Movable{
 		DoomThing: NewDoomThing(x, y, height, angle, sprite, true),
 	}
+	m.Turn(0, 0)
 	return m
 }
 
