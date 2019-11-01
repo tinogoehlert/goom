@@ -118,17 +118,18 @@ func NewEvent(index int, data []byte) (*Event, error) {
 	return &ev, nil
 }
 
-// ParsePayload reads the payload bytes of an event.
+// ParsePayload reads and sets the 0-2 payload bytes of an event.
 func (ev *Event) ParsePayload(data []byte) error {
 	switch ev.Type {
 	case RelaseNote, PitchBend, System:
 		ev.Data = data[0:1]
 	case PlayNote:
+		// check if high bit is set, indicating that a volume byte follows
 		if data[0]>>7 == 0 {
-			// has no volume flag and thus no volume byte
+			// has no volume byte
 			ev.Data = data[0:1]
 		} else {
-			// has no volume flag and a volume byte
+			// has volume byte
 			ev.Data = data[0:2]
 		}
 	case Controller:
@@ -198,7 +199,7 @@ func (ev *Event) Validate() error {
 		check127(0, "invalid release note")
 	case PlayNote:
 		if ev.HasVolume() {
-			if ev.Data[0] < 127 {
+			if ev.Data[0]&0x80 == 1 {
 				err("invalid play note (with volume): ev.Data[%d] = %x", 0, ev.Data[0])
 			}
 			check127(1, "invalid volume")
@@ -214,8 +215,8 @@ func (ev *Event) Validate() error {
 	case Controller:
 		ctrl := uint8(ev.Data[0])
 		check127(0, "invalid controller number")
-		if ctrl != 3 {
-			// allow bigger vaules for volume controller
+		if Control(ctrl) != Volume {
+			// allow bigger values for volume controller
 			check127(1, "invalid controller value")
 		}
 		if ctrl > 15 {

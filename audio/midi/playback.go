@@ -114,6 +114,7 @@ func NewPlayer(providers ...Provider) (*Player, error) {
 	}()
 
 	expPortTimidity := regexp.MustCompile(`TiMidity.*port.*[0-9]`)
+	expPortMacSynth := regexp.MustCompile(`SimpleSynth virtual.*`)
 
 	d := &Player{
 		TicksPerSecond: TicksPerSecond,
@@ -130,8 +131,10 @@ func NewPlayer(providers ...Provider) (*Player, error) {
 	var out mid.Out
 
 	for _, o := range outs {
-		match := expPortTimidity.Find([]byte(o.String()))
-		if match != nil {
+		name := []byte(o.String())
+		mtmy := expPortTimidity.Find(name)
+		mmac := expPortMacSynth.Find(name)
+		if mtmy != nil || mmac != nil {
 			fmt.Printf("using device #%d: %s\n", o.Number(), o.String())
 			out = o
 			break
@@ -144,8 +147,12 @@ func NewPlayer(providers ...Provider) (*Player, error) {
 	}
 
 	if out == nil && len(outs) > 0 {
-		fmt.Printf("fallback to first MIDI device #%d: %s\n", out.Number(), out.String())
-		out = outs[0]
+		i := 0
+		if len(outs) > 1 {
+			i = 1
+		}
+		fmt.Printf("fallback to output #%d, MIDI device #%d: %s\n", i, out.Number(), out.String())
+		out = outs[i]
 	}
 
 	if out == nil {
