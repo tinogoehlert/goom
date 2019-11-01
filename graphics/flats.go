@@ -34,7 +34,7 @@ func NewFlatStore() FlatStore {
 	return make(FlatStore)
 }
 
-func (fs FlatStore) LoadWAD(w *wad.WAD) error {
+func (fs FlatStore) LoadWAD(w *wad.WAD) {
 	var (
 		flatStartRegex = regexp.MustCompile(`^F?_START`)
 		flatEndRegex   = regexp.MustCompile(`^F?_END`)
@@ -57,7 +57,6 @@ func (fs FlatStore) LoadWAD(w *wad.WAD) error {
 			}
 		}
 	}
-	return nil
 }
 
 func (fs FlatStore) Append(name string, flat *Flat) {
