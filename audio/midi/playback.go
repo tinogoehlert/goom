@@ -151,8 +151,8 @@ func NewPlayer(providers ...Provider) (*Player, error) {
 		if len(outs) > 1 {
 			i = 1
 		}
-		fmt.Printf("fallback to output #%d, MIDI device #%d: %s\n", i, out.Number(), out.String())
 		out = outs[i]
+		fmt.Printf("fallback to output #%d, MIDI device #%d: %s\n", i, out.Number(), out.String())
 	}
 
 	if out == nil {
