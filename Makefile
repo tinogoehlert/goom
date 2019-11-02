@@ -2,6 +2,7 @@
 
 export GO111MODULE=auto
 export DOOM_TEST=$(CURDIR)/.test
+export DOOM_TESTWAD=$(CURDIR)/DOOM1.WAD
 
 FILES = DOOM1.gwa go.mod
 TARGETS = $(FILES) $(DOOM_TEST)
@@ -14,7 +15,7 @@ clean:
 	rm -f $(DOOM_TEST)/*.mus
 
 test: $(TARGETS)
-	go test -v . ./audio ./audio/midi ./audio/convert
+	go test -v ./audio/...
 
 go.mod:
 	go mod init github.com/tinogoehlert/goom

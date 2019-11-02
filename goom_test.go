@@ -1,17 +1,18 @@
-package goom
+package goom_test
 
 import (
 	"os"
 	"testing"
 
+	"github.com/tinogoehlert/goom"
 	"github.com/tinogoehlert/goom/test"
 )
 
 const testWad = "DOOM1"
 
 // loads test WAD if present, otherwise skips the test.
-func loadTestWAD(t *testing.T) *GameData {
-	gd, err := GetWAD(testWad, "")
+func loadTestWAD(t *testing.T) *goom.GameData {
+	gd, err := goom.GetWAD(testWad, "")
 	if os.IsNotExist(err) {
 		t.Logf("skipping WAD test for missing %s WAD.", testWad)
 		t.Skip()
@@ -30,12 +31,7 @@ func TestWAD(t *testing.T) {
 // Test loading and playing music.
 func TestMusic(t *testing.T) {
 	gd := loadTestWAD(t)
-	music, ok := gd.Music["D_INTRO"]
-	test.Assert(ok, "track not found: D_INTRO", t)
-	music.Play()
-	defer music.Stop()
-
-	test.Check(music.Validate(), t)
-	// test.Check(music.SaveMus(), t)
-	// test.Check(music.SaveMidi(), t)
+	track := gd.Music.Track("INTRO")
+	test.Assert(track != nil, "track not found: INTRO", t)
+	test.Check(track.Validate(), t)
 }

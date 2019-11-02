@@ -18,6 +18,43 @@ type Stream struct {
 	Events      []Event // The actual music notes, pauses, etc.
 }
 
+// NewMusStream creates a MUS data from the given WAD bytes.
+func NewMusStream(data []byte) (*Stream, error) {
+	if data == nil {
+		return &Stream{ID: LumpID}, nil
+	}
+	data = data[HeaderStart(data):]
+	id := string(data[:4])
+	if len(data) < 16 || id != LumpID {
+		return nil, fmt.Errorf("failed to load bytes '%s' as MUS", data)
+	}
+
+	md := &Stream{
+		ID:          string(data[:4]),
+		ScoreLen:    ParseInt(data[4:]),
+		ScoreStart:  ParseInt(data[6:]),
+		Channels:    ParseInt(data[8:]),
+		SecChannels: ParseInt(data[10:]),
+		NumInstr:    ParseInt(data[12:]),
+		Dummy:       ParseInt(data[14:]),
+		Instruments: nil,
+		Events:      nil,
+	}
+	inst, err := ParseInstruments(data[16:], md.NumInstr)
+	if err != nil {
+		return nil, err
+	}
+	md.Instruments = inst
+
+	events, err := ParseEvents(data[md.ScoreStart:])
+	if err != nil {
+		return nil, err
+	}
+	md.Events = events
+
+	return md, nil
+}
+
 // ParseEvents parses the given bytes and converts them to a slice of MusScores.
 func ParseEvents(data []byte) ([]Event, error) {
 	events := make([]Event, 0, len(data)/2)
