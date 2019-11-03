@@ -9,8 +9,6 @@ import (
 	"testing"
 
 	"github.com/tinogoehlert/goom"
-	"github.com/tinogoehlert/goom/audio/convert"
-	"github.com/tinogoehlert/goom/audio/files"
 	gmidi "github.com/tinogoehlert/goom/audio/midi"
 	gmus "github.com/tinogoehlert/goom/audio/mus"
 	mus "github.com/tinogoehlert/goom/audio/mus"
@@ -194,6 +192,50 @@ func introMid(t *testing.T) {
 	*/
 }
 
+func e1m1Mid() {
+	/*
+		4D 54 68 64 00 00 00 06 00 00 00 01 00
+		46 4D 54 72 6B 00 00 5B 04
+
+		00 C0 1E         ChangeInst 0  30
+		00 B0 07 64      ChangeCtrl 0   7  100
+		00 B0 0A 18      ChangeCtrl 0  10   24
+		00 B0 07 64      ChangeCtrl 0   7  100
+		00 B0 0A 18      ChangeCtrl 0  10   24
+
+		00 C1 1D         ChangeInst 1  29
+		00 B1 07 64      ChangeCtrl 1   7  100
+		00 B1 0A 68      ChangeCtrl 1  10  104
+		00 B1 07 64      ChangeCtrl 1   7  100
+		00 B1 0A 68      ChangeCtrl 1  10  104
+
+		00 C2 22         ChangeInst 2  34
+		00 B2 07 64      ChangeCtrl 2   7  100
+		00 B2 0A 40      ChangeCtrl 2  10   64
+
+		00 92 28 78      NoteOn     2  40  120
+
+		00 C9 00         ChangeInst 9   0
+		00 B9 07 64      ChangeCtrl 9   7  100
+		00 99 24 7B      NoteOn     9  36  123
+		00 99 28 73      NoteOn     9  40  115
+		00 99 29 78      NoteOn     9  41  120
+
+		00 91 28 6C
+		06 81 28 00
+		07 82 28 00
+		04 89 24 00
+		02 91 28 72
+		01 89 28 00
+		01 89 29 00
+		11 91 34 72
+		03 81 28 00
+		10 81 34 00
+		01 91 28 6E
+		06 81 28 00
+	*/
+}
+
 // Hand-coded, playable MIDI file, tested using aplaymidi and Timidity.
 // This MIDI file encodes the same notes as sampleMus.
 // Converting sampleMus should produce this MIDI file.
@@ -275,12 +317,6 @@ func loadMus(name string, t *testing.T) []byte {
 	return gd.Music.Track(name).Data
 }
 
-func loadFile(name string, t *testing.T) []byte {
-	f := files.NewBinFile("..", "..", "files", name)
-	test.Check(f.Load(), t)
-	return f.Data
-}
-
 type Mus struct {
 	Name   string
 	Data   []byte
@@ -356,23 +392,6 @@ func TestMusLoading(t *testing.T) {
 			}
 		}
 	}
-}
-
-func TestSampleTrackMus2Mid(t *testing.T) {
-	// e1mid := loadFile("SLADE_E1M1.mid", t)
-	e1mus := loadMus("E1M1", t)
-
-	mu, err := mus.NewMusStream(e1mus)
-	test.Check(err, t)
-	mi, err := convert.Mus2Mid(mu)
-	test.Check(err, t)
-	f2 := files.NewBinFile("..", "..", "files", "GOOM_E1M1.mid")
-	f2.Data = mi.Data.Bytes()
-	f2.Dump()
-	f2.Save()
-
-	// TODO: complete mus2mid conversion features and compare bytes.
-	// test.Assert(f.Compare(f2) == 0, "invalid MIDI output", t)
 }
 
 func TestTrackLoading(t *testing.T) {
