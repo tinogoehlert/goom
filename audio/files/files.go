@@ -57,3 +57,10 @@ func (f *BinFile) FromHex(hexString string) (err error) {
 func NewBinFile(location ...string) *BinFile {
 	return &BinFile{path.Join(location...), nil}
 }
+
+// LoadFile loads bytes to a new BinFile.
+func LoadFile(location ...string) (*BinFile, error) {
+	f := NewBinFile(location...)
+	err := f.Load()
+	return f, err
+}
