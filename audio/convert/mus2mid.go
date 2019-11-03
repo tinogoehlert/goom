@@ -67,14 +67,15 @@ func Mus2Mid(in *mus.Stream) (*midi.Stream, error) {
 		case mus.PlayNote:
 			var vol byte
 			if ev.HasVolume() {
-				// use event volume (overriding the channel volume)
+				// use event volume
 				vol = ev.GetVolume()
+				// set it as new channel volume for notes without volume
+				p.SetVelocity(ch, vol)
 			} else {
-				// use the channel volume for playing the note
-				// (channel volumes can be set via a Volume Controller event)
+				// use the last volume for playing the note
 				vol = p.GetVelocity(ch)
 			}
-			vol = ClampVolume(ev.GetVolume())
+			vol = ClampVolume(vol)
 			p.Add(midi.PressKey, ch, ev.GetNote(), vol)
 		case mus.PitchBend:
 			bend := ev.GetBend()
@@ -112,7 +113,7 @@ func Mus2Mid(in *mus.Stream) (*midi.Stream, error) {
 				// only clamp volumes when sending them to the MIDI out
 				val = ClampVolume(val)
 			}
-			if mus.Control(ctrl) == mus.BankSelect {
+			if mus.Control(ctrl) == mus.ChangeInstr {
 				p.Add(midi.ChangePatch, ch, val)
 				break
 			}
