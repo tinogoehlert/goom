@@ -66,7 +66,7 @@ func NewDoomThing(x, y, height, angle float32, sprite string, hasAngles bool) *D
 func appendDoomThing(dst []Thingable, src Thingable, m *level.Level) []Thingable {
 	var ssect, err = m.FindPositionInBsp(level.GLNodesName, src.Position()[0], src.Position()[1])
 	if err != nil {
-		log.Print("could not find GLnode for pos %v", src.Position())
+		log.Printf("could not find GLnode for pos %v\n", src.Position())
 	} else {
 		var sector = m.SectorFromSSect(ssect)
 		src.SetSector(sector)
