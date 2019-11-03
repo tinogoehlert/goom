@@ -1,21 +1,21 @@
-.PHONY: all clean test test-run run
+.PHONY: all clean tidy test test-run run
 
 export GO111MODULE=auto
-export DOOM_TEST=$(CURDIR)/.test
-export DOOM_TESTWAD=$(CURDIR)/DOOM1.WAD
 
 FILES = DOOM1.gwa go.mod
-TARGETS = $(FILES) $(DOOM_TEST)
+TARGETS = $(FILES)
 
-all: $(TARGETS) test
+all: $(TARGETS) tidy test
 
 clean:
 	rm -f $(FILES)
-	rm -f $(DOOM_TEST)/*.mid
-	rm -f $(DOOM_TEST)/*.mus
+	rm -rf .test
+
+tidy:
+	go mod tidy
 
 test: $(TARGETS)
-	go test -v ./audio/...
+	go test -v ./...
 
 go.mod:
 	go mod init github.com/tinogoehlert/goom
@@ -24,11 +24,8 @@ go.mod:
 DOOM1.gwa: DOOM1.WAD
 	glbsp -v5 DOOM1.WAD
 
-$(DOOM_TEST):
-	mkdir -p $@
-
 test-run: TEST=-test
 test-run: run
 
 run: $(TARGETS)
-	cd cmd/doom && go run main.go -iwad ../../DOOM1 $(TEST)
+	cd cmd/doom && go run main.go -iwad $(CURDIR)/DOOM1 $(TEST)
