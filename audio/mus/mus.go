@@ -45,7 +45,7 @@ type Control uint8
 // MUS Controller Numbers
 const (
 	//                           //  MIDI Controller
-	Undefined       Control = 0  //  N/A
+	ChangeInstr     Control = 0  //  N/A (Event 0xC0)
 	BankSelect      Control = 1  //  0 or 32
 	ModulationWheel Control = 2  //  1
 	Volume          Control = 3  //  7
