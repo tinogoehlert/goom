@@ -46,8 +46,8 @@ type Player struct {
 	out              mid.Out
 	drv              mid.Driver
 	wr               *mid.Writer
-	TicksPerSecond   int
 	useFixedMessages bool
+	TicksPerSecond   int
 }
 
 var test = false
@@ -71,30 +71,30 @@ func TestMode() {
 	test = true
 }
 
-func (d *Player) initDriver(providers ...Provider) error {
+func (p *Player) initDriver(providers ...Provider) error {
 	var errors []string
 
 	if len(providers) == 0 {
 		providers = []Provider{Any}
 	}
 
-	for _, p := range providers {
+	for _, pr := range providers {
 		switch {
-		case p.match(RTMidi):
+		case pr.match(RTMidi):
 			fmt.Println("trying MIDI driver: gomidi/rtmididrv")
 			if drv, err := rtmididrv.New(); err != nil {
 				errors = append(errors, err.Error())
 			} else {
-				d.drv = drv
+				p.drv = drv
 				return nil
 			}
-		case p.match(PortMidi):
+		case pr.match(PortMidi):
 			fmt.Println("trying MIDI driver: gomidi/portmididrv")
 			if drv, err := portmididrv.New(); err != nil {
 				errors = append(errors, err.Error())
 			} else {
-				d.drv = drv
-				d.useFixedMessages = true
+				p.drv = drv
+				p.useFixedMessages = true
 				return nil
 			}
 		}
@@ -105,7 +105,7 @@ func (d *Player) initDriver(providers ...Provider) error {
 
 // NewPlayer looks for common MIDI devices
 // and returns an opened MIDI output suitable for playback.
-// Make sure to `defer d.Close()` the device later.
+// Make sure to `defer p.Close()` the device later.
 func NewPlayer(providers ...Provider) (*Player, error) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -116,14 +116,14 @@ func NewPlayer(providers ...Provider) (*Player, error) {
 	expPortTimidity := regexp.MustCompile(`TiMidity.*port.*[0-9]`)
 	expPortMacSynth := regexp.MustCompile(`SimpleSynth virtual.*`)
 
-	d := &Player{
+	p := &Player{
 		TicksPerSecond: TicksPerSecond,
 	}
-	if err := d.initDriver(providers...); err != nil {
+	if err := p.initDriver(providers...); err != nil {
 		return nil, err
 	}
 
-	outs, err := d.drv.Outs()
+	outs, err := p.drv.Outs()
 	if err != nil {
 		return nil, err
 	}
@@ -156,7 +156,7 @@ func NewPlayer(providers ...Provider) (*Player, error) {
 	}
 
 	if out == nil {
-		d.drv.Close()
+		p.drv.Close()
 		return nil, fmt.Errorf("no playback device found")
 	}
 
@@ -164,103 +164,111 @@ func NewPlayer(providers ...Provider) (*Player, error) {
 		return nil, err
 	}
 
-	d.wr = mid.ConnectOut(out)
-	d.out = out
+	p.wr = mid.ConnectOut(out)
+	p.out = out
 
-	return d, nil
+	return p, nil
 }
 
 // Close closes the underlying MIDI port and driver.
-func (d *Player) Close() {
-	defer d.Off()
-	defer d.out.Close()
-	defer d.drv.Close()
+func (p *Player) Close() {
+	defer p.Off()
+	defer p.out.Close()
+	defer p.drv.Close()
 }
 
 // Off silences all MIDI channels.
-func (d *Player) Off() {
+func (p *Player) Off() {
 	if test {
 		return
 	}
 	fmt.Println("muting all channels")
 	for ch := 0; ch < 16; ch++ {
-		if err := d.wr.Silence(int8(ch), false); err != nil {
+		if err := p.wr.Silence(int8(ch), false); err != nil {
 			fmt.Printf("failed to silence channel %d: %s\n", ch, err.Error())
 		}
 	}
 }
 
 // HandleMessage plays MIDI messages.
-func (d *Player) HandleMessage(pos *mid.Position, msg midi.Message) {
-	if !d.out.IsOpen() {
+func (p *Player) HandleMessage(pos *mid.Position, msg midi.Message) {
+	if !p.out.IsOpen() {
 		return
 	}
 	if test {
 		time.Sleep(time.Nanosecond)
 	} else {
-		delay := time.Second / time.Duration(d.TicksPerSecond) * time.Duration(pos.DeltaTicks)
+		delay := time.Second / time.Duration(p.TicksPerSecond) * time.Duration(pos.DeltaTicks)
 		time.Sleep(delay)
 	}
 	var err error
 	switch msg.(type) {
 	case channel.ProgramChange:
-		err = d.ProgramChange(msg.(channel.ProgramChange))
+		err = p.ProgramChange(msg.(channel.ProgramChange))
 	default:
 		if msg == meta.EndOfTrack {
-			d.Off()
+			p.Off()
 		}
 		if test {
 			return
 		}
-		err = d.wr.Write(msg)
+		err = p.wr.Write(msg)
 	}
 	if err != nil {
-		d.Off()
+		p.Off()
 		panic(err)
 	}
 }
 
 // ProgramChange implements workaround for ProgramChange messages
 // for broken drivers.
-func (d *Player) ProgramChange(msg channel.ProgramChange) error {
+func (p *Player) ProgramChange(msg channel.ProgramChange) error {
 	switch {
 	case test:
 		return nil
-	case d.useFixedMessages:
+	case p.useFixedMessages:
 		fmt.Println("TODO: fix portmididrv to 2-byte ProgramChange message")
 		msg := FixedMessage{msg}
-		return d.wr.Write(msg)
+		return p.wr.Write(msg)
 	default:
-		return gm.WriteGMProgram(d.wr, msg.Channel(), msg.Program())
+		return gm.WriteGMProgram(p.wr, msg.Channel(), msg.Program())
 	}
 }
 
 // Reset send common reset messages to the MIDI device.
-func (d *Player) Reset() {
+func (p *Player) Reset() {
 
 	switch {
-	case d.useFixedMessages:
+	case p.useFixedMessages:
 		fmt.Println("TODO: fix portmididrv to allow Reset")
 	default:
 		fmt.Println("resetting MIDI player")
-		if err := gm.WriteReset(d.wr, 0, 0); err != nil {
+		if err := gm.WriteReset(p.wr, 0, 0); err != nil {
 			fmt.Printf("failed to GM-reset player: %s", err)
 		}
 	}
 }
 
 // Play plays a song.
-func (d *Player) Play(stream *Stream) {
-	d.Reset()
-	b := bytes.NewReader(stream.Bytes())
-	rd := mid.NewReader(mid.NoLogger())
-	rd.Msg.Each = d.HandleMessage
-	rd.ReadAllSMF(b)
+func (p *Player) Play(stream *Stream) {
+	p.Reset()
+	Process(stream.Bytes(), p.HandleMessage)
 }
 
 // Loop plays a song repeatedly until the player closes.
-func (d *Player) Loop(stream *Stream) {
-	for d.out.IsOpen() {
-		d.Play(stream)
+func (p *Player) Loop(stream *Stream) {
+	for p.out.IsOpen() {
+		p.Play(stream)
 	}
+}
+
+// MessageHandler processes MIDI messages.
+type MessageHandler func(*mid.Position, midi.Message)
+
+// Process plays the stream using the given message handler.
+func Process(data []byte, fn MessageHandler) {
+	b := bytes.NewReader(data)
+	rd := mid.NewReader(mid.NoLogger())
+	rd.Msg.Each = fn
+	rd.ReadAllSMF(b)
 }
