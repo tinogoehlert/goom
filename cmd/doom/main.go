@@ -36,6 +36,7 @@ func main() {
 	levelName := flag.String("level", "E1M1", "Level to start e.g. E1M1")
 	test := flag.Bool("test", false, "Exit GOOM after loading all data.")
 	showStats := flag.Bool("rstat", false, "Show renderer stats like FPS and frametime")
+	midiDriver := flag.String("midi", string(midi.Any), "MIDI driver: 'portmidi', 'rtmidi', or 'any'")
 
 	flag.Parse()
 	log.Green("GOOM - DOOM clone written in Go")
@@ -68,7 +69,7 @@ func main() {
 	world := game.NewWorld(m, game.NewDefStore("defs.yaml"), gameData)
 
 	track := gameData.Music.Track(mission)
-	mPlayer, err := midi.NewPlayer(midi.Any)
+	mPlayer, err := midi.NewPlayer(midi.Provider(*midiDriver))
 	if err != nil {
 		log.Red("failed to start MIDI player: %s", err.Error())
 	}

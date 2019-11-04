@@ -12,8 +12,8 @@ import (
 	"gitlab.com/gomidi/midi/mid"
 	"gitlab.com/gomidi/midi/midimessage/channel"
 	"gitlab.com/gomidi/midi/midimessage/meta"
-	"gitlab.com/gomidi/portmididrv"
 	"gitlab.com/gomidi/rtmididrv"
+	"gitlab.com/ubunatic/portmididrv"
 )
 
 // TicksPerSecond defines the default number of MIDI ticks per second used for playback.
@@ -21,33 +21,13 @@ import (
 // The value can be adjusted by setting `Player.TicksPerSecond` before playback.
 const TicksPerSecond = 140
 
-// FixedMessage wraps a MIDI message and fixes bytes for portmididrv.
-type FixedMessage struct {
-	midi.Message
-}
-
-// Raw returns the fixed bytes.
-func (m FixedMessage) Raw() []byte {
-	b := m.Message.Raw()
-	if len(b) == 2 {
-		fmt.Println("fixing ProgramChange message for portmididrv")
-		b = append(b, 0)
-	}
-	return b
-}
-
-func (m FixedMessage) String() string {
-	return m.Message.String()
-}
-
 // Player defines a MIDI port and driver ana allows
 // closing these.
 type Player struct {
-	out              mid.Out
-	drv              mid.Driver
-	wr               *mid.Writer
-	useFixedMessages bool
-	TicksPerSecond   int
+	out            mid.Out
+	drv            mid.Driver
+	wr             *mid.Writer
+	TicksPerSecond int
 }
 
 var test = false
@@ -57,9 +37,9 @@ type Provider string
 
 // MIDI driver types
 const (
-	PortMidi = "gomidi/portmididrv"
-	RTMidi   = "gomidi/rtmididrv"
-	Any      = "any"
+	PortMidi Provider = "portmidi"
+	RTMidi   Provider = "rtmidi"
+	Any      Provider = "any"
 )
 
 func (p Provider) match(provider Provider) bool {
@@ -89,12 +69,11 @@ func (p *Player) initDriver(providers ...Provider) error {
 				return nil
 			}
 		case pr.match(PortMidi):
-			fmt.Println("trying MIDI driver: gomidi/portmididrv")
+			fmt.Println("trying MIDI driver: ubunatic/portmididrv")
 			if drv, err := portmididrv.New(); err != nil {
 				errors = append(errors, err.Error())
 			} else {
 				p.drv = drv
-				p.useFixedMessages = true
 				return nil
 			}
 		}
@@ -226,10 +205,6 @@ func (p *Player) ProgramChange(msg channel.ProgramChange) error {
 	switch {
 	case test:
 		return nil
-	case p.useFixedMessages:
-		fmt.Println("TODO: fix portmididrv to 2-byte ProgramChange message")
-		msg := FixedMessage{msg}
-		return p.wr.Write(msg)
 	default:
 		return gm.WriteGMProgram(p.wr, msg.Channel(), msg.Program())
 	}
@@ -237,15 +212,9 @@ func (p *Player) ProgramChange(msg channel.ProgramChange) error {
 
 // Reset send common reset messages to the MIDI device.
 func (p *Player) Reset() {
-
-	switch {
-	case p.useFixedMessages:
-		fmt.Println("TODO: fix portmididrv to allow Reset")
-	default:
-		fmt.Println("resetting MIDI player")
-		if err := gm.WriteReset(p.wr, 0, 0); err != nil {
-			fmt.Printf("failed to GM-reset player: %s", err)
-		}
+	fmt.Println("resetting MIDI player")
+	if err := gm.WriteReset(p.wr, 0, 0); err != nil {
+		fmt.Printf("failed to GM-reset player: %s", err)
 	}
 }
 

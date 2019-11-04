@@ -10,12 +10,10 @@ require (
 	github.com/go-gl/glfw v0.0.0-20190409004039-e6da0acd62b1
 	github.com/go-gl/mathgl v0.0.0-20190713194549-592312d8590a
 	github.com/pkg/errors v0.8.1 // indirect
-	github.com/rakyll/portmidi v0.0.0-20191102002215-74e95e8bc9b1 // indirect
 	github.com/ttacon/chalk v0.0.0-20160626202418-22c06c80ed31
-	gitlab.com/gomidi/midi v1.13.3
-	gitlab.com/gomidi/portmididrv v0.3.0
+	gitlab.com/gomidi/midi v1.10.0
 	gitlab.com/gomidi/rtmididrv v0.4.2
-	gitlab.com/gomidi/rtmididrv/imported/rtmidi v0.0.0-20191025104230-1dd005ef57aa // indirect
+	gitlab.com/ubunatic/portmididrv v0.3.1-0.20191104070601-795b76baf93c
 	golang.org/x/image v0.0.0-20191009234506-e7c1f5e7dbb8
 	gopkg.in/yaml.v2 v2.2.4
 )
