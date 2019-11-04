@@ -1,4 +1,4 @@
-package audio
+package music
 
 import (
 	"fmt"
@@ -8,17 +8,17 @@ import (
 	"github.com/tinogoehlert/goom/wad"
 )
 
-// MusicSuite is a suite of named MusicTracks.
-type MusicSuite map[string]*MusicTrack
+// Suite is a suite of named Tracks.
+type Suite map[string]*Track
 
-// NewMusicSuite creates a new MusicStore
-func NewMusicSuite() MusicSuite {
-	return make(MusicSuite)
+// NewSuite creates a new music.Suite.
+func NewSuite() Suite {
+	return make(Suite)
 }
 
 // LoadWAD loads the music data from the WAD and returns it
 // as playble music tracks.
-func (suite MusicSuite) LoadWAD(w *wad.WAD) error {
+func (suite Suite) LoadWAD(w *wad.WAD) error {
 	var (
 		midiRegex = regexp.MustCompile(`^D_`)
 		lumps     = w.Lumps()
@@ -27,14 +27,9 @@ func (suite MusicSuite) LoadWAD(w *wad.WAD) error {
 		l := lumps[i]
 		switch {
 		case midiRegex.Match([]byte(l.Name)):
-			musData, err1 := NewMusStream(l.Data)
-			midData, err2 := NewMidiStream(l.Data)
-			t := &MusicTrack{l, midData, musData}
-			if err1 != nil {
-				fmt.Printf("failed to load MUS track: %s, err: %s\n", t.Name, err1)
-			}
-			if err2 != nil {
-				fmt.Printf("failed to load MID track: %s, err: %s\n", t.Name, err2)
+			t, err := NewTrack(l)
+			if err != nil {
+				fmt.Printf("failed to load track: %s, err: %s\n", t.Name, err)
 			}
 			suite[l.Name] = t
 		}
@@ -43,7 +38,7 @@ func (suite MusicSuite) LoadWAD(w *wad.WAD) error {
 }
 
 // Info shows a summary of the loaded tracks.
-func (suite MusicSuite) Info() string {
+func (suite Suite) Info() string {
 	var text []string
 	for _, t := range suite {
 		text = append(text, fmt.Sprintf("%s (%d): %v", t.Name, t.Size, t.MidiStream.Info()))
@@ -52,7 +47,7 @@ func (suite MusicSuite) Info() string {
 }
 
 // Track returns a specific MusicTrack.
-func (suite MusicSuite) Track(name string) *MusicTrack {
+func (suite Suite) Track(name string) *Track {
 	if t, ok := suite["D_"+name]; ok {
 		return t
 	}

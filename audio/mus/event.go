@@ -47,11 +47,7 @@ func (ev *Event) GetVolume() byte {
 	if ev.HasVolume() {
 		return ev.Data[1]
 	}
-	// HACK: Allow playing notes without using channel volume
-	//       using volume level = 100.
-	// TODO: When converting MUS to MIDI always check if `ev.HasVolume()`
-	//       and use Channel Volume if PlayNote has no own volume.
-	return 0x64
+	return 0
 }
 
 // GetBend returns the bend value (0-255).

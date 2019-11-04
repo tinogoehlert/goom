@@ -1,16 +1,18 @@
-package audio_test
+package music_test
 
 import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
+	"path"
 	"strings"
 	"testing"
 
-	"github.com/tinogoehlert/goom/audio"
+	"github.com/tinogoehlert/goom"
 	gmidi "github.com/tinogoehlert/goom/audio/midi"
 	gmus "github.com/tinogoehlert/goom/audio/mus"
-	"github.com/tinogoehlert/goom/files"
+	mus "github.com/tinogoehlert/goom/audio/mus"
+	"github.com/tinogoehlert/goom/audio/music"
 	"github.com/tinogoehlert/goom/test"
 	"github.com/tinogoehlert/goom/wad"
 )
@@ -93,16 +95,16 @@ func sampleMus(t *testing.T) []byte {
 		b16(len(events)),    // score size             2       4
 		b16(20),             // score offset           2       6   <--.
 		b16(1),              // primary channels       2       8      |
-		b16(0),              // secndary channels      2      10      |
+		b16(0),              // secondary channels     2      10      |
 		b16(numInst),        // number of instruments  2      12      |
 		b16(0),              // dummy                  2      14      |
 		b16(inst1),          // instrument 1           2      16      |
 		b16(inst2),          // instrument 2           2      18      |
 		events,              // event bytes            8      20   ---'
-		// EOF                                        0      28
+		// EOF                                         0      28
 	)
 
-	hex := hex.EncodeToString(data)
+	hx := hex.EncodeToString(data)
 
 	// fmt.Println("sampleData:", hex)
 
@@ -117,16 +119,8 @@ func sampleMus(t *testing.T) []byte {
 		"2000" + //    32 second inst
 		eventsHex)
 
-	bf := &files.BinFile{
-		"test",
-		data,
-	}
-
-	if hex != expected {
-		t.Errorf("invalid sample.\nobserved: %s\nexpected: %s", hex, expected)
-	}
-	if bf.Hex() != expected {
-		t.Errorf("invalid hex data.\nobserved: %s\nexpected: %s", bf.Hex(), expected)
+	if hx != expected {
+		t.Errorf("invalid sample.\nobserved: %s\nexpected: %s", hx, expected)
 	}
 	return data
 }
@@ -195,6 +189,50 @@ func introMid(t *testing.T) {
 		00 CA 0B
 		00 BA 07 64
 		...
+	*/
+}
+
+func e1m1Mid() {
+	/*
+		4D 54 68 64 00 00 00 06 00 00 00 01 00
+		46 4D 54 72 6B 00 00 5B 04
+
+		00 C0 1E         ChangeInst 0  30
+		00 B0 07 64      ChangeCtrl 0   7  100
+		00 B0 0A 18      ChangeCtrl 0  10   24
+		00 B0 07 64      ChangeCtrl 0   7  100
+		00 B0 0A 18      ChangeCtrl 0  10   24
+
+		00 C1 1D         ChangeInst 1  29
+		00 B1 07 64      ChangeCtrl 1   7  100
+		00 B1 0A 68      ChangeCtrl 1  10  104
+		00 B1 07 64      ChangeCtrl 1   7  100
+		00 B1 0A 68      ChangeCtrl 1  10  104
+
+		00 C2 22         ChangeInst 2  34
+		00 B2 07 64      ChangeCtrl 2   7  100
+		00 B2 0A 40      ChangeCtrl 2  10   64
+
+		00 92 28 78      NoteOn     2  40  120
+
+		00 C9 00         ChangeInst 9   0
+		00 B9 07 64      ChangeCtrl 9   7  100
+		00 99 24 7B      NoteOn     9  36  123
+		00 99 28 73      NoteOn     9  40  115
+		00 99 29 78      NoteOn     9  41  120
+
+		00 91 28 6C
+		06 81 28 00
+		07 82 28 00
+		04 89 24 00
+		02 91 28 72
+		01 89 28 00
+		01 89 29 00
+		11 91 34 72
+		03 81 28 00
+		10 81 34 00
+		01 91 28 6E
+		06 81 28 00
 	*/
 }
 
@@ -273,44 +311,42 @@ func doomSample(t *testing.T) []byte {
 	return data
 }
 
-func doomFile(name string, t *testing.T) *files.BinFile {
-	f := files.NewBinFile("..", "files", name)
-	test.Check(f.Load(), t)
-	return f
+func loadMus(name string, t *testing.T) []byte {
+	gd, err := goom.GetWAD(path.Join("..", "..", "DOOM1"), "")
+	test.Check(err, t)
+	return gd.Music.Track(name).Data
 }
 
-func introMus(t *testing.T) *files.BinFile  { return doomFile("D_INTRO.mus", t) }
-func introaMus(t *testing.T) *files.BinFile { return doomFile("D_INTROA.mus", t) }
-func e1m1Mus(t *testing.T) *files.BinFile   { return doomFile("D_E1M1.mus", t) }
-func e1m1Mid(t *testing.T) *files.BinFile   { return doomFile("D_E1M1.mid", t) }
+type Mus struct {
+	Name   string
+	Data   []byte
+	Length int
+}
+
+func allMus(t *testing.T) []Mus {
+	return []Mus{
+		Mus{"SAMPLE", sampleMus(t), 7},
+		Mus{"DOOM", doomSample(t), 6},
+		Mus{"INTROA", loadMus("INTROA", t), 214},
+		Mus{"INTRO", loadMus("INTRO", t), 498},
+		Mus{"E1M1", loadMus("E1M1", t), 5826},
+	}
+}
 
 func TestParseEvents(t *testing.T) {
-	type Case struct {
-		Data   []byte
-		Length int
-	}
-
-	cases := []Case{
-		Case{sampleMus(t), 7},
-		Case{doomSample(t), 6},
-		Case{introaMus(t).Data, 214},
-		Case{introMus(t).Data, 498},
-		Case{e1m1Mus(t).Data, 5826},
-	}
-
-	for _, c := range cases {
-		data := c.Data
-		dmus, err := audio.NewMusStream(data)
+	for _, m := range allMus(t) {
+		dmus, err := mus.NewMusStream(m.Data)
 		test.Check(err, t)
-		if len(dmus.Events) != c.Length {
-			t.Errorf("invalid number of MUS events: %d, expected: %d events", len(dmus.Events), c.Length)
+		if len(dmus.Events) != m.Length {
+			t.Errorf("track %s: invalid number of MUS events: %d, expected: %d events",
+				m.Name, len(dmus.Events), m.Length)
 		}
 	}
 }
 
 func TestMusLoading(t *testing.T) {
 	data := sampleMus(t)
-	md, err := audio.NewMusStream(data)
+	md, err := mus.NewMusStream(data)
 	test.Check(err, t)
 
 	type Case struct {
@@ -358,64 +394,26 @@ func TestMusLoading(t *testing.T) {
 	}
 }
 
-func TestSampleTrackMus2Mid(t *testing.T) {
-	f := e1m1Mid(t)
-	f.Load()
-	f.Dump()
-
-	e1 := e1m1Mus(t)
-	e1.Load()
-	_, err := audio.NewMusStream(e1.Data)
-	test.Check(err, t)
-
-	s, err := audio.NewMidiStream(e1.Data)
-	test.Check(err, t)
-	f2 := &files.BinFile{"../files/converted-e1m1.mid", s.Bytes()}
-	f2.Dump()
-	//f2.Save()
-
-	// test.Assert(f.Compare(f2) == 0, "invalid MIDI output", t)
-	// TODO: fix msu2mid conversion and compare bytes instead of dumping.
-}
-
 func TestTrackLoading(t *testing.T) {
-	for i, d := range [][]byte{
-		sampleMus(t),
-		doomSample(t),
-		introMus(t).Data,
-		introaMus(t).Data,
-		e1m1Mus(t).Data,
-	} {
-		musd, err := audio.NewMusStream(d)
+	for _, d := range allMus(t) {
+		track, err := music.NewTrack(wad.Lump{Name: d.Name, Data: d.Data})
 		test.Check(err, t)
-		mid, err := audio.NewMidiStream(d)
-		test.Check(err, t)
-		name := fmt.Sprintf("D_TEST%d", i)
-		track := audio.MusicTrack{wad.Lump{Name: name, Data: d}, mid, musd}
-		track.Play()
-		defer track.Stop()
-
 		test.Check(track.Validate(), t)
-
-		ev := musd.Events[0]
+		mu := track.MusStream
+		ev := mu.Events[0]
 
 		// test.Check(track.SaveMus(), t)
 		// test.Check(track.SaveMidi(), t)
 
 		// test the info methods
-		test.Assert(musd.Info()[0:8] == "mus.Data", "invalid mus info", t)
+		test.Assert(mu.Info()[0:8] == "mus.Data", "invalid mus info", t)
 		test.Assert(ev.Info()[0:9] == "mus.Event", "invalid event info", t)
 	}
 }
 
 func TestPlaybackProviders(t *testing.T) {
 	allProviders := []gmidi.Provider{gmidi.RTMidi, gmidi.PortMidi, gmidi.Any}
-	type musGetter func(t *testing.T) *files.BinFile
-	getters := []musGetter{
-		introaMus,
-		introMus,
-		e1m1Mus,
-	}
+	songs := allMus(t)[:3]
 	gmidi.TestMode()
 
 	for _, provider := range allProviders {
@@ -425,12 +423,11 @@ func TestPlaybackProviders(t *testing.T) {
 		test.Assert(p != nil, "no midi device found cannot test playback", t)
 		defer p.Close()
 
-		for _, g := range getters {
-			f := g(t)
-			song, err := audio.NewMidiStream(f.Data)
+		for _, song := range songs {
+			track, err := music.NewTrack(wad.Lump{Data: song.Data})
 			test.Check(err, t)
-			fmt.Println("playing song", f.Path, "using provider", provider)
-			p.Play(song)
+			fmt.Println("playing song", track.Name, "using provider", provider)
+			p.Play(track.MidiStream)
 		}
 		p.Close()
 	}
