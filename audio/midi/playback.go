@@ -37,9 +37,9 @@ type Provider string
 
 // MIDI driver types
 const (
-	PortMidi = "ubunatic/portmididrv"
-	RTMidi   = "gomidi/rtmididrv"
-	Any      = "any"
+	PortMidi Provider = "portmidi"
+	RTMidi   Provider = "rtmidi"
+	Any      Provider = "any"
 )
 
 func (p Provider) match(provider Provider) bool {
