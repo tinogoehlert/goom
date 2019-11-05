@@ -12,8 +12,6 @@ import (
 	"gitlab.com/gomidi/midi/mid"
 	"gitlab.com/gomidi/midi/midimessage/channel"
 	"gitlab.com/gomidi/midi/midimessage/meta"
-	"gitlab.com/gomidi/rtmididrv"
-	"gitlab.com/ubunatic/portmididrv"
 )
 
 // TicksPerSecond defines the default number of MIDI ticks per second used for playback.
@@ -42,6 +40,10 @@ const (
 	Any      Provider = "any"
 )
 
+type drvInitFunc func() (mid.Driver, error)
+
+var drvInit = make(map[Provider]drvInitFunc)
+
 func (p Provider) match(provider Provider) bool {
 	return p == Any || p == provider
 }
@@ -58,19 +60,19 @@ func (p *Player) initDriver(providers ...Provider) error {
 		providers = []Provider{Any}
 	}
 
-	for _, pr := range providers {
+	var initFunc drvInitFunc = nil
+	for _, prov := range providers {
 		switch {
-		case pr.match(RTMidi):
-			fmt.Println("trying MIDI driver: gomidi/rtmididrv")
-			if drv, err := rtmididrv.New(); err != nil {
-				errors = append(errors, err.Error())
-			} else {
-				p.drv = drv
-				return nil
-			}
-		case pr.match(PortMidi):
-			fmt.Println("trying MIDI driver: ubunatic/portmididrv")
-			if drv, err := portmididrv.New(); err != nil {
+		case prov.match(RTMidi):
+			initFunc = drvInit[RTMidi]
+			fmt.Printf("trying MIDI driver: %s\n", string(RTMidi))
+		case prov.match(PortMidi):
+			initFunc = drvInit[PortMidi]
+			fmt.Printf("trying MIDI driver: %s\n", string(PortMidi))
+		}
+
+		if initFunc != nil {
+			if drv, err := initFunc(); err != nil {
 				errors = append(errors, err.Error())
 			} else {
 				p.drv = drv
