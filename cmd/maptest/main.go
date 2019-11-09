@@ -12,7 +12,7 @@ import (
 	"github.com/faiface/pixel/imdraw"
 	"github.com/faiface/pixel/pixelgl"
 	"github.com/tinogoehlert/goom"
-	"github.com/tinogoehlert/goom/utils"
+	"github.com/tinogoehlert/goom/geometry"
 	"github.com/ttacon/chalk"
 	"golang.org/x/image/colornames"
 )
@@ -133,7 +133,7 @@ func run() {
 			var (
 				ls  = e1m1.Vert(uint32(line.Start)).DivScalar(down)
 				le  = e1m1.Vert(uint32(line.End)).DivScalar(down)
-				mid = utils.V2((ls.X()+le.X())/2, (ls.Y()+le.Y())/2)
+				mid = geometry.V2((ls.X()+le.X())/2, (ls.Y()+le.Y())/2)
 			)
 
 			tangent := le.Sub(ls).Normalize()

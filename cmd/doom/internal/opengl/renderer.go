@@ -9,8 +9,8 @@ import (
 	"github.com/go-gl/glfw/v3.2/glfw"
 	"github.com/go-gl/mathgl/mgl32"
 
-	"github.com/tinogoehlert/goom/game"
-	"github.com/tinogoehlert/goom/goom"
+	"github.com/tinogoehlert/goom"
+	"github.com/tinogoehlert/goom/cmd/doom/internal/game"
 	"github.com/tinogoehlert/goom/graphics"
 	"github.com/tinogoehlert/goom/level"
 )
@@ -285,9 +285,8 @@ func (gr *GLRenderer) Loop(drawCB func(), inputCB func(win *glfw.Window, frameti
 	targetFrameTime := time.Second / time.Duration(gr.fpsCap)
 	for !gr.window.ShouldClose() {
 		t0 := time.Now()
-		gr.fbWidth = 1024
-		gr.fbHeight = 768
-		gl.Viewport(0, 0, 1024, 768)
+		gr.fbWidth, gr.fbHeight = gr.window.GetFramebufferSize()
+		gl.Viewport(0, 0, int32(gr.fbWidth), int32(gr.fbHeight))
 		// Do OpenGL stuff.
 		gl.Enable(gl.DEPTH_TEST)
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)

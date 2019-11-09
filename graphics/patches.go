@@ -1,7 +1,7 @@
 package graphics
 
 import (
-	"github.com/tinogoehlert/goom/utils"
+	"github.com/tinogoehlert/goom/internal/utils"
 )
 
 const (

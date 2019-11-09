@@ -17,14 +17,14 @@ type glWorldGeometry struct {
 	seqTime  time.Time
 }
 
-func addGlWorldutils(dst []*glWorldGeometry, src *glWorldGeometry) []*glWorldGeometry {
+func addGlWorldGeometry(dst []*glWorldGeometry, src *glWorldGeometry) []*glWorldGeometry {
 	if src == nil {
 		return dst
 	}
 	return append(dst, src)
 }
 
-func newGlWorldutils(data []float32, light float32, texture []*glTexture) *glWorldGeometry {
+func newGlWorldGeometry(data []float32, light float32, texture []*glTexture) *glWorldGeometry {
 	m := &glWorldGeometry{
 		data:    data,
 		light:   light,

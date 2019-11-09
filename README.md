@@ -1,7 +1,7 @@
 # GOOM
 DOOM engine written in Go
 
-![GOOM](/resources/press/goom.png?raw=true "GOOM")
+![GOOM](/misc/goom.png?raw=true "GOOM")
 
 Make sure you have `DOOM1.WAD` in the root dir. Then type `make run` to run GOOM.
 
@@ -10,7 +10,7 @@ Make sure you have `DOOM1.WAD` in the root dir. Then type `make run` to run GOOM
 The project is an experiment and is still lacking a lot of
 features, such as shooting, enemy behavior, sound, menus, and more.
 
-![DEMO](/resources/press/goom-preview.gif?raw=true "DEMO")
+![DEMO](/misc/goom-preview.gif?raw=true "DEMO")
 
 # Development Setup
 

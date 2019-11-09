@@ -1,6 +1,6 @@
-package utils
+package geometry
 
-func Clamp(num, min, max float32) float32 {
+func clamp(num, min, max float32) float32 {
 	if num < min {
 		return min
 	}

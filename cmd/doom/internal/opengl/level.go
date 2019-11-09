@@ -2,7 +2,7 @@ package opengl
 
 import (
 	"github.com/go-gl/gl/v2.1/gl"
-	"github.com/tinogoehlert/goom/goom"
+	"github.com/tinogoehlert/goom"
 	"github.com/tinogoehlert/goom/level"
 )
 
@@ -73,12 +73,12 @@ func (s *subSector) addFlats(md *level.Level, gd *goom.GameData, ts glTextureSto
 
 	s.sector = sector
 	if len(gd.Flat(sector.FloorTexture())) > 0 {
-		fm := newGlWorldutils(floorData, sector.LightLevel(), ts[sector.FloorTexture()])
-		s.floors = addGlWorldutils(s.floors, fm)
+		fm := newGlWorldGeometry(floorData, sector.LightLevel(), ts[sector.FloorTexture()])
+		s.floors = addGlWorldGeometry(s.floors, fm)
 	}
 	if len(gd.Flat(sector.CeilTexture())) > 0 {
-		cm := newGlWorldutils(ceilData, md.Sectors[side.Sector].LightLevel(), ts[sector.CeilTexture()])
-		s.ceilings = addGlWorldutils(s.ceilings, cm)
+		cm := newGlWorldGeometry(ceilData, md.Sectors[side.Sector].LightLevel(), ts[sector.CeilTexture()])
+		s.ceilings = addGlWorldGeometry(s.ceilings, cm)
 	}
 }
 
@@ -135,8 +135,8 @@ func (s *subSector) addWalls(md *level.Level, gd *goom.GameData, ts glTextureSto
 				-start.X(), sector.CeilHeight(), start.Y(), -sLen / tw, height / th,
 			}
 			if gd.Texture(side.Upper()) != nil {
-				wm := newGlWorldutils(wallData, sector.LightLevel(), ts[side.Upper()])
-				s.walls = addGlWorldutils(s.walls, wm)
+				wm := newGlWorldGeometry(wallData, sector.LightLevel(), ts[side.Upper()])
+				s.walls = addGlWorldGeometry(s.walls, wm)
 			}
 		}
 
@@ -159,8 +159,8 @@ func (s *subSector) addWalls(md *level.Level, gd *goom.GameData, ts glTextureSto
 				-start.X(), sector.FloorHeight(), start.Y(), -sLen / tw, height / th,
 			}
 			if gd.Texture(side.Lower()) != nil {
-				wm := newGlWorldutils(wallData, sector.LightLevel(), ts[side.Lower()])
-				s.walls = addGlWorldutils(s.walls, wm)
+				wm := newGlWorldGeometry(wallData, sector.LightLevel(), ts[side.Lower()])
+				s.walls = addGlWorldGeometry(s.walls, wm)
 			}
 		}
 
@@ -181,8 +181,8 @@ func (s *subSector) addWalls(md *level.Level, gd *goom.GameData, ts glTextureSto
 				-end.X(), sector.FloorHeight(), end.Y(), -eLen / tw, height / th,
 				-start.X(), sector.FloorHeight(), start.Y(), -sLen / tw, height / th,
 			}
-			wm := newGlWorldutils(wallData, sector.LightLevel(), ts[side.Middle()])
-			s.walls = addGlWorldutils(s.walls, wm)
+			wm := newGlWorldGeometry(wallData, sector.LightLevel(), ts[side.Middle()])
+			s.walls = addGlWorldGeometry(s.walls, wm)
 		}
 	}
 }

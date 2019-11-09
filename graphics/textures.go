@@ -10,7 +10,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/tinogoehlert/goom/utils"
+	"github.com/tinogoehlert/goom/internal/utils"
 	"github.com/tinogoehlert/goom/wad"
 )
 

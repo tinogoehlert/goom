@@ -1,8 +1,7 @@
-package utils
+package goom
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/ttacon/chalk"
 )
@@ -37,10 +36,4 @@ func (c *Console) Red(format string, a ...interface{}) {
 // Print prints console text in the default color using the given format and values.
 func (c *Console) Print(format string, a ...interface{}) {
 	fmt.Println(fmt.Sprintf(format, a...))
-}
-
-// Fatalf prints console text in the default color using the given format and values.
-func (c *Console) Fatalf(format string, a ...interface{}) {
-	fmt.Println(c.Redf(format, a...))
-	os.Exit(2)
 }

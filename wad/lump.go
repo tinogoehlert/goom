@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/tinogoehlert/goom/utils"
+	"github.com/tinogoehlert/goom/internal/utils"
 )
 
 // Lump consists of a number of entries, each with a length of 16 bytes.

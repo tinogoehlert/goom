@@ -1,4 +1,4 @@
-package utils
+package geometry
 
 import "math"
 
@@ -109,7 +109,7 @@ func (a Vec2) AngleTo(b Vec2) float32 {
 		return 0.0
 	}
 	d := a.Dot(b) / (a.length * b.length)
-	return float32(math.Acos(float64(Clamp(d, -1.0, 1.0))))
+	return float32(math.Acos(float64(clamp(d, -1.0, 1.0))))
 }
 
 // DistanceTo Distance from this to b
