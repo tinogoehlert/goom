@@ -4,6 +4,7 @@ import (
 	"sync"
 
 	"github.com/tinogoehlert/goom/audio/music"
+	"github.com/tinogoehlert/goom/audio/sfx"
 	"github.com/tinogoehlert/goom/graphics"
 	"github.com/tinogoehlert/goom/level"
 	"github.com/tinogoehlert/goom/wad"
@@ -17,6 +18,7 @@ type GameData struct {
 	Sprites  graphics.SpriteStore
 	Palettes *graphics.Palettes
 	Music    music.Suite
+	Sounds   sfx.Sounds
 	Fonts    graphics.FontBook
 }
 
