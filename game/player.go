@@ -1,9 +1,10 @@
 package game
 
 import (
-	"fmt"
 	"math"
 	"time"
+
+	"github.com/tinogoehlert/goom/utils"
 
 	"github.com/go-gl/mathgl/mgl32"
 )
@@ -11,10 +12,15 @@ import (
 // Player DOOM SLAYER!!
 type Player struct {
 	*Movable
-	weaponBag map[string]*Weapon
-	weapon    *Weapon
-	lastTick  time.Time
-	world     *World
+	weaponBag    map[string]*Weapon
+	weapon       *Weapon
+	lastTick     time.Time
+	world        *World
+	velocityX    float32
+	velocityZ    float32
+	maxSpeed     float32
+	currSpeedX   float32
+	targetHeight float32
 }
 
 // NewPlayer creates a new player with the given values
@@ -31,39 +37,39 @@ func NewPlayer(x, y, height, angle float32, w *World) *Player {
 		},
 		world:     w,
 		weaponBag: make(map[string]*Weapon),
+		maxSpeed:  30,
 	}
 	return p
 }
 
-/*
-var ax = 0;
-if (keyIsDown(Key.Left))
-    ax -= 5;
-if (keyIsDown(Key.Right))
-    ax += 5;
-
-// frame independent movement
-this.xVelocity += ax * timeDelta;
-this.xPosition += this.xVelocity * timeDelta;
-*/
-
-var vel = float32(0)
-
-func (p *Player) SmoothWalk(steps, delta float32) {
-	vel += steps * delta
+func (p *Player) Forward(speed, delta float32) {
+	p.weapon.bobbing(delta)
+	p.currSpeedX = utils.Clamp(p.currSpeedX+speed, -p.maxSpeed, p.maxSpeed)
+	p.velocityX += p.currSpeedX * delta
 }
 
-func (p *Player) Update(delta float32) {
-	p.Walk(vel, delta)
-}
-
-func (p *Player) Walk(steps, passedTime float32) {
-	if steps == 0 {
+func (p *Player) Lift(height, delta float32) {
+	if p.targetHeight == height {
 		return
 	}
-	steps *= float32(math.Pow(0.5, float64(passedTime)))
-	p.Movable.Walk(steps, passedTime)
-	p.weapon.bobbing(passedTime)
+	p.targetHeight = height
+	p.velocityZ = (p.targetHeight - p.height) / 4
+}
+
+func (p *Player) Stop() {
+	p.velocityX = 0
+}
+
+func (p *Player) Height() float32 {
+	return p.DoomThing.height + 40
+}
+
+func (p *Player) Update(passedTime float32) {
+	p.velocityX *= 0.91
+	p.Movable.Walk(p.velocityX, passedTime)
+	if p.targetHeight != p.height {
+		p.SetHeight(p.height + p.velocityZ)
+	}
 	p.lastTick = time.Now()
 }
 
@@ -76,11 +82,6 @@ func (p *Player) AddWeapon(weapon *Weapon) {
 	}
 	p.weaponBag[weapon.Name] = weapon
 	p.SwitchWeapon(weapon.Name)
-}
-
-// CollidedWithThing something collides with thing
-func (p *Player) CollidedWithThing(thing *DoomThing) {
-	fmt.Println("i collided with", thing.SpriteName())
 }
 
 func (p *Player) FireWeapon() {

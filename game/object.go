@@ -109,7 +109,7 @@ func (dt *DoomThing) IsShown() bool {
 	return true
 }
 
-// Height get players height
+// Height get Things height
 func (dt *DoomThing) Height() float32 {
 	return dt.height
 }

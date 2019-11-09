@@ -15,4 +15,5 @@ type Key struct {
 
 type InputDriver interface {
 	KeyStates() chan Key
+	IsPressed(keycode Keycode) bool
 }

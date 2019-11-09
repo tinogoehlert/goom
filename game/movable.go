@@ -53,8 +53,8 @@ func (m *Movable) Strafe(steps, timePassed float32) {
 }
 
 // Lift set players height
-func (m *Movable) Lift(height float32, timePassed float32) {
-	m.height = height
+func (m *Movable) Lift(steps float32, timePassed float32) {
+	m.height += steps * timePassed
 }
 
 // Turn player

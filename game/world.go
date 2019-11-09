@@ -155,12 +155,12 @@ func (w *World) Update(t float32) {
 			m.Think(w.me, t)
 		}
 	}
-
 	for e := w.projectiles.Front(); e != nil; e = e.Next() {
 		var (
 			p       = e.Value.(*Projectile)
 			projPos = utils.V2(p.position[0], p.position[1])
 		)
+
 		for _, m := range w.monsters {
 			if m.IsCorpse() {
 				continue
@@ -176,8 +176,9 @@ func (w *World) Update(t float32) {
 		if int(ppos.DistanceTo(projPos)) > p.maxRange {
 			w.projectiles.Remove(e)
 		}
-		p.Walk(1000, t)
+		p.Walk(20, t)
 	}
+	w.me.Update(t)
 }
 
 func (w *World) doesCollide(thing *DoomThing, to mgl32.Vec2) mgl32.Vec2 {
@@ -231,7 +232,7 @@ func (w *World) checkThingCollision(thing *DoomThing, to mgl32.Vec2) {
 
 func (w *World) checkWallCollision(thing *DoomThing, to mgl32.Vec2) mgl32.Vec2 {
 	var (
-		collided = false
+		collided = 0
 		x        = to.X()
 		y        = to.Y()
 		radius   = float32(24)
@@ -256,8 +257,7 @@ func (w *World) checkWallCollision(thing *DoomThing, to mgl32.Vec2) mgl32.Vec2 {
 				to[0] += wall.Normal.X() * toPushOut * mul
 				to[1] += wall.Normal.Y() * toPushOut * mul
 				hitWall = wall
-				collided = true
-
+				collided++
 			} else {
 				var (
 					tmpxd float32
@@ -277,13 +277,13 @@ func (w *World) checkWallCollision(thing *DoomThing, to mgl32.Vec2) mgl32.Vec2 {
 					to[0] += tmpxd / dist * toPushOut
 					to[1] += tmpyd / dist * toPushOut
 					hitWall = wall
-					collided = true
+					collided++
 				}
 			}
 		}
 	}
 
-	if collided {
+	if collided > 0 {
 		if hitWall.lineDef.Left != -1 {
 			var (
 				lSector   = w.levelRef.Sectors[hitWall.Sides.Left.Sector]

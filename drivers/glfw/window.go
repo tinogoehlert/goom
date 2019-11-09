@@ -35,8 +35,8 @@ func NewWindow(title string, width, height int) (*Window, error) {
 		window:        glfwWin,
 		width:         width,
 		height:        height,
-		secsPerUpdate: 1.0 / 120.0,
-		inputDrv:      NewInputDriver(),
+		secsPerUpdate: 1.0 / 60.0,
+		inputDrv:      newInputDriver(glfwWin),
 	}
 
 	win.fbWidth, win.fbHeight = glfwWin.GetFramebufferSize()
@@ -71,20 +71,11 @@ func (w *Window) FrameBufferSize() (int, int) {
 	return w.fbWidth, w.fbHeight
 }
 
-func (w *Window) onKeyCallback(win *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
-	w.inputDrv.keyStates <- drivers.Key{
-		Keycode: w.inputDrv.NormalizeKeyCode(key),
-		State:   drivers.KeyState(action),
-	}
-}
-
 // Run runs the window loop
 func (w *Window) Run(loop func(elapsed float32)) {
 	var (
 		previous = glfw.GetTime()
 	)
-
-	w.window.SetKeyCallback(w.onKeyCallback)
 
 	for !w.window.ShouldClose() {
 		var (
@@ -97,7 +88,7 @@ func (w *Window) Run(loop func(elapsed float32)) {
 		}
 
 		w.window.SwapBuffers()
-		glfw.PollEvents()
+		w.inputDrv.poll()
 		previous = glfw.GetTime()
 	}
 }

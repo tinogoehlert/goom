@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/tinogoehlert/goom/drivers"
+
 	"github.com/tinogoehlert/goom/drivers/glfw"
 	"github.com/tinogoehlert/goom/drivers/opengl"
 	"github.com/tinogoehlert/goom/game"
@@ -48,6 +49,13 @@ func main() {
 	renderer.SetShaderProgram("main")
 	world := game.NewWorld(m, game.NewDefStore("resources/defs.yaml"), gameData)
 	player := world.Me()
+	ssect, err := m.FindPositionInBsp(level.GLNodesName, player.Position()[0], player.Position()[1])
+	if err != nil {
+		logger.Print("could not find GLnode for pos %v", player.Position())
+	} else {
+		var sector = m.SectorFromSSect(ssect)
+		player.SetSector(sector)
+	}
 	renderer.Camera().SetCamera(player.Position(), player.Direction(), player.Height())
 	renderer.SetViewPort(win.FrameBufferSize())
 	rs := &renderStats{lastUpdate: time.Now()}
@@ -68,13 +76,12 @@ func main() {
 		} else {
 			var sector = m.SectorFromSSect(ssect)
 			player.SetSector(sector)
-			player.Lift(sector.FloorHeight()+40, float32(elapsed))
+			player.Lift(sector.FloorHeight(), float32(elapsed))
 		}
-		renderer.Camera().SetCamera(player.Position(), player.Direction(), player.Height())
-		handleInput(player, win.Input(), elapsed)
-		player.Update(elapsed)
-		player.Turn(turnvel, elapsed)
+		world.Update(elapsed / float32(time.Second))
 
+		renderer.Camera().SetCamera(player.Position(), player.Direction(), player.Height())
+		input(win.Input(), player, elapsed)
 		rs.showStats(gameData, renderer)
 		rs.countedFrames++
 		rs.accumulatedTime += time.Duration(elapsed)
@@ -130,51 +137,20 @@ type renderStats struct {
 	lastUpdate      time.Time
 }
 
-var fwdvel = float32(0)
-var turnvel = float32(0)
-
-func handleInput(player *game.Player, input drivers.InputDriver, t float32) {
-	select {
-	case k := <-input.KeyStates():
-		handleKey(player, k, t)
-	default:
+func input(id drivers.InputDriver, player *game.Player, delta float32) {
+	if id.IsPressed(drivers.KeyUp) {
+		player.Forward(100, delta)
 	}
-}
-
-func handleKey(player *game.Player, k drivers.Key, t float32) float32 {
-	switch k.Keycode {
-	case drivers.KeyUp:
-		if k.State == drivers.KeyPressed {
-			fwdvel = 520
-			player.SmoothWalk(520, t)
-		}
-		if k.State == drivers.KeyReleased {
-			fwdvel = 0
-			player.SmoothWalk(0, t)
-		}
-	case drivers.KeyDown:
-		if k.State == drivers.KeyPressed {
-			fwdvel = -520
-			player.SmoothWalk(-520, t)
-		}
-		if k.State == drivers.KeyReleased {
-			fwdvel = 0
-		}
-
-	case drivers.KeyLeft:
-		if k.State == drivers.KeyPressed {
-			turnvel = -300
-		}
-		if k.State == drivers.KeyReleased {
-			turnvel = 0
-		}
-	case drivers.KeyRight:
-		if k.State == drivers.KeyPressed {
-			turnvel = 300
-		}
-		if k.State == drivers.KeyReleased {
-			turnvel = 0
-		}
+	if id.IsPressed(drivers.KeyDown) {
+		player.Forward(-100, delta)
 	}
-	return fwdvel
+	if id.IsPressed(drivers.KeyLeft) {
+		player.Turn(-100, delta)
+	}
+	if id.IsPressed(drivers.KeyRight) {
+		player.Turn(100, delta)
+	}
+	if id.IsPressed(drivers.KeyLShift) {
+		player.FireWeapon()
+	}
 }
