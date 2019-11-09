@@ -4,8 +4,7 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/tinogoehlert/goom/geometry"
-	"github.com/tinogoehlert/goom/internal/utils"
+	"github.com/tinogoehlert/goom/utils"
 	"github.com/tinogoehlert/goom/wad"
 )
 
@@ -26,7 +25,7 @@ type Level struct {
 	LinesDefs  []LineDef
 	Sectors    []Sector
 	SideDefs   []SideDef
-	vertexPool map[string][]geometry.Vec2
+	vertexPool map[string][]utils.Vec2
 	segPool    map[string][]Segment
 	ssectPool  map[string][]SubSector
 	nodePool   map[string][]Node
@@ -68,7 +67,7 @@ func (s Store) LoadWAD(w *wad.WAD) error {
 // NewLevel Loads a level from a list of lumps
 func NewLevel(lumps []wad.Lump) (l *Level, err error) {
 	l = &Level{
-		vertexPool: make(map[string][]geometry.Vec2),
+		vertexPool: make(map[string][]utils.Vec2),
 		segPool:    make(map[string][]Segment),
 		ssectPool:  make(map[string][]SubSector),
 		nodePool:   make(map[string][]Node),
@@ -134,7 +133,7 @@ func appendGLNodes(l *Level, lumps []wad.Lump) (err error) {
 }
 
 // Vert gets a vert
-func (l *Level) Vert(id uint32) geometry.Vec2 {
+func (l *Level) Vert(id uint32) utils.Vec2 {
 	if utils.MagicU32(id).MagicBit() {
 		return l.vertexPool["GL_VERT"][utils.MagicU32(id).Uint32()]
 	}

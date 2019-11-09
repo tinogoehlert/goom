@@ -18,6 +18,10 @@ func Int(buff []byte) int {
 	return int(int16(binary.LittleEndian.Uint16(buff)))
 }
 
+func I16Tof(buff []byte) float32 {
+	return float32(int16(binary.LittleEndian.Uint16(buff)))
+}
+
 //DoomStr DOOM string, 8 bytes, filled with 0's
 type DoomStr [8]byte
 

@@ -2,11 +2,9 @@ package opengl
 
 import (
 	"fmt"
-	"runtime"
 	"time"
 
 	"github.com/go-gl/gl/v2.1/gl"
-	"github.com/go-gl/glfw/v3.2/glfw"
 	"github.com/go-gl/mathgl/mgl32"
 
 	"github.com/tinogoehlert/goom/game"
@@ -17,7 +15,6 @@ import (
 
 //GLRenderer openGL renderer
 type GLRenderer struct {
-	window        *glfw.Window
 	currentLevel  *doomLevel
 	shaders       map[string]*ShaderProgram
 	fbWidth       int
@@ -28,35 +25,55 @@ type GLRenderer struct {
 	spriter       *glSpriter
 	lastTick      time.Time
 	currentShader string
-	fpsCap        float32
-	inputCallback func(*glfw.Window)
 }
 
-func init() {
-	// This is needed to arrange that main() runs on main thread.
-	// See documentation for functions that are only allowed to be called from the main thread.
-	runtime.LockOSThread()
-
-	err := glfw.Init()
-	if err != nil {
-		panic(err.Error())
+// Init initialize glfw
+func Init() error {
+	if err := gl.Init(); err != nil {
+		return fmt.Errorf("could not init GL: %s", err.Error())
 	}
-	glfw.WindowHint(glfw.Resizable, glfw.True)
-	glfw.WindowHint(glfw.ContextVersionMajor, 4)
-	glfw.WindowHint(glfw.ContextVersionMinor, 0)
-	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
-	glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
+
+	gl.Enable(gl.DEPTH_TEST)
+	gl.DepthFunc(gl.LESS)
+
+	return nil
 }
 
 // NewRenderer initialize the renderer
-func NewRenderer() (*GLRenderer, error) {
-	return &GLRenderer{
+func NewRenderer(gd *goom.GameData) (*GLRenderer, error) {
+	gr := &GLRenderer{
 		shaders:       make(map[string]*ShaderProgram),
 		camera:        NewCamera(),
 		modelMatrix:   mgl32.Ident4(),
 		currentShader: "main",
 		textures:      newGLTextureStore(),
-	}, nil
+	}
+
+	for k, v := range gd.Textures {
+		gr.textures.initTexture(k, 1)
+		gr.textures.addTexture(k, 0, v)
+	}
+
+	for k, v := range gd.Flats {
+		gr.textures.initTexture(k, 1)
+		gr.textures.addTexture(k, 0, v[0])
+	}
+
+	for k, v := range gd.Fonts.GetAllGraphics() {
+		gr.textures.initTexture(k, 1)
+		gr.textures.addTexture(k, 0, v)
+	}
+
+	for _, v := range gd.Sprites {
+		v.Frames(func(f *graphics.SpriteFrame) {
+			gr.textures.initTexture(f.Name(), len(f.Angles()))
+			for i, img := range f.Angles() {
+				gr.textures.addTexture(f.Name(), i, img)
+			}
+		})
+	}
+	gr.spriter = NewSpriter()
+	return gr, nil
 }
 
 // LoadShaderProgram loads a shader program
@@ -84,74 +101,12 @@ func (gr *GLRenderer) SetShaderProgram(name string) error {
 }
 
 // BuildLevel builds the level
-func (gr *GLRenderer) BuildLevel(m *level.Level, gd *goom.GameData) {
+func (gr *GLRenderer) LoadLevel(m *level.Level, gd *goom.GameData) {
 	gr.currentLevel = RegisterMap(m, gd, gr.textures)
-}
-
-// BuildGraphics adds defined graphics to the texture store and initializes the spriter
-func (gr *GLRenderer) BuildGraphics(gd *goom.GameData) {
-	for k, v := range gd.Textures {
-		gr.textures.initTexture(k, 1)
-		gr.textures.addTexture(k, 0, v)
-	}
-
-	for k, v := range gd.Flats {
-		gr.textures.initTexture(k, 1)
-		gr.textures.addTexture(k, 0, v[0])
-	}
-
-	for k, v := range gd.Fonts.GetAllGraphics() {
-		gr.textures.initTexture(k, 1)
-		gr.textures.addTexture(k, 0, v)
-	}
-
-	for _, v := range gd.Sprites {
-		v.Frames(func(f *graphics.SpriteFrame) {
-			gr.textures.initTexture(f.Name(), len(f.Angles()))
-			for i, img := range f.Angles() {
-				gr.textures.addTexture(f.Name(), i, img)
-			}
-		})
-	}
-
-	gr.spriter = NewSpriter()
 }
 
 func (gr *GLRenderer) Camera() *Camera {
 	return gr.camera
-}
-
-func (gr *GLRenderer) SetInputLoop(fn func(*glfw.Window)) {
-	gr.inputCallback = fn
-}
-
-// CreateWindow creates the GL window
-func (gr *GLRenderer) CreateWindow(width, height int, title string) (err error) {
-	gr.window, err = glfw.CreateWindow(width, height, title, nil, nil)
-	if err != nil {
-		return fmt.Errorf("could not create Window: %s", err.Error())
-	}
-
-	gr.window.MakeContextCurrent()
-	if err := gl.Init(); err != nil {
-		return fmt.Errorf("could not init GL: %s", err.Error())
-	}
-	gl.Enable(gl.DEPTH_TEST)
-	gl.DepthFunc(gl.LESS)
-
-	return nil
-}
-
-// KeyPressed set callback for keypress
-func (gr *GLRenderer) KeyPressed(keyPressed func(key int)) {
-	gr.window.SetKeyCallback(func(
-		w *glfw.Window,
-		key glfw.Key,
-		scancode int,
-		action glfw.Action,
-		mods glfw.ModifierKey) {
-		keyPressed(int(key))
-	})
 }
 
 func (gr *GLRenderer) SetLight(light float32) {
@@ -160,7 +115,7 @@ func (gr *GLRenderer) SetLight(light float32) {
 
 func (gr *GLRenderer) setProjection() {
 	gr.shaders[gr.currentShader].UniformMatrix4fv("projection",
-		mgl32.Perspective(64.0, float32(gr.fbWidth)/float32(gr.fbHeight), 1.0, 10000.0),
+		mgl32.Perspective(64.2, float32(gr.fbWidth)/float32(gr.fbHeight), 1.0, 8000.0),
 	)
 }
 
@@ -276,38 +231,17 @@ func (gr *GLRenderer) DrawHUdElement(name string, xpos, ypos float32, scaleFacto
 	gr.shaders[gr.currentShader].Uniform1i("draw_phase", 0)
 }
 
-func (gr *GLRenderer) SetFPSCap(cap float32) {
-	gr.fpsCap = cap
+func (gr *GLRenderer) SetViewPort(fbWidth, fbHeight int) {
+	gr.fbWidth = fbWidth
+	gr.fbHeight = fbHeight
+	gl.Viewport(0, 0, int32(fbWidth), int32(fbHeight))
 }
 
-// Loop starts the render loop
-func (gr *GLRenderer) Loop(drawCB func(), inputCB func(win *glfw.Window, frametime float32), statsCB func(recordedFrameTime time.Duration)) {
-	targetFrameTime := time.Second / time.Duration(gr.fpsCap)
-	for !gr.window.ShouldClose() {
-		t0 := time.Now()
-		gr.fbWidth = 1024
-		gr.fbHeight = 768
-		gl.Viewport(0, 0, 1024, 768)
-		// Do OpenGL stuff.
-		gl.Enable(gl.DEPTH_TEST)
-		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
-		gr.shaders[gr.currentShader].Use()
-		gr.setProjection()
-		gr.setView()
-		gr.setModel()
-
-		drawCB()
-
-		gr.window.SwapBuffers()
-		glfw.PollEvents()
-		inputCB(gr.window, float32(targetFrameTime)/float32(time.Second))
-
-		frameTime := time.Now().Sub(t0)
-		waitTime := targetFrameTime - frameTime
-		if waitTime > 0 {
-			time.Sleep(waitTime)
-		}
-
-		statsCB(frameTime)
-	}
+func (gr *GLRenderer) RenderNewFrame(frameTime float32) {
+	gl.Enable(gl.DEPTH_TEST)
+	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+	gr.shaders[gr.currentShader].Use()
+	gr.setProjection()
+	gr.setView()
+	gr.setModel()
 }

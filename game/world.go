@@ -7,9 +7,9 @@ import (
 
 	"github.com/go-gl/mathgl/mgl32"
 
-	"github.com/tinogoehlert/goom"
-	"github.com/tinogoehlert/goom/utils"
+	"github.com/tinogoehlert/goom/goom"
 	"github.com/tinogoehlert/goom/level"
+	"github.com/tinogoehlert/goom/utils"
 )
 
 // Wall a DOOM Wall
@@ -105,7 +105,6 @@ func NewWorld(doomLevel *level.Level, defs *DefStore, data *goom.GameData) *Worl
 		if monsterDef := defs.GetMonsterDef(int(t.Type)); monsterDef != nil {
 			sprite := data.Sprite(monsterDef.Sprite)
 			img := sprite.FirstFrame().Angles()[1]
-			fmt.Println(img.Width(), img.Height())
 
 			monster := MonsterFromDef(
 				t.X,

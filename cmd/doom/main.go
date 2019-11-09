@@ -9,17 +9,18 @@ import (
 
 	"github.com/go-gl/glfw/v3.2/glfw"
 
-	"github.com/tinogoehlert/goom"
+	"github.com/tinogoehlert/goom/goom"
 	"github.com/tinogoehlert/goom/audio/midi"
-	"github.com/tinogoehlert/goom/cmd/doom/internal/game"
+	"github.com/tinogoehlert/goom/game"
 	"github.com/tinogoehlert/goom/cmd/doom/internal/opengl"
 	"github.com/tinogoehlert/goom/graphics"
 	"github.com/tinogoehlert/goom/level"
+	"github.com/tinogoehlert/goom/utils"
 )
 
 var (
 	shaderDir = "resources/shaders"
-	log       = goom.GoomConsole
+	log       = utils.GoomConsole
 )
 
 type renderStats struct {
