@@ -6,8 +6,8 @@ import (
 )
 
 const (
-	bobSpeed float64 = 0.4
-	bobPow   float64 = 2
+	bobSpeed float64 = 1.7
+	bobPow   float64 = 1.3
 )
 
 // Weapon weapon
@@ -59,7 +59,7 @@ func (w *Weapon) PutUp() {
 }
 
 func (w *Weapon) pull(frameTime float32) {
-	w.offset[1] += frameTime / 2.5
+	w.offset[1] += 450 * frameTime
 	if w.offset[1] > 200 {
 		w.pulledDown()
 		w.state = 0
@@ -74,9 +74,9 @@ func (w *Weapon) bobbing(passedTime float32) {
 	if w.state != 0 {
 		return
 	}
-	w.bobPhase += float64(passedTime) * math.Pi * 2 * bobSpeed
-	x := math.Sin(w.bobPhase/2.0) * bobSpeed * 25.5 * bobPow
-	y := math.Abs((math.Sin(w.bobPhase/2.0) * bobSpeed * 12.5 * bobPow))
+	w.bobPhase += float64(passedTime) * math.Pi * 0.7 * bobSpeed
+	x := math.Cos(w.bobPhase) * bobSpeed * 20.5 * bobPow
+	y := math.Abs((math.Sin(w.bobPhase) * bobSpeed * 17 * bobPow))
 	w.offset[0] = float32(math.Round(x))
 	w.offset[1] = float32(math.Round(y))
 }
@@ -102,7 +102,7 @@ func (w *Weapon) NextFrames(frameTime float32) (byte, byte) {
 		w.pull(-(frameTime))
 		return frame, fire
 	}
-	if time.Now().Sub(w.lastTick) >= 70*time.Millisecond {
+	if time.Now().Sub(w.lastTick) >= 100*time.Millisecond {
 		if w.currentFrame+1 < len(anim) {
 			w.currentFrame++
 		} else {

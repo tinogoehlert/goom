@@ -1,6 +1,8 @@
 package opengl
 
 import (
+	"fmt"
+
 	"github.com/go-gl/gl/v2.1/gl"
 	"github.com/tinogoehlert/goom/goom"
 	"github.com/tinogoehlert/goom/level"
@@ -24,10 +26,11 @@ func RegisterMap(m *level.Level, gd *goom.GameData, ts glTextureStore) *doomLeve
 	l := doomLevel{
 		name:       m.Name,
 		mapRef:     m,
-		subSectors: make([]*subSector, 0, len(m.SubSectors("GL_SSECT"))),
+		subSectors: make([]*subSector, 0, len(m.SubSectors(level.GLNodesName))),
 	}
 
-	for _, ssect := range m.SubSectors("GL_SSECT") {
+	fmt.Println(len(m.SubSectors(level.GLNodesName)))
+	for _, ssect := range m.SubSectors(level.GLSsectsName) {
 		var s = &subSector{ref: ssect}
 		s.addFlats(m, gd, ts)
 		s.addWalls(m, gd, ts)
@@ -183,6 +186,23 @@ func (s *subSector) addWalls(md *level.Level, gd *goom.GameData, ts glTextureSto
 			}
 			wm := newGlWorldutils(wallData, sector.LightLevel(), ts[side.Middle()])
 			s.walls = addGlWorldutils(s.walls, wm)
+			if otherSide != nil {
+				oppositeSector := md.Sectors[otherSide.Sector]
+				height = oppositeSector.CeilHeight() - oppositeSector.FloorHeight()
+				wallData := []float32{
+					-start.X(), oppositeSector.FloorHeight(), start.Y(), -sLen / tw, height / th,
+					-start.X(), oppositeSector.CeilHeight(), start.Y(), -sLen / tw, 0.0,
+					-end.X(), oppositeSector.CeilHeight(), end.Y(), -eLen / tw, 0.0,
+
+					-end.X(), oppositeSector.CeilHeight(), end.Y(), -eLen / tw, 0.0,
+					-end.X(), oppositeSector.FloorHeight(), end.Y(), -eLen / tw, height / th,
+					-start.X(), oppositeSector.FloorHeight(), start.Y(), -sLen / tw, height / th,
+				}
+				if gd.Texture(side.Lower()) != nil {
+					wm := newGlWorldutils(wallData, sector.LightLevel(), ts[side.Lower()])
+					s.walls = addGlWorldutils(s.walls, wm)
+				}
+			}
 		}
 	}
 }

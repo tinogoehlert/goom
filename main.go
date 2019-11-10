@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"strings"
 	"time"
@@ -19,6 +20,11 @@ import (
 var logger = utils.GoomConsole
 
 func main() {
+	iwadfile := flag.String("iwad", "DOOM1", "IWAD file to load (without extension)")
+	pwadfile := flag.String("pwad", "", "PWAD file to load (without extension)")
+	levelName := flag.String("level", "E1M1", "Level to start e.g. E1M1")
+	flag.Parse()
+
 	if err := glfw.Init(); err != nil {
 		logger.Fatalf(err.Error())
 	}
@@ -32,7 +38,8 @@ func main() {
 		logger.Fatalf(err.Error())
 	}
 
-	gameData, err := goom.LoadWAD("DOOM1", "")
+	logger.Green("load WAD: %s", *iwadfile)
+	gameData, err := goom.LoadWAD(*iwadfile, *pwadfile)
 	if err != nil {
 		logger.Red("could not load WAD data: %s", err.Error())
 	}
@@ -42,7 +49,7 @@ func main() {
 		logger.Red("could not init GL: %s", err.Error())
 	}
 
-	mission := strings.ToUpper("E1M1")
+	mission := strings.ToUpper(*levelName)
 	m := gameData.Level(mission)
 
 	renderer.LoadLevel(m, gameData)
@@ -68,7 +75,7 @@ func main() {
 		})
 
 		renderer.DrawThings(world.Things())
-		renderer.DrawHUD(world.Me())
+		renderer.DrawHUD(world.Me(), elapsed)
 
 		ssect, err := m.FindPositionInBsp(level.GLNodesName, player.Position()[0], player.Position()[1])
 		if err != nil {
@@ -145,10 +152,10 @@ func input(id drivers.InputDriver, player *game.Player, delta float32) {
 		player.Forward(-100, delta)
 	}
 	if id.IsPressed(drivers.KeyLeft) {
-		player.Turn(-100, delta)
+		player.Turn(-130, delta)
 	}
 	if id.IsPressed(drivers.KeyRight) {
-		player.Turn(100, delta)
+		player.Turn(130, delta)
 	}
 	if id.IsPressed(drivers.KeyLShift) {
 		player.FireWeapon()

@@ -12,7 +12,7 @@ const (
 	GLNodesName  = "GL_NODES"
 	NodesName    = "NODES"
 	GLSsectsName = "GL_SSECT"
-	SSectsName   = "SSECT"
+	SSectsName   = "SSECTORS"
 	GLSegsName   = "GL_SEGS"
 	SegsName     = "SEGS"
 )
@@ -94,6 +94,7 @@ func NewLevel(lumps []wad.Lump) (l *Level, err error) {
 	}
 	segs := l.segPool[lumps[4].Name]
 	l.ssectPool[lumps[5].Name], err = newSSectsFromLump(&lumps[5], segs)
+
 	if err != nil {
 		return nil, fmt.Errorf("could not read subsectors from WAD: %s", err.Error())
 	}

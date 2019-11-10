@@ -19,6 +19,7 @@ type GLRenderer struct {
 	shaders       map[string]*ShaderProgram
 	fbWidth       int
 	fbHeight      int
+	fbAspectRatio float32
 	camera        *Camera
 	modelMatrix   mgl32.Mat4
 	textures      glTextureStore
@@ -115,7 +116,7 @@ func (gr *GLRenderer) SetLight(light float32) {
 
 func (gr *GLRenderer) setProjection() {
 	gr.shaders[gr.currentShader].UniformMatrix4fv("projection",
-		mgl32.Perspective(64.2, float32(gr.fbWidth)/float32(gr.fbHeight), 1.0, 8000.0),
+		mgl32.Perspective(64, gr.fbAspectRatio, 1.0, 8000.0),
 	)
 }
 
@@ -156,30 +157,22 @@ func (gr *GLRenderer) DrawThings(things []game.Thingable) {
 		gr.SetLight(t.GetSector().LightLevel())
 		gr.shaders[gr.currentShader].Uniform3f("billboard_pos", mgl32.Vec3{
 			-t.Position()[0],
-			t.Height() + (float32(img.image.Height()) / 2) + 4,
+			t.Height() + (float32(img.image.Height()) / 2),
 			t.Position()[1],
 		})
 
 		gr.shaders[gr.currentShader].Uniform1i("billboard_flipped", flipped)
 		gr.shaders[gr.currentShader].Uniform2f("billboard_size", mgl32.Vec2{
-			float32(img.image.Width()) / 120,
-			float32(img.image.Height()) / 100,
+			float32(img.image.Width()) / 150,
+			float32(img.image.Height()) / 130,
 		})
 		gr.spriter.Draw(gl.TRIANGLES, img)
 	}
 	gr.shaders[gr.currentShader].Uniform1i("draw_phase", 0)
 }
 
-var (
-	currX = float32(1)
-	currY = float32(1)
-	angle float64
-)
-
 func (gr *GLRenderer) setUpHudShader(aspect float32) {
-
 	ortho := mgl32.Ortho2D(640*aspect, 0, 0, 640)
-
 	gl.Disable(gl.DEPTH_TEST) // Disable the Depth-testing
 	gr.shaders[gr.currentShader].UniformMatrix4fv("ortho", ortho)
 	gr.shaders[gr.currentShader].Uniform1i("draw_phase", 2)
@@ -202,31 +195,40 @@ func (gr *GLRenderer) drawHudImage(sprite string, pos mgl32.Vec3, offsetX, offse
 }
 
 // DrawHUD draws the game hud
-func (gr *GLRenderer) DrawHUD(player *game.Player) {
+func (gr *GLRenderer) DrawHUD(player *game.Player, t float32) {
 	aspect := float32(gr.fbWidth) / float32(gr.fbHeight)
 
 	gr.setUpHudShader(aspect)
-
+	gr.SetLight(player.GetSector().LightLevel())
 	w := player.Weapon()
-	frame, fire := w.NextFrames(float32((1000 / 30)))
+	frame, fire := w.NextFrames(t)
 
 	pos := mgl32.Vec3{(640 * aspect) / 2, 0, 0}
 	scaleFactor := float32(1)
 
-	gr.drawHudImage(w.Sprite+string(frame), pos, +w.Offset()[0], -20-w.Offset()[1], scaleFactor)
+	gr.drawHudImage(
+		w.Sprite+string(frame),
+		pos,
+		+w.Offset()[0],
+		-w.Offset()[1]-30,
+		scaleFactor,
+	)
 
 	if fire != 255 {
-		gr.drawHudImage(w.FireSprite+string(fire), pos, w.FireOffset.X+w.Offset()[0], w.FireOffset.Y+w.Offset()[1], scaleFactor)
+		gr.drawHudImage(
+			w.FireSprite+string(fire),
+			pos,
+			w.FireOffset.X+w.Offset()[0],
+			w.FireOffset.Y+(-w.Offset()[1])-30,
+			scaleFactor,
+		)
 	}
 	gr.shaders[gr.currentShader].Uniform1i("draw_phase", 0)
 }
 
 // DrawHUdElement draws a single element to the HUD
 func (gr *GLRenderer) DrawHUdElement(name string, xpos, ypos float32, scaleFactor float32) {
-	aspect := float32(gr.fbWidth) / float32(gr.fbHeight)
-
-	gr.setUpHudShader(aspect)
-
+	gr.setUpHudShader(gr.fbAspectRatio)
 	gr.drawHudImage(name, mgl32.Vec3{xpos, ypos, 0}, 0, 0, scaleFactor)
 	gr.shaders[gr.currentShader].Uniform1i("draw_phase", 0)
 }
@@ -234,14 +236,15 @@ func (gr *GLRenderer) DrawHUdElement(name string, xpos, ypos float32, scaleFacto
 func (gr *GLRenderer) SetViewPort(fbWidth, fbHeight int) {
 	gr.fbWidth = fbWidth
 	gr.fbHeight = fbHeight
+	gr.fbAspectRatio = float32(gr.fbWidth) / float32(gr.fbHeight)
 	gl.Viewport(0, 0, int32(fbWidth), int32(fbHeight))
+	gr.setProjection()
 }
 
 func (gr *GLRenderer) RenderNewFrame(frameTime float32) {
 	gl.Enable(gl.DEPTH_TEST)
 	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 	gr.shaders[gr.currentShader].Use()
-	gr.setProjection()
 	gr.setView()
 	gr.setModel()
 }

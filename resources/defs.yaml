@@ -25,7 +25,7 @@ weapons:
   range: 10000
   fire_offset:
     x: -8
-    y: 78
+    y: 100
   anim:
     idle: "A"
     shoot: "ABCDCBA"
@@ -36,11 +36,11 @@ weapons:
   damage: 30
   range: 10000
   fire_offset:
-    x: 0
-    y: 60
+    x: -2
+    y: 93
   anim:
     idle: "A"
-    shoot: "ABCDEFGH"
+    shoot: "AABCDEFGH"
     fire: "IJ"
 
 monsters:
