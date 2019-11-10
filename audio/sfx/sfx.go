@@ -47,29 +47,25 @@ func (s Sounds) LoadWAD(w *wad.WAD) error {
 			if hex.EncodeToString(l.Data[:2]) != SoundID {
 				return fmt.Errorf("invalid DS header for LUMP %s: %x", l.Name, l.Data[:4])
 			}
-			snd := &Sound{l}
-			s[l.Name] = snd
-			if len(snd.Data) < 32 {
-				return fmt.Errorf("too few bytes for %s: %x", snd.Name, len(snd.Data))
-			}
+			s[l.Name] = &Sound{l}
 		}
 	}
 	return nil
 }
 
-// SampleRate returns the bits per sample of the Sound.
-func (s *Sound) SampleRate() int {
+// BitDepth returns the bits per sample of the Sound.
+func (s *Sound) BitDepth() int {
 	return 8
 }
 
-// SampleFreq returns the sample frequency in Hz.
-func (s *Sound) SampleFreq() int {
+// SampleRate returns the sample frequency in Hz.
+func (s *Sound) SampleRate() int {
 	return int(binary.LittleEndian.Uint16(s.Data[2:]))
 }
 
 // NumSamples returns the number of PCM samples that define the Sound.
 func (s *Sound) NumSamples() int {
-	return len(s.SampleBytes()) * 8 / s.SampleRate()
+	return len(s.SampleBytes()) * 8 / s.BitDepth()
 }
 
 // SampleBytes returns the PCM bytes without the header.
@@ -79,8 +75,8 @@ func (s *Sound) SampleBytes() []byte {
 
 // Duration returns the duration of the sound.
 func (s *Sound) Duration() time.Duration {
-	numMillis := int64(1000 * float32(s.NumSamples()) / float32(11025))
-	return time.Millisecond * time.Duration(numMillis)
+	sampleTime := time.Second / time.Duration(s.SampleRate())
+	return time.Duration(s.NumSamples()) * sampleTime
 }
 
 // Info decsribes the Sound.
@@ -88,8 +84,8 @@ func (s *Sound) Info() string {
 	head := fmt.Sprintln(hex.Dump(s.Data[:32]))
 	dur := s.Duration()
 	return fmt.Sprintf(
-		"Sound(name=%s, bits=%d, num=%d, size=%d, dur=%s)\n%s",
-		s.Name, s.SampleRate(), s.NumSamples(), len(s.SampleBytes()), dur,
+		"Sound(name=%s, bits=%d, rate=%d, num=%d, size=%d, dur=%s)\n%s",
+		s.Name, s.BitDepth(), s.SampleRate(), s.NumSamples(), len(s.SampleBytes()), dur,
 		head)
 }
 
@@ -122,36 +118,17 @@ func Play(s *Sound) error {
 	fmt.Println("using portaudio device:", dev.Name)
 
 	data := s.SampleBytes()
+	bufSize := len(data)
 
-	/*
-		size := len(data)
-
-		readBytes := func(in, out []byte) {
-			// head := hex.Dump(in[:16])
-			// fmt.Printf("reading %d bytes from pos=%d:\n%s\n", len(out), chunkStart, head)
-			for i := range out {
-				if i < len(in) {
-					// copy PCM byte
-					out[i] = in[i]
-				} else {
-					// fill buffer with silence
-					out[i] = 0x7f
-				}
-			}
-		}
-	*/
-
-	bufSize := len(data) // 8192
-	// out := make([]byte, bufSize)
 	if test {
 		for i := range data {
 			data[i] = 127 // silence
 		}
 	}
 
-	freq := float64(s.SampleFreq())
+	rate := float64(s.SampleRate())
 
-	stream, err := pa.OpenDefaultStream(0, 1, freq, bufSize, &data)
+	stream, err := pa.OpenDefaultStream(0, 1, rate, bufSize, &data)
 	if err == pa.DeviceUnavailable {
 		fmt.Println("skipping unavailable device:", dev.Name)
 		return nil
