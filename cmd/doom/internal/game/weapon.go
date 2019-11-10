@@ -15,6 +15,7 @@ type Weapon struct {
 	Name       string `yaml:"name"`
 	Sprite     string `yaml:"egoSprite"`
 	FireSprite string `yaml:"fireSprite"`
+	Sound      string `yaml:"sound"`
 	Damage     int    `yaml:"damage"`
 	Range      int    `yaml:"range"`
 	FireOffset struct {

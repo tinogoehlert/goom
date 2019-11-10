@@ -64,7 +64,7 @@ func (p *Player) FireWeapon() {
 		fmt.Println("FIRE:", p.weapon.Name)
 		// TODO: play correct sounds for other weapons
 		// TODO: reuse playback device instead of naive playback
-		go sfx.PlaySounds("PISTOL")
+		go sfx.PlaySounds(p.weapon.Sound)
 		p.world.spawnShot(p)
 	}
 }
@@ -75,6 +75,7 @@ func (p *Player) SwitchWeapon(name string) {
 		p.weapon = p.weaponBag[name]
 		p.weapon.PutUp()
 	}
+	fmt.Println("SWITCH WEAPON", p.weapon.Name, "-->", name)
 	if name == p.weapon.Name {
 		return
 	}

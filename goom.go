@@ -61,6 +61,7 @@ func LoadGameData(files ...string) (*GameData, error) {
 		Flats:    graphics.NewFlatStore(),
 		Sprites:  graphics.NewSpriteStore(),
 		Music:    music.NewSuite(),
+		Sounds:   sfx.Sounds{},
 		Fonts:    graphics.NewFontBook(),
 	}
 	for _, file := range files {
@@ -83,7 +84,7 @@ func LoadGameData(files ...string) (*GameData, error) {
 		gd.Sprites.LoadWAD(wad)
 		gd.Flats.LoadWAD(wad)
 		gd.Textures.LoadWAD(wad)
-
+		gd.Sounds.LoadWAD(wad)
 	}
 	gd.Textures.InitPatches()
 	return gd, nil

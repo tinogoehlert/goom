@@ -85,6 +85,8 @@ func NewWorld(doomLevel *level.Level, defs *DefStore, data *goom.GameData) *Worl
 				w.me = player
 			}
 			player.AddWeapon(defs.GetWeapon("pistol"))
+			player.AddWeapon(defs.GetWeapon("shotgun"))
+			player.AddWeapon(defs.GetWeapon("chainsaw"))
 			player.SetCollision(w.doesCollide)
 		}
 		if obstacleDef := defs.GetObstacleDef(int(t.Type)); obstacleDef != nil {

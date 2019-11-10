@@ -1,17 +1,24 @@
 package sfx
 
 import (
+	"encoding/binary"
 	"encoding/hex"
 	"fmt"
 	"io"
 	"path"
+	"regexp"
 	"time"
 
 	pa "github.com/gordonklaus/portaudio"
 	"github.com/tinogoehlert/goom/wad"
 )
 
+// SoundID defines the first 4 bytes of a DOOM sound.
+const SoundID = "0300"
+
+// vars for testing and development
 var test bool
+var sounds Sounds
 
 // TestMode silences all sound and remove all delays.
 // Use this for testing.
@@ -29,12 +36,35 @@ type Sounds map[string]*Sound
 
 // Get returns a Sound sample by name.
 func (s Sounds) Get(name string) *Sound {
-	return s[name]
+	return s["DS"+name]
+}
+
+// LoadWAD loads the sound data from the WAD.
+func (s Sounds) LoadWAD(w *wad.WAD) error {
+	sfxRegex := regexp.MustCompile(`^DS`)
+	for _, l := range w.Lumps() {
+		if sfxRegex.Match([]byte(l.Name)) {
+			if hex.EncodeToString(l.Data[:2]) != SoundID {
+				return fmt.Errorf("invalid DS header for LUMP %s: %x", l.Name, l.Data[:4])
+			}
+			snd := &Sound{l}
+			s[l.Name] = snd
+			if len(snd.Data) < 32 {
+				return fmt.Errorf("too few bytes for %s: %x", snd.Name, len(snd.Data))
+			}
+		}
+	}
+	return nil
 }
 
 // SampleRate returns the bits per sample of the Sound.
 func (s *Sound) SampleRate() int {
 	return 8
+}
+
+// SampleFreq returns the sample frequency in Hz.
+func (s *Sound) SampleFreq() int {
+	return int(binary.LittleEndian.Uint16(s.Data[2:]))
 }
 
 // NumSamples returns the number of PCM samples that define the Sound.
@@ -61,12 +91,12 @@ func (s *Sound) Info() string {
 		"Sound(name=%s, bits=%d, num=%d, size=%d, dur=%s)\n%s",
 		s.Name, s.SampleRate(), s.NumSamples(), len(s.SampleBytes()), dur,
 		head)
-
 }
 
 // Play plays a Sound using portaudio.
 func Play(s *Sound) error {
-	fmt.Println("playing sound:", s.Info())
+	fmt.Println("playing sound:", s.Name, s.Size)
+	fmt.Println(s.Info())
 
 	if err := pa.Initialize(); err != nil {
 		return err
@@ -119,7 +149,9 @@ func Play(s *Sound) error {
 		}
 	}
 
-	stream, err := pa.OpenDefaultStream(0, 1, 11025, bufSize, &data)
+	freq := float64(s.SampleFreq())
+
+	stream, err := pa.OpenDefaultStream(0, 1, freq, bufSize, &data)
 	if err == pa.DeviceUnavailable {
 		fmt.Println("skipping unavailable device:", dev.Name)
 		return nil
@@ -148,18 +180,23 @@ func Play(s *Sound) error {
 
 // PlaySounds plays all given sounds.
 func PlaySounds(names ...string) error {
-	w, err := wad.NewWADFromFile(path.Join("..", "..", "DOOM1.WAD"))
-	if err != nil {
-		return err
+	if len(sounds) == 0 {
+		w, err := wad.NewWADFromFile(path.Join("..", "..", "DOOM1.WAD"))
+		if err != nil {
+			return err
+		}
+		sounds = make(Sounds)
+		if err := sounds.LoadWAD(w); err != nil {
+			return err
+		}
+		if len(sounds) == 0 {
+			return fmt.Errorf("no sounds loaded")
+		}
+		fmt.Printf("loaded %d sounds to test cache\n", len(sounds))
 	}
 
 	for _, n := range names {
-		s := &Sound{*w.Lump("DS" + n)}
-		if hex.EncodeToString(s.Data[:4]) != "0300112b" {
-			return fmt.Errorf("invalid DS header for LUMP: %v", s)
-		}
-		// fmt.Printf("loaded %d sfx bytes:\n", len(s.Data))
-		if err := Play(s); err != nil {
+		if err := Play(sounds.Get(n)); err != nil {
 			return err
 		}
 	}

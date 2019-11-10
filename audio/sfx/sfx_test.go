@@ -9,5 +9,8 @@ import (
 
 func TestPlaySound(t *testing.T) {
 	sfx.TestMode()
+	// 22 kHz
+	test.Check(sfx.PlaySounds("ITMBK"), t)
+	// 11 kHz
 	test.Check(sfx.PlaySounds("PISTOL", "OOF", "SHOTGN"), t)
 }
