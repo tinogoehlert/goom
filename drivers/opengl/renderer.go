@@ -157,7 +157,7 @@ func (gr *GLRenderer) DrawThings(things []game.Thingable) {
 		gr.SetLight(t.GetSector().LightLevel())
 		gr.shaders[gr.currentShader].Uniform3f("billboard_pos", mgl32.Vec3{
 			-t.Position()[0],
-			t.Height() + (float32(img.image.Height()) / 2),
+			t.Height() + (float32(img.image.Height()) / 2.2),
 			t.Position()[1],
 		})
 
