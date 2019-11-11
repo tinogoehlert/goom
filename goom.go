@@ -4,6 +4,7 @@ import (
 	"sync"
 
 	"github.com/tinogoehlert/goom/audio/music"
+	"github.com/tinogoehlert/goom/audio/sfx"
 	"github.com/tinogoehlert/goom/graphics"
 	"github.com/tinogoehlert/goom/level"
 	"github.com/tinogoehlert/goom/wad"
@@ -17,6 +18,7 @@ type GameData struct {
 	Sprites  graphics.SpriteStore
 	Palettes *graphics.Palettes
 	Music    music.Suite
+	Sounds   sfx.Sounds
 	Fonts    graphics.FontBook
 }
 
@@ -59,6 +61,7 @@ func LoadGameData(files ...string) (*GameData, error) {
 		Flats:    graphics.NewFlatStore(),
 		Sprites:  graphics.NewSpriteStore(),
 		Music:    music.NewSuite(),
+		Sounds:   sfx.Sounds{},
 		Fonts:    graphics.NewFontBook(),
 	}
 	for _, file := range files {
@@ -81,7 +84,7 @@ func LoadGameData(files ...string) (*GameData, error) {
 		gd.Sprites.LoadWAD(wad)
 		gd.Flats.LoadWAD(wad)
 		gd.Textures.LoadWAD(wad)
-
+		gd.Sounds.LoadWAD(wad)
 	}
 	gd.Textures.InitPatches()
 	return gd, nil
