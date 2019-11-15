@@ -1,8 +1,8 @@
 package sdl
 
 import (
+	"github.com/tinogoehlert/go-sdl2/sdl"
 	"github.com/tinogoehlert/goom/drivers"
-	"github.com/veandco/go-sdl2/sdl"
 )
 
 // InputDriver handles GLFW Input Events

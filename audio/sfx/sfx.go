@@ -1,11 +1,12 @@
 package sfx
 
 import (
+	"bytes"
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
 	"io"
-	"path"
+	"io/ioutil"
 	"regexp"
 	"time"
 
@@ -48,8 +49,12 @@ func (s Sounds) LoadWAD(w *wad.WAD) error {
 				return fmt.Errorf("invalid DS header for LUMP %s: %x", l.Name, l.Data[:4])
 			}
 			s[l.Name] = &Sound{l}
+			if l.Name == "DSPISTOL" {
+				ioutil.WriteFile(l.Name, s[l.Name].SampleBytes(), 0644)
+			}
 		}
 	}
+	sounds = s
 	return nil
 }
 
@@ -66,6 +71,31 @@ func (s *Sound) SampleRate() int {
 // NumSamples returns the number of PCM samples that define the Sound.
 func (s *Sound) NumSamples() int {
 	return len(s.SampleBytes()) * 8 / s.BitDepth()
+}
+
+// ToWAV returns sampleBytes with RIFF/WAV header
+func (s *Sound) ToWAV() []byte {
+	var (
+		wavBuff = new(bytes.Buffer)
+	)
+
+	wavBuff.WriteString("RIFF")
+	binary.Write(wavBuff, binary.LittleEndian, uint32(44+len(s.SampleBytes())-8))
+	wavBuff.WriteString("WAVE")
+	wavBuff.WriteString("fmt ")
+	binary.Write(wavBuff, binary.LittleEndian, uint32(16))
+	binary.Write(wavBuff, binary.LittleEndian, uint16(1))
+	binary.Write(wavBuff, binary.LittleEndian, uint16(1))
+	binary.Write(wavBuff, binary.LittleEndian, uint32(s.SampleRate()))
+	binary.Write(wavBuff, binary.LittleEndian, uint32(s.SampleRate()))
+	binary.Write(wavBuff, binary.LittleEndian, uint16(1))
+	binary.Write(wavBuff, binary.LittleEndian, uint16(8))
+	wavBuff.WriteString("data")
+	binary.Write(wavBuff, binary.LittleEndian, uint32(len(s.SampleBytes())))
+	wavBuff.Write(s.SampleBytes())
+
+	ioutil.WriteFile("new.wav", wavBuff.Bytes(), 0644)
+	return wavBuff.Bytes()
 }
 
 // SampleBytes returns the PCM bytes without the header.
@@ -89,15 +119,18 @@ func (s *Sound) Info() string {
 		head)
 }
 
+func init() {
+	if err := pa.Initialize(); err != nil {
+		panic(err)
+	}
+}
+
 // Play plays a Sound using portaudio.
 func Play(s *Sound) error {
 	fmt.Println("playing sound:", s.Name, s.Size)
 	fmt.Println(s.Info())
 
-	if err := pa.Initialize(); err != nil {
-		return err
-	}
-	defer pa.Terminate()
+	//defer pa.Terminate()
 	api, err := pa.DefaultHostApi()
 	if err != nil {
 		return err
@@ -118,7 +151,6 @@ func Play(s *Sound) error {
 	fmt.Println("using portaudio device:", dev.Name)
 
 	data := s.SampleBytes()
-	bufSize := len(data)
 
 	if test {
 		for i := range data {
@@ -127,8 +159,7 @@ func Play(s *Sound) error {
 	}
 
 	rate := float64(s.SampleRate())
-
-	stream, err := pa.OpenDefaultStream(0, 1, rate, bufSize, &data)
+	stream, err := pa.OpenDefaultStream(0, 1, rate, pa.FramesPerBufferUnspecified, &data)
 	if err == pa.DeviceUnavailable {
 		fmt.Println("skipping unavailable device:", dev.Name)
 		return nil
@@ -138,8 +169,8 @@ func Play(s *Sound) error {
 	}
 
 	stream.Start()
-	defer stream.Stop()
-	defer stream.Close()
+	//defer stream.Stop()
+	//defer stream.Close()
 
 	// fmt.Println("started playback on device:", dev.Name)
 	// t := time.Now()
@@ -158,22 +189,12 @@ func Play(s *Sound) error {
 // PlaySounds plays all given sounds.
 func PlaySounds(names ...string) error {
 	if len(sounds) == 0 {
-		w, err := wad.NewWADFromFile(path.Join("..", "..", "DOOM1.WAD"))
-		if err != nil {
-			return err
-		}
-		sounds = make(Sounds)
-		if err := sounds.LoadWAD(w); err != nil {
-			return err
-		}
-		if len(sounds) == 0 {
-			return fmt.Errorf("no sounds loaded")
-		}
-		fmt.Printf("loaded %d sounds to test cache\n", len(sounds))
+		fmt.Println("no sounds loaded")
+		return fmt.Errorf("no sounds loaded")
 	}
-
 	for _, n := range names {
 		if err := Play(sounds.Get(n)); err != nil {
+			fmt.Println(err)
 			return err
 		}
 	}

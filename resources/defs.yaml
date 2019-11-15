@@ -1,6 +1,7 @@
 weapons:
 - name: chainsaw
   egoSprite: "SAWG"
+  sound: "SAWFUL"
   damage: 15
   range: 40
   anim:
@@ -9,6 +10,7 @@ weapons:
 - name: pistol
   egoSprite: "PISG"
   fireSprite: "PISF"
+  sound: "PISTOL"
   damage: 10
   range: 10000
   fire_offset:

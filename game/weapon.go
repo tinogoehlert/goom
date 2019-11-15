@@ -17,6 +17,7 @@ type Weapon struct {
 	FireSprite string `yaml:"fireSprite"`
 	Damage     int    `yaml:"damage"`
 	Range      int    `yaml:"range"`
+	Sound      string `yaml:"sound"`
 	FireOffset struct {
 		X float32 `yaml:"x"`
 		Y float32 `yaml:"y"`

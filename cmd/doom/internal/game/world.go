@@ -8,16 +8,16 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 
 	"github.com/tinogoehlert/goom"
-	"github.com/tinogoehlert/goom/geometry"
+	"github.com/tinogoehlert/goom/utils"
 	"github.com/tinogoehlert/goom/level"
 )
 
 // Wall a DOOM Wall
 type Wall struct {
-	Start   geometry.Vec2
-	End     geometry.Vec2
-	Normal  geometry.Vec2
-	Tangent geometry.Vec2
+	Start   utils.Vec2
+	End     utils.Vec2
+	Normal  utils.Vec2
+	Tangent utils.Vec2
 	Length  float32
 	Sides   struct {
 		Right *level.SideDef
@@ -151,7 +151,7 @@ func (w *World) SetPlayer(num int) error {
 
 // Update updates the world (monster think and player position)
 func (w *World) Update(t float32) {
-	ppos := geometry.V2(w.me.position[0], w.me.position[1])
+	ppos := utils.V2(w.me.position[0], w.me.position[1])
 	for _, m := range w.monsters {
 		if !m.IsCorpse() {
 			m.Update()
@@ -162,14 +162,14 @@ func (w *World) Update(t float32) {
 	for e := w.projectiles.Front(); e != nil; e = e.Next() {
 		var (
 			p       = e.Value.(*Projectile)
-			projPos = geometry.V2(p.position[0], p.position[1])
+			projPos = utils.V2(p.position[0], p.position[1])
 		)
 		for _, m := range w.monsters {
 			if m.IsCorpse() {
 				continue
 			}
 			if w.hitThing(m, p, m.sizeX, m.sizeY) {
-				mpos := geometry.V2(m.position[0], m.position[1])
+				mpos := utils.V2(m.position[0], m.position[1])
 				dist := ppos.DistanceTo(mpos)
 				w.projectiles.Remove(e)
 				m.Hit(p.damage, dist)
