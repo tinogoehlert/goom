@@ -3,8 +3,11 @@ package main
 import (
 	"flag"
 	"fmt"
+	"os"
 	"strings"
 	"time"
+
+	"github.com/tinogoehlert/goom/drivers/sdl"
 
 	"github.com/tinogoehlert/goom/drivers"
 
@@ -23,7 +26,11 @@ func main() {
 	iwadfile := flag.String("iwad", "DOOM1", "IWAD file to load (without extension)")
 	pwadfile := flag.String("pwad", "", "PWAD file to load (without extension)")
 	levelName := flag.String("level", "E1M1", "Level to start e.g. E1M1")
+	test := flag.Bool("test", false, "Exit GOOM after loading all data.")
+
 	flag.Parse()
+	logger.Green("GOOM - DOOM clone written in Go")
+	logger.Green("loading %s", *iwadfile)
 
 	if err := glfw.Init(); err != nil {
 		logger.Fatalf(err.Error())
@@ -43,18 +50,26 @@ func main() {
 	if err != nil {
 		logger.Red("could not load WAD data: %s", err.Error())
 	}
+	mission := strings.ToUpper(*levelName)
+
+	sm, err := sdl.NewAudioDriver(gameData.Sounds)
+	if err != nil {
+		logger.Fatalf("could not load sounds: %s", err.Error())
+	}
+	if err := sm.PlayMusic(gameData.Music.Track(mission)); err != nil {
+		logger.Fatalf("could not play music: %s", err.Error())
+	}
 
 	renderer, err := opengl.NewRenderer(gameData)
 	if err := renderer.LoadShaderProgram("main", "resources/shaders/main.vert", "resources/shaders/main.frag"); err != nil {
 		logger.Red("could not init GL: %s", err.Error())
 	}
 
-	mission := strings.ToUpper(*levelName)
 	m := gameData.Level(mission)
 
 	renderer.LoadLevel(m, gameData)
 	renderer.SetShaderProgram("main")
-	world := game.NewWorld(m, game.NewDefStore("resources/defs.yaml"), gameData)
+	world := game.NewWorld(m, game.NewDefStore("resources/defs.yaml"), gameData, sm)
 	player := world.Me()
 	ssect, err := m.FindPositionInBsp(level.GLNodesName, player.Position()[0], player.Position()[1])
 	if err != nil {
@@ -63,9 +78,16 @@ func main() {
 		var sector = m.SectorFromSSect(ssect)
 		player.SetSector(sector)
 	}
+
+	logger.Green("Press Q to exit GOOM.")
+
 	renderer.Camera().SetCamera(player.Position(), player.Direction(), player.Height())
 	renderer.SetViewPort(win.FrameBufferSize())
 	rs := &renderStats{lastUpdate: time.Now()}
+	if *test {
+		logger.Green("Test run finished. Exiting GOOM.")
+		os.Exit(0)
+	}
 	win.Run(func(elapsed float32) {
 		renderer.RenderNewFrame(elapsed)
 		renderer.SetViewPort(win.FrameBufferSize())

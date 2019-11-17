@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-gl/mathgl/mgl32"
 
+	"github.com/tinogoehlert/goom/drivers"
 	"github.com/tinogoehlert/goom/goom"
 	"github.com/tinogoehlert/goom/level"
 	"github.com/tinogoehlert/goom/utils"
@@ -38,6 +39,7 @@ type World struct {
 	projectiles *list.List
 	me          *Player
 	levelRef    *level.Level
+	audioDriver drivers.AudioDriver
 }
 
 func newWall(line level.LineDef, lvl *level.Level) Wall {
@@ -64,13 +66,19 @@ func newWall(line level.LineDef, lvl *level.Level) Wall {
 }
 
 // NewWorld creates a new world
-func NewWorld(doomLevel *level.Level, defs *DefStore, data *goom.GameData) *World {
+func NewWorld(
+	doomLevel *level.Level,
+	defs *DefStore,
+	data *goom.GameData,
+	audioDrv drivers.AudioDriver,
+) *World {
 	var w = &World{
 		nodes:       doomLevel.Nodes(level.GLNodesName),
 		walls:       make([]Wall, 0, len(doomLevel.LinesDefs)),
 		levelRef:    doomLevel,
 		definitions: defs,
 		projectiles: list.New(),
+		audioDriver: audioDrv,
 	}
 
 	for _, line := range doomLevel.LinesDefs {
@@ -193,6 +201,8 @@ func (w *World) spawnShot(player *Player) {
 		player.weapon.Damage,
 		player.weapon.Range,
 	))
+	fmt.Println(player.weapon.Sound)
+	w.audioDriver.Play("DS" + player.weapon.Sound)
 }
 
 func (w *World) hitThing(t1, t2 Thingable, sx, sy float32) bool {

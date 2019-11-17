@@ -1,11 +1,9 @@
 package game
 
 import (
-	"fmt"
 	"math"
 	"time"
 
-	"github.com/tinogoehlert/goom/audio/sfx"
 	"github.com/tinogoehlert/goom/utils"
 
 	"github.com/go-gl/mathgl/mgl32"
@@ -88,10 +86,8 @@ func (p *Player) AddWeapon(weapon *Weapon) {
 
 func (p *Player) FireWeapon() {
 	if p.weapon.Fire() {
-		fmt.Println("FIRE:", p.weapon.Name)
 		// TODO: play correct sounds for other weapons
 		// TODO: reuse playback device instead of naive playback
-		go sfx.PlaySounds(p.weapon.Sound)
 		p.world.spawnShot(p)
 	}
 }
