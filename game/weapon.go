@@ -6,8 +6,8 @@ import (
 )
 
 const (
-	bobSpeed float64 = 1.7
-	bobPow   float64 = 1.3
+	bobSpeed float64 = 0.03
+	bobPow   float64 = 50
 )
 
 // Weapon weapon
@@ -59,8 +59,8 @@ func (w *Weapon) PutUp() {
 	w.state = 3
 }
 
-func (w *Weapon) pull(frameTime float32) {
-	w.offset[1] += 450 * frameTime
+func (w *Weapon) pull(frameTime float64) {
+	w.offset[1] += float32(450 * frameTime)
 	if w.offset[1] > 200 {
 		w.pulledDown()
 		w.state = 0
@@ -71,11 +71,11 @@ func (w *Weapon) pull(frameTime float32) {
 	}
 }
 
-func (w *Weapon) bobbing(passedTime float32) {
+func (w *Weapon) bobbing() {
 	if w.state != 0 {
 		return
 	}
-	w.bobPhase += float64(passedTime) * math.Pi * 0.7 * bobSpeed
+	w.bobPhase += math.Pi * 0.7 * bobSpeed
 	x := math.Cos(w.bobPhase) * bobSpeed * 20.5 * bobPow
 	y := math.Abs((math.Sin(w.bobPhase) * bobSpeed * 17 * bobPow))
 	w.offset[0] = float32(math.Round(x))
@@ -83,7 +83,7 @@ func (w *Weapon) bobbing(passedTime float32) {
 }
 
 // NextFrames gets weapon and fire frame. if no fire, value will be 255
-func (w *Weapon) NextFrames(frameTime float32) (byte, byte) {
+func (w *Weapon) NextFrames(frameTime float64) (byte, byte) {
 	var (
 		anim      = w.Animations["idle"]
 		fire byte = 255

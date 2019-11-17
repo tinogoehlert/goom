@@ -195,7 +195,7 @@ func (gr *GLRenderer) drawHudImage(sprite string, pos mgl32.Vec3, offsetX, offse
 }
 
 // DrawHUD draws the game hud
-func (gr *GLRenderer) DrawHUD(player *game.Player, t float32) {
+func (gr *GLRenderer) DrawHUD(player *game.Player, t float64) {
 	aspect := float32(gr.fbWidth) / float32(gr.fbHeight)
 
 	gr.setUpHudShader(aspect)
@@ -241,7 +241,7 @@ func (gr *GLRenderer) SetViewPort(fbWidth, fbHeight int) {
 	gr.setProjection()
 }
 
-func (gr *GLRenderer) RenderNewFrame(frameTime float32) {
+func (gr *GLRenderer) RenderNewFrame() {
 	gl.Enable(gl.DEPTH_TEST)
 	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 	gr.shaders[gr.currentShader].Use()

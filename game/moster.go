@@ -102,7 +102,7 @@ func (m *Monster) Lurk() {
 	}
 }
 
-func (m *Monster) Think(player *Player, frameTime float32) {
+func (m *Monster) Think(player *Player) {
 	//m.Walk(12, frameTime)
 	//m.Turn(12, frameTime)
 }

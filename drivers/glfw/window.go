@@ -66,34 +66,52 @@ func (w *Window) Size() (int, int) {
 	return w.width, w.height
 }
 
-// Size Returns the current size of the Window
+// FrameBufferSize returns the current size of the Window
 func (w *Window) FrameBufferSize() (int, int) {
 	return w.fbWidth, w.fbHeight
 }
 
+type updateFunc func()
+type renderFunc func(interpolTime float64)
+type inputFunc func()
+
 // Run runs the window loop
-func (w *Window) Run(loop func(elapsed float32)) {
+func (w *Window) Run(input inputFunc, update updateFunc, render renderFunc) {
 	var (
-		previous = glfw.GetTime()
+		previous         = glfw.GetTime()
+		lag              = float64(0)
+		elapsed, current float64
 	)
 
 	for !w.window.ShouldClose() {
-		var (
-			frameTime = glfw.GetTime() - previous
-			waitTime  = w.secsPerUpdate - frameTime
-		)
-		loop(float32(waitTime))
-		if waitTime > 0 {
-			glfw.WaitEventsTimeout(waitTime)
+		current = glfw.GetTime()
+		elapsed = current - previous
+		previous = current
+
+		lag += elapsed
+
+		w.inputDrv.poll()
+
+		for lag >= w.secsPerUpdate {
+			lag -= w.secsPerUpdate
+			input()
+			update()
 		}
 
+		// TODO: This tells the renderer close we are to the next tick, so if we
+		//       are between two ticks we can display (as an example) the movement
+		//       of a projectile by and additional 0.8 units instead of fixed 1 unit.
+		//       The todo is to implement this in the renderer ^^.
+		render(lag / w.secsPerUpdate)
 		w.window.SwapBuffers()
-		w.inputDrv.poll()
-		previous = glfw.GetTime()
 	}
 }
 
 // Close closes the window
 func (w *Window) Close() {
 	w.window.Destroy()
+}
+
+func GetGameTime() float64 {
+	return glfw.GetTime()
 }
