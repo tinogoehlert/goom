@@ -179,7 +179,15 @@ func (w *World) Update() {
 				w.projectiles.Remove(e)
 				state := m.Hit(p.damage, dist)
 				if state > 0 {
-					w.audioDriver.Play(m.sounds[state])
+					distP := mgl32.Vec2(m.position).Sub(w.me.position)
+					angle := mgl32.RadToDeg(
+						float32(math.Atan2(float64(distP.Y()),
+							float64(distP.X()))),
+					) - m.angle
+					if angle < 0.0 {
+						angle += 360
+					}
+					w.audioDriver.PlayAtPosition(m.sounds[state], dist/2.6, int16(angle))
 				}
 				break
 			}

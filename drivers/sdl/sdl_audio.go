@@ -70,6 +70,9 @@ func (sm *AudioDriver) PlayAtPosition(name string, distance float32, angle int16
 	if err != nil {
 		return err
 	}
+	if distance > 255 {
+		distance = 255
+	}
 	channel, err := chunk.Play(-1, 0)
 	mix.SetPosition(channel, angle, uint8(distance))
 	return err
