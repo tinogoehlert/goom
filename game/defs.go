@@ -19,6 +19,7 @@ type MonsterDef struct {
 	ID         int               `yaml:"id"`
 	Health     int               `yaml:"health"`
 	Sprite     string            `yaml:"sprite"`
+	Sounds     map[string]string `yaml:"sounds"`
 	Animations map[string]string `yaml:"anim"`
 }
 

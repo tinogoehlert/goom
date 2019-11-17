@@ -2,7 +2,7 @@ package game
 
 import (
 	"container/list"
-	"fmt"
+	"errors"
 	"math"
 
 	"github.com/go-gl/mathgl/mgl32"
@@ -148,19 +148,19 @@ func (w *World) Monsters() []*Monster {
 // SetPlayer (in case we will implement multiplayer LOL)
 func (w *World) SetPlayer(num int) error {
 	if num > 4 {
-		return fmt.Errorf("out of range")
+		return errors.New("out of range")
 	}
 	w.me = w.players[num]
 	return nil
 }
 
-// Update updates the world (monster think and player position)
-func (w *World) Update(t float32) {
+// Update the world (monster, thing and player position)
+func (w *World) Update() {
 	ppos := utils.V2(w.me.position[0], w.me.position[1])
 	for _, m := range w.monsters {
 		if !m.IsCorpse() {
 			m.Update()
-			m.Think(w.me, t)
+			m.Think(w.me)
 		}
 	}
 	for e := w.projectiles.Front(); e != nil; e = e.Next() {
@@ -177,16 +177,19 @@ func (w *World) Update(t float32) {
 				mpos := utils.V2(m.position[0], m.position[1])
 				dist := ppos.DistanceTo(mpos)
 				w.projectiles.Remove(e)
-				m.Hit(p.damage, dist)
+				state := m.Hit(p.damage, dist)
+				if state > 0 {
+					w.audioDriver.Play(m.sounds[state])
+				}
 				break
 			}
 		}
 		if int(ppos.DistanceTo(projPos)) > p.maxRange {
 			w.projectiles.Remove(e)
 		}
-		p.Walk(20, t)
+		p.Walk(20)
 	}
-	w.me.Update(t)
+	w.me.Update()
 }
 
 func (w *World) doesCollide(thing *DoomThing, to mgl32.Vec2) mgl32.Vec2 {
@@ -201,7 +204,6 @@ func (w *World) spawnShot(player *Player) {
 		player.weapon.Damage,
 		player.weapon.Range,
 	))
-	fmt.Println(player.weapon.Sound)
 	w.audioDriver.Play("DS" + player.weapon.Sound)
 }
 
@@ -233,6 +235,7 @@ func (w *World) checkThingCollision(thing *DoomThing, to mgl32.Vec2) {
 				if t.category == "weapon" {
 					w.me.AddWeapon(w.definitions.GetWeapon(t.ref))
 					t.consumed = true
+					w.audioDriver.Play("DSWPNUP")
 				}
 			}
 		}

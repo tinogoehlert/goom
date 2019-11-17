@@ -17,6 +17,7 @@ type Player struct {
 	lastTick     time.Time
 	world        *World
 	velocityX    float32
+	velocityY    float32
 	velocityZ    float32
 	maxSpeed     float32
 	currSpeed    float32
@@ -37,18 +38,24 @@ func NewPlayer(x, y, height, angle float32, w *World) *Player {
 		},
 		world:     w,
 		weaponBag: make(map[string]*Weapon),
-		maxSpeed:  35,
+		maxSpeed:  0.5,
 	}
 	return p
 }
 
-func (p *Player) Forward(speed, delta float32) {
-	p.weapon.bobbing(delta)
+func (p *Player) Forward(speed float32) {
+	p.weapon.bobbing()
 	p.currSpeed = utils.Clamp(p.currSpeed+speed, -p.maxSpeed, p.maxSpeed)
-	p.velocityX += p.currSpeed * delta
+	p.velocityX += p.currSpeed
 }
 
-func (p *Player) Lift(height, delta float32) {
+func (p *Player) Strafe(speed float32) {
+	p.weapon.bobbing()
+	p.currSpeed = utils.Clamp(p.currSpeed+speed, -p.maxSpeed, p.maxSpeed)
+	p.velocityY += p.currSpeed
+}
+
+func (p *Player) Lift(height float32) {
 	if p.targetHeight == height {
 		return
 	}
@@ -64,9 +71,11 @@ func (p *Player) Height() float32 {
 	return p.DoomThing.height + 40
 }
 
-func (p *Player) Update(passedTime float32) {
+func (p *Player) Update() {
 	p.velocityX *= 0.90
-	p.Movable.Walk(p.velocityX, passedTime)
+	p.Movable.Walk(p.velocityX)
+	p.velocityY *= 0.90
+	p.Movable.Strafe(p.velocityY)
 	if p.targetHeight != p.height {
 		p.SetHeight(p.height + p.velocityZ)
 	}

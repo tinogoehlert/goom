@@ -23,6 +23,7 @@ weapons:
 - name: "shotgun"
   egoSprite: "SHTG"
   fireSprite: "SHTF"
+  sound: "SHOTGN"
   damage: 20
   range: 10000
   fire_offset:
@@ -56,7 +57,10 @@ monsters:
     splash: "MNOPQRSTU"
   height: 90
   width: 60
-  health: 25
+  health: 19
+  sounds:
+    hit: "DSPOPAIN"
+    die: "DSPODTH2"
 - id: 9
   sprite: "SPOS"
   anim:
@@ -65,7 +69,10 @@ monsters:
     hurt: "G"
     die: "HIJKL"
     splash: "MNOPQRSTU"
-  health: 50
+  health: 25
+  sounds:
+    hit: "DSPOPAIN"
+    die: "DSPODTH3"
 - id: 3001
   sprite: "TROO"
   anim:
@@ -74,7 +81,10 @@ monsters:
     hurt: "H"
     die: "IJKLM"
     splash: "NOPQRSTU"
-  health: 45
+  sounds:
+    hit: "DSPOPAIN"
+    die: "DSPODTH1"
+  health: 22
 - id: 3002
   sprite: SARG
   anim:
@@ -85,12 +95,6 @@ monsters:
     splash: "NOPQRSTU"
 
 obstacles:
-- id: 2019
-  sprite: "ARM2"
-  anim: "AB"
-- id: 2018
-  sprite: "ARM1"
-  anim: "AB"
 - id: 48
   sprite: "ELEC"
   anim: "A"
@@ -108,6 +112,12 @@ obstacles:
   anim: "N"
 
 items:
+- id: 2019
+  sprite: "ARM2"
+  anim: "AB"
+- id: 2018
+  sprite: "ARM1"
+  anim: "AB"
 - id: 2001
   sprite: "SHOT"
   category: "weapon"

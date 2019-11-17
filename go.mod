@@ -13,6 +13,7 @@ require (
 	github.com/pkg/errors v0.8.1 // indirect
 	github.com/tinogoehlert/go-sdl2 v0.4.0-rc.1
 	github.com/ttacon/chalk v0.0.0-20160626202418-22c06c80ed31
+	github.com/veandco/go-sdl2 v0.3.3
 	gitlab.com/gomidi/midi v1.10.0
 	gitlab.com/gomidi/rtmididrv v0.4.2
 	gitlab.com/ubunatic/portmididrv v0.3.1-0.20191104070601-795b76baf93c

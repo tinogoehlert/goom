@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"os"
 	"strings"
 	"time"
 
@@ -26,8 +25,7 @@ func main() {
 	iwadfile := flag.String("iwad", "DOOM1", "IWAD file to load (without extension)")
 	pwadfile := flag.String("pwad", "", "PWAD file to load (without extension)")
 	levelName := flag.String("level", "E1M1", "Level to start e.g. E1M1")
-	test := flag.Bool("test", false, "Exit GOOM after loading all data.")
-
+	fpsMax := flag.Int("fpsmax", 0, "Limit FPS")
 	flag.Parse()
 	logger.Green("GOOM - DOOM clone written in Go")
 	logger.Green("loading %s", *iwadfile)
@@ -84,12 +82,10 @@ func main() {
 	renderer.Camera().SetCamera(player.Position(), player.Direction(), player.Height())
 	renderer.SetViewPort(win.FrameBufferSize())
 	rs := &renderStats{lastUpdate: time.Now()}
-	if *test {
-		logger.Green("Test run finished. Exiting GOOM.")
-		os.Exit(0)
-	}
-	win.Run(func(elapsed float32) {
-		renderer.RenderNewFrame(elapsed)
+
+	renderFunc := func(interpolTime float64) {
+		started := glfw.GetGameTime()
+		renderer.RenderNewFrame()
 		renderer.SetViewPort(win.FrameBufferSize())
 
 		m.WalkBsp(func(i int, n *level.Node, b level.BBox) {
@@ -97,7 +93,7 @@ func main() {
 		})
 
 		renderer.DrawThings(world.Things())
-		renderer.DrawHUD(world.Me(), elapsed)
+		renderer.DrawHUD(world.Me(), interpolTime)
 
 		ssect, err := m.FindPositionInBsp(level.GLNodesName, player.Position()[0], player.Position()[1])
 		if err != nil {
@@ -105,16 +101,25 @@ func main() {
 		} else {
 			var sector = m.SectorFromSSect(ssect)
 			player.SetSector(sector)
-			player.Lift(sector.FloorHeight(), float32(elapsed))
+			player.Lift(sector.FloorHeight())
 		}
-		world.Update(elapsed / float32(time.Second))
-
 		renderer.Camera().SetCamera(player.Position(), player.Direction(), player.Height())
-		input(win.Input(), player, elapsed)
+
 		rs.showStats(gameData, renderer)
 		rs.countedFrames++
-		rs.accumulatedTime += time.Duration(elapsed)
-	})
+		ft := glfw.GetGameTime() - started
+		rs.accumulatedTime += time.Duration(ft * float64(time.Second))
+
+		if *fpsMax > 0 {
+			time.Sleep(time.Second / time.Duration(*fpsMax))
+		}
+	}
+
+	inputFunc := func() {
+		input(win.Input(), player)
+	}
+
+	win.Run(inputFunc, world.Update, renderFunc)
 }
 
 // DrawText draws a string on the screen
@@ -154,7 +159,7 @@ func (rs *renderStats) showStats(gd *goom.GameData, gr *opengl.GLRenderer) {
 
 	fpsText := fmt.Sprintf("FPS: %d", rs.fps)
 	drawText(gd.Fonts, graphics.FnCompositeRed, fpsText, 800, 600, 0.6, gr)
-	ftimeText := fmt.Sprintf("frame time: %.3f ms", rs.meanFrameTime)
+	ftimeText := fmt.Sprintf("frame time: %.6f ms", rs.meanFrameTime)
 	drawText(gd.Fonts, graphics.FnCompositeRed, ftimeText, 800, 580, 0.6, gr)
 }
 
@@ -166,18 +171,24 @@ type renderStats struct {
 	lastUpdate      time.Time
 }
 
-func input(id drivers.InputDriver, player *game.Player, delta float32) {
-	if id.IsPressed(drivers.KeyUp) {
-		player.Forward(100, delta)
+func input(id drivers.InputDriver, player *game.Player) {
+	if id.IsPressed(drivers.KeyUp) || id.IsPressed(drivers.KeyW) {
+		player.Forward(1)
 	}
-	if id.IsPressed(drivers.KeyDown) {
-		player.Forward(-100, delta)
+	if id.IsPressed(drivers.KeyDown) || id.IsPressed(drivers.KeyS) {
+		player.Forward(-1)
+	}
+	if id.IsPressed(drivers.KeyA) {
+		player.Strafe(-1)
+	}
+	if id.IsPressed(drivers.KeyD) {
+		player.Strafe(1)
 	}
 	if id.IsPressed(drivers.KeyLeft) {
-		player.Turn(-130, delta)
+		player.Turn(-1.5)
 	}
 	if id.IsPressed(drivers.KeyRight) {
-		player.Turn(130, delta)
+		player.Turn(1.5)
 	}
 	if id.IsPressed(drivers.KeyLShift) {
 		player.FireWeapon()

@@ -29,6 +29,7 @@ type Monster struct {
 	sizeY      float32
 	lastTick   time.Time
 	lastChange time.Time
+	sounds     map[State]string
 }
 
 // MonsterFromDef creates monster from definition
@@ -37,6 +38,15 @@ func MonsterFromDef(x, y, sx, sy, height, angle float32, def *MonsterDef) *Monst
 	m.health = def.Health
 	m.sizeX = sx
 	m.sizeY = sy
+	for k, v := range def.Sounds {
+		switch k {
+		case "hit":
+			m.sounds[StateHurt] = v
+		case "die":
+			m.sounds[StateDying] = v
+		}
+	}
+
 	for k, v := range def.Animations {
 		m.animations[k] = []byte(v)
 	}
@@ -48,6 +58,7 @@ func MonsterFromDef(x, y, sx, sy, height, angle float32, def *MonsterDef) *Monst
 func NewMonster(x, y, height, angle float32, sprite string) *Monster {
 	return &Monster{
 		Movable: NewMovable(x, y, height, angle, sprite),
+		sounds:  make(map[State]string),
 	}
 }
 
@@ -72,10 +83,10 @@ func (m *Monster) Update() {
 }
 
 // Hit monster got hit by something
-func (m *Monster) Hit(damage int, distance float32) {
+func (m *Monster) Hit(damage int, distance float32) State {
 	m.health -= damage - (int(distance) / 100)
 	if m.state == StateHurt || m.state == StateDying || m.state == StateDead {
-		return
+		return -1
 	}
 	if m.health < 0 {
 		m.currentAnimation = m.animations["die"]
@@ -85,12 +96,13 @@ func (m *Monster) Hit(damage int, distance float32) {
 		m.currentFrame = 0
 		m.state = StateDying
 		m.lastChange = time.Now()
-		return
+		return StateDying
 	}
 	m.currentAnimation = m.animations["hurt"]
 	m.currentFrame = 0
 	m.state = StateHurt
 	m.lastChange = time.Now()
+	return StateHurt
 }
 
 func (m *Monster) Lurk() {
@@ -102,7 +114,7 @@ func (m *Monster) Lurk() {
 	}
 }
 
-func (m *Monster) Think(player *Player, frameTime float32) {
+func (m *Monster) Think(player *Player) {
 	//m.Walk(12, frameTime)
 	//m.Turn(12, frameTime)
 }
