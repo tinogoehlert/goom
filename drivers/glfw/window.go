@@ -26,6 +26,7 @@ func NewWindow(title string, width, height int) (*Window, error) {
 	glfw.WindowHint(glfw.ContextVersionMinor, 2)
 	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
 	glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
+
 	glfwWin, err := glfw.CreateWindow(width, height, title, nil, nil)
 	if err != nil {
 		return nil, fmt.Errorf("could not create GLFW Window: %s", err.Error())

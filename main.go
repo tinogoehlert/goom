@@ -175,6 +175,7 @@ func input(id drivers.InputDriver, player *game.Player) {
 	if id.IsPressed(drivers.KeyUp) || id.IsPressed(drivers.KeyW) {
 		player.Forward(1)
 	}
+
 	if id.IsPressed(drivers.KeyDown) || id.IsPressed(drivers.KeyS) {
 		player.Forward(-1)
 	}
