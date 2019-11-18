@@ -20,6 +20,7 @@ __MACOSX
 *.WAD
 *.wad
 *.gwa
+*.mid
 
 # External Docs
 doc/extern

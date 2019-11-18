@@ -1,0 +1,136 @@
+weapons:
+- name: chainsaw
+  egoSprite: "SAWG"
+  sound: "SAWFUL"
+  damage: 15
+  range: 40
+  anim:
+    idle: "CD"
+    shoot: "AB"
+- name: pistol
+  egoSprite: "PISG"
+  fireSprite: "PISF"
+  sound: "PISTOL"
+  damage: 10
+  range: 10000
+  fire_offset:
+    x: -19
+    y: 118
+  anim:
+    idle: "A"
+    shoot: "ABCDE"
+    fire: "A"
+- name: "shotgun"
+  egoSprite: "SHTG"
+  fireSprite: "SHTF"
+  sound: "SHOTGN"
+  damage: 20
+  range: 10000
+  fire_offset:
+    x: -8
+    y: 100
+  anim:
+    idle: "A"
+    shoot: "ABCDCBA"
+    fire: "AB"
+- name: "super-shotgun"
+  egoSprite: "SHT2"
+  fireSprite: "SHT2"
+  damage: 30
+  range: 10000
+  fire_offset:
+    x: -2
+    y: 93
+  anim:
+    idle: "A"
+    shoot: "AABCDEFGH"
+    fire: "IJ"
+
+monsters:
+- id: 3004
+  sprite: "POSS"
+  anim:
+    walk: "ABCD"
+    shoot: "EF"
+    hurt: "G"
+    die: "HIJKL"
+    splash: "MNOPQRSTU"
+  height: 90
+  width: 60
+  health: 19
+  sounds:
+    hit: "DSPOPAIN"
+    die: "DSPODTH2"
+- id: 9
+  sprite: "SPOS"
+  anim:
+    walk: "ABCD"
+    shoot: "EF"
+    hurt: "G"
+    die: "HIJKL"
+    splash: "MNOPQRSTU"
+  health: 25
+  sounds:
+    hit: "DSPOPAIN"
+    die: "DSPODTH3"
+- id: 3001
+  sprite: "TROO"
+  anim:
+    walk: "ABCD"
+    shoot: "EFG"
+    hurt: "H"
+    die: "IJKLM"
+    splash: "NOPQRSTU"
+  sounds:
+    hit: "DSPOPAIN"
+    die: "DSPODTH1"
+  health: 22
+- id: 3002
+  sprite: SARG
+  anim:
+    walk: "ABCD"
+    shoot: "EFG"
+    hurt: "H"
+    die: "IJKLM"
+    splash: "NOPQRSTU"
+
+obstacles:
+- id: 48
+  sprite: "ELEC"
+  anim: "A"
+- id: 2035
+  sprite: "BAR1"
+  anim: "AB"
+- id: 10
+  sprite: "PLAY"
+  anim: "W"
+- id: 12
+  sprite: "PLAY"
+  anim: "W"
+- id: 15
+  sprite: "PLAY"
+  anim: "N"
+
+items:
+- id: 2019
+  sprite: "ARM2"
+  anim: "AB"
+- id: 2018
+  sprite: "ARM1"
+  anim: "AB"
+- id: 2001
+  sprite: "SHOT"
+  category: "weapon"
+  ref: "shotgun"
+  anim: "A"
+- id: 2005
+  sprite: "CSAW"
+  category: "weapon"
+  ref: "chainsaw"
+  anim: "A"
+- id: 82
+  sprite: "SGN2"
+  category: "weapon"
+  ref: "super-shotgun"
+  anim: "A"
+  

@@ -3,9 +3,7 @@ package level
 import (
 	"encoding/binary"
 
-	"github.com/tinogoehlert/goom/internal/utils"
-
-	"github.com/tinogoehlert/goom/geometry"
+	"github.com/tinogoehlert/goom/utils"
 	"github.com/tinogoehlert/goom/wad"
 )
 
@@ -69,9 +67,9 @@ func (n *NodeChild) Num() uint32 {
 
 // Node The nodes lump constitutes a binary space partition of the level.
 type Node struct {
-	position  geometry.Vec2
-	diagonal  geometry.Vec2
-	direction geometry.Vec2
+	position  utils.Vec2
+	diagonal  utils.Vec2
+	direction utils.Vec2
 	dirDeg    float32
 	RightBBox BBox
 	LeftBBox  BBox
@@ -87,8 +85,8 @@ func newNodesFromLump(lump *wad.Lump) ([]Node, error) {
 	for i := 0; i < nodeCount; i++ {
 		vb := lump.Data[(i * nodeSize) : (i*nodeSize)+nodeSize]
 		nodes[i] = Node{
-			position:  geometry.V2(utils.Int16Tof32(vb[0:2]), utils.Int16Tof32(vb[2:4])),
-			diagonal:  geometry.V2(utils.Int16Tof32(vb[4:6]), utils.Int16Tof32(vb[6:8])),
+			position:  utils.V2(utils.Int16Tof32(vb[0:2]), utils.Int16Tof32(vb[2:4])),
+			diagonal:  utils.V2(utils.Int16Tof32(vb[4:6]), utils.Int16Tof32(vb[6:8])),
 			RightBBox: NewBBoxFromi16(vb[8:16]),
 			LeftBBox:  NewBBoxFromi16(vb[16:24]),
 			Right:     nodeChildI16(int(binary.LittleEndian.Uint16(vb[24:26]))),
@@ -108,8 +106,8 @@ func newGLNodesFromLump(lump *wad.Lump) ([]Node, error) {
 	for i := 0; i < nodeCount; i++ {
 		vb := lump.Data[(i * glNodeSize) : (i*glNodeSize)+glNodeSize]
 		nodes[i] = Node{
-			position:  geometry.V2(utils.Int16Tof32(vb[0:2]), utils.Int16Tof32(vb[2:4])),
-			diagonal:  geometry.V2(utils.Int16Tof32(vb[4:6]), utils.Int16Tof32(vb[6:8])),
+			position:  utils.V2(utils.Int16Tof32(vb[0:2]), utils.Int16Tof32(vb[2:4])),
+			diagonal:  utils.V2(utils.Int16Tof32(vb[4:6]), utils.Int16Tof32(vb[6:8])),
 			RightBBox: NewBBoxFromi16(vb[8:16]),
 			LeftBBox:  NewBBoxFromi16(vb[16:24]),
 			Right:     NodeChild(binary.LittleEndian.Uint32(vb[24:28])),
