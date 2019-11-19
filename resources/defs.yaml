@@ -36,6 +36,7 @@ weapons:
 - name: "super-shotgun"
   egoSprite: "SHT2"
   fireSprite: "SHT2"
+  sound: "DSHTGN"
   damage: 30
   range: 10000
   fire_offset:

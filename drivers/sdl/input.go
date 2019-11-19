@@ -26,5 +26,7 @@ func (id *InputDriver) KeyStates() chan drivers.Key {
 
 // IsPressed is keycode pressed? -.^
 func (id *InputDriver) IsPressed(keycode drivers.Keycode) bool {
-	return false
+	states := sdl.GetKeyboardState()
+	scanCode := sdl.GetScancodeFromKey(driversKeyMap[keycode])
+	return states[scanCode] != 0
 }

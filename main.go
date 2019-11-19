@@ -6,11 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/tinogoehlert/goom/drivers/sdl"
-
 	"github.com/tinogoehlert/goom/drivers"
 
-	"github.com/tinogoehlert/goom/drivers/glfw"
 	"github.com/tinogoehlert/goom/drivers/opengl"
 	"github.com/tinogoehlert/goom/game"
 	"github.com/tinogoehlert/goom/goom"
@@ -30,11 +27,7 @@ func main() {
 	logger.Green("GOOM - DOOM clone written in Go")
 	logger.Green("loading %s", *iwadfile)
 
-	if err := glfw.Init(); err != nil {
-		logger.Fatalf(err.Error())
-	}
-
-	win, err := glfw.NewWindow("GOOM", 800, 600)
+	win, err := initWindow("GOOM", 800, 600)
 	if err != nil {
 		logger.Fatalf(err.Error())
 	}
@@ -50,25 +43,20 @@ func main() {
 	}
 	mission := strings.ToUpper(*levelName)
 
-	sm, err := sdl.NewAudioDriver(gameData.Sounds)
-	if err != nil {
-		logger.Fatalf("could not load sounds: %s", err.Error())
-	}
-	if err := sm.PlayMusic(gameData.Music.Track(mission)); err != nil {
-		logger.Fatalf("could not play music: %s", err.Error())
-	}
-
 	renderer, err := opengl.NewRenderer(gameData)
 	if err := renderer.LoadShaderProgram("main", "resources/shaders/main.vert", "resources/shaders/main.frag"); err != nil {
 		logger.Red("could not init GL: %s", err.Error())
 	}
 
 	m := gameData.Level(mission)
+	world := game.NewWorld(gameData, game.NewDefStore("resources/defs.yaml"))
+
+	initAudio(world)
+	world.LoadLevel(m)
+	player := world.Me()
 
 	renderer.LoadLevel(m, gameData)
 	renderer.SetShaderProgram("main")
-	world := game.NewWorld(m, game.NewDefStore("resources/defs.yaml"), gameData, sm)
-	player := world.Me()
 	ssect, err := m.FindPositionInBsp(level.GLNodesName, player.Position()[0], player.Position()[1])
 	if err != nil {
 		logger.Print("could not find GLnode for pos %v", player.Position())
@@ -84,7 +72,7 @@ func main() {
 	rs := &renderStats{lastUpdate: time.Now()}
 
 	renderFunc := func(interpolTime float64) {
-		started := glfw.GetGameTime()
+		started := getTime()
 		renderer.RenderNewFrame()
 		renderer.SetViewPort(win.FrameBufferSize())
 
@@ -107,7 +95,7 @@ func main() {
 
 		rs.showStats(gameData, renderer)
 		rs.countedFrames++
-		ft := glfw.GetGameTime() - started
+		ft := getTime() - started
 		rs.accumulatedTime += time.Duration(ft * float64(time.Second))
 
 		if *fpsMax > 0 {

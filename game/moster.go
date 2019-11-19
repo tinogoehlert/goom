@@ -14,10 +14,12 @@ const (
 	StateAttacking State = 1
 	// StateHurt monster was hurt
 	StateHurt State = 2
-	// StateHurt monster was hurt
+	// StateDying monster is dying
 	StateDying State = 3
-	// StateHurt monster was hurt
-	StateDead State = 4
+	// StateSplash monster is dying so hard that it splashes into bloody chunks of hellish meat
+	StateSplash State = 4
+	// StateDead monster was hurt
+	StateDead State = 5
 )
 
 // Monster A DOOM Monster
@@ -46,6 +48,7 @@ func MonsterFromDef(x, y, sx, sy, height, angle float32, def *MonsterDef) *Monst
 			m.sounds[StateDying] = v
 		}
 	}
+	m.sounds[StateSplash] = "DSSLOP"
 
 	for k, v := range def.Animations {
 		m.animations[k] = []byte(v)
@@ -72,7 +75,7 @@ func (m *Monster) Update() {
 			m.Lurk()
 		}
 	}
-	if m.state == StateDying {
+	if m.state == StateDying || m.state == StateSplash {
 		if m.currentFrame == len(m.currentAnimation)-1 {
 			m.state = StateDead
 			m.freeze = true
@@ -90,13 +93,14 @@ func (m *Monster) Hit(damage int, distance float32) State {
 	}
 	if m.health < 0 {
 		m.currentAnimation = m.animations["die"]
+		m.state = StateDying
 		if damage > 20 && distance < 100 {
 			m.currentAnimation = m.animations["splash"]
+			m.state = StateSplash
 		}
 		m.currentFrame = 0
-		m.state = StateDying
 		m.lastChange = time.Now()
-		return StateDying
+		return m.state
 	}
 	m.currentAnimation = m.animations["hurt"]
 	m.currentFrame = 0

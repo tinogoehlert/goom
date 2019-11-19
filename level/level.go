@@ -1,6 +1,7 @@
 package level
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 
@@ -20,11 +21,13 @@ const (
 // Level - A map in Doom is made up of several lumps,
 // each containing specific data required to construct and execute the map.
 type Level struct {
-	Name       string
-	Things     []Thing
-	LinesDefs  []LineDef
-	Sectors    []Sector
-	SideDefs   []SideDef
+	Name      string
+	Things    []Thing
+	LinesDefs []LineDef
+	Sectors   []Sector
+	SideDefs  []SideDef
+	Walls     []Wall
+	// private pools
 	vertexPool map[string][]utils.Vec2
 	segPool    map[string][]Segment
 	ssectPool  map[string][]SubSector
@@ -106,6 +109,11 @@ func NewLevel(lumps []wad.Lump) (l *Level, err error) {
 	if err != nil {
 		return nil, fmt.Errorf("could not read sectors from WAD: %s", err.Error())
 	}
+
+	for _, line := range l.LinesDefs {
+		l.Walls = append(l.Walls, NewWall(&line, l))
+	}
+
 	return l, nil
 }
 
@@ -130,6 +138,14 @@ func appendGLNodes(l *Level, lumps []wad.Lump) (err error) {
 	if err != nil {
 		return fmt.Errorf("could not read GL_NODES from WAD: %s", err.Error())
 	}
+	return nil
+}
+
+func (l *Level) buildWalls() error {
+	if len(l.LinesDefs) == 0 {
+		return errors.New("no linedefs given")
+	}
+
 	return nil
 }
 

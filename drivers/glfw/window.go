@@ -72,12 +72,8 @@ func (w *Window) FrameBufferSize() (int, int) {
 	return w.fbWidth, w.fbHeight
 }
 
-type updateFunc func()
-type renderFunc func(interpolTime float64)
-type inputFunc func()
-
 // Run runs the window loop
-func (w *Window) Run(input inputFunc, update updateFunc, render renderFunc) {
+func (w *Window) Run(input func(), update func(), render func(float64)) {
 	var (
 		previous         = glfw.GetTime()
 		lag              = float64(0)

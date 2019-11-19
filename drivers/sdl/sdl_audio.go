@@ -19,9 +19,10 @@ type AudioDriver struct {
 	chunks           map[string]*mix.Chunk
 	currentTrackName string
 	currentTrack     *mix.Music
+	tempFolder       string
 }
 
-func NewAudioDriver(sounds sfx.Sounds) (*AudioDriver, error) {
+func NewAudioDriver(sounds sfx.Sounds, tempFolder string) (*AudioDriver, error) {
 	if err := sdl.InitSubSystem(sdl.INIT_AUDIO); err != nil {
 		return nil, err
 	}
@@ -31,13 +32,18 @@ func NewAudioDriver(sounds sfx.Sounds) (*AudioDriver, error) {
 		return nil, err
 	}
 	return &AudioDriver{
-		sounds: sounds,
-		chunks: make(map[string]*mix.Chunk),
+		sounds:     sounds,
+		chunks:     make(map[string]*mix.Chunk),
+		tempFolder: tempFolder,
 	}, nil
+
 }
 
 func (sm *AudioDriver) PlayMusic(m *music.Track) error {
-	sm.currentTrackName = m.Name + ".mid"
+	if m == nil {
+		return nil
+	}
+	sm.currentTrackName = sm.tempFolder + "/" + m.Name + ".mid"
 	if _, err := os.Stat(sm.currentTrackName); err != nil {
 		if !os.IsNotExist(err) {
 			return err
@@ -50,12 +56,10 @@ func (sm *AudioDriver) PlayMusic(m *music.Track) error {
 		return err
 	}
 
-	if err := sm.currentTrack.FadeIn(-1, 1000); err != nil {
-		return err
-	}
-	return nil
+	return sm.currentTrack.FadeIn(-1, 1000)
 }
 
+// Play simply plays an audio chunk with the given name
 func (sm *AudioDriver) Play(name string) error {
 	chunk, err := sm.getChunk(name)
 	if err != nil {

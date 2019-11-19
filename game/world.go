@@ -3,6 +3,7 @@ package game
 import (
 	"container/list"
 	"errors"
+	"fmt"
 	"math"
 
 	"github.com/go-gl/mathgl/mgl32"
@@ -13,20 +14,6 @@ import (
 	"github.com/tinogoehlert/goom/utils"
 )
 
-// Wall a DOOM Wall
-type Wall struct {
-	Start   utils.Vec2
-	End     utils.Vec2
-	Normal  utils.Vec2
-	Tangent utils.Vec2
-	Length  float32
-	Sides   struct {
-		Right *level.SideDef
-		Left  *level.SideDef
-	}
-	lineDef level.LineDef
-}
-
 //World  holds the current world
 type World struct {
 	nodes       []level.Node
@@ -35,99 +22,89 @@ type World struct {
 	monsters    []*Monster
 	players     []*Player
 	definitions *DefStore
-	walls       []Wall
 	projectiles *list.List
 	me          *Player
 	levelRef    *level.Level
 	audioDriver drivers.AudioDriver
+	gameData    *goom.GameData
 }
 
-func newWall(line level.LineDef, lvl *level.Level) Wall {
-	var w = Wall{
-		lineDef: line,
-		Start:   lvl.Vert(uint32(line.Start)),
-		End:     lvl.Vert(uint32(line.End)),
-		Sides: struct {
-			Right *level.SideDef
-			Left  *level.SideDef
-		}{
-			Right: &lvl.SideDefs[line.Right],
-		},
-	}
-
-	w.Length = w.Start.DistanceTo(w.End)
-	w.Tangent = w.End.Sub(w.Start).Normalize()
-	w.Normal = w.Tangent.CrossVec2()
-
-	if line.Left != -1 {
-		w.Sides.Left = &lvl.SideDefs[line.Left]
-	}
-	return w
-}
-
-// NewWorld creates a new world
-func NewWorld(
-	doomLevel *level.Level,
-	defs *DefStore,
-	data *goom.GameData,
-	audioDrv drivers.AudioDriver,
-) *World {
-	var w = &World{
-		nodes:       doomLevel.Nodes(level.GLNodesName),
-		walls:       make([]Wall, 0, len(doomLevel.LinesDefs)),
-		levelRef:    doomLevel,
+// NewWorld Creates a new world
+func NewWorld(data *goom.GameData, defs *DefStore) *World {
+	return &World{
 		definitions: defs,
-		projectiles: list.New(),
-		audioDriver: audioDrv,
+		gameData:    data,
+		audioDriver: &drivers.NOPlayer{},
 	}
+}
 
-	for _, line := range doomLevel.LinesDefs {
-		w.walls = append(w.walls, newWall(line, doomLevel))
-	}
+func (w *World) Data() *goom.GameData {
+	return w.gameData
+}
 
-	for _, t := range doomLevel.Things {
+// SetAudioDriver sets the audioDriver
+func (w *World) SetAudioDriver(drv drivers.AudioDriver) {
+	w.audioDriver = drv
+}
+
+// LoadLevel a specific level of the world
+func (w *World) LoadLevel(lvl *level.Level) error {
+	w.nodes = lvl.Nodes(level.GLNodesName)
+	w.levelRef = lvl
+	w.projectiles = list.New()
+
+	for _, t := range w.levelRef.Things {
 		if t.Type < 5 {
 			player := NewPlayer(t.X, t.Y, 0, t.Angle, w)
 			w.players = append(w.players, player)
 			if t.Type == 1 {
 				w.me = player
 			}
-			player.AddWeapon(defs.GetWeapon("pistol"))
+			player.AddWeapon(w.definitions.GetWeapon("pistol"))
 			player.SetCollision(w.doesCollide)
 		}
-		if obstacleDef := defs.GetObstacleDef(int(t.Type)); obstacleDef != nil {
+		if obstacleDef := w.definitions.GetObstacleDef(int(t.Type)); obstacleDef != nil {
 			obstacle := ThingFromDef(t.X, t.Y, 0, t.Angle, obstacleDef)
-			w.things = appendDoomThing(w.things, obstacle, doomLevel)
+			w.things = appendDoomThing(w.things, obstacle, w.levelRef)
 		}
 
-		if itemDef := defs.GetItemDef(int(t.Type)); itemDef != nil {
+		if itemDef := w.definitions.GetItemDef(int(t.Type)); itemDef != nil {
 			item := ItemFromDef(t.X, t.Y, 0, t.Angle, itemDef)
-			w.things = appendDoomThing(w.things, item, doomLevel)
+			w.things = appendDoomThing(w.things, item, w.levelRef)
 		}
 
-		if obstacleDef := defs.GetObstacleDef(int(t.Type)); obstacleDef != nil {
+		if obstacleDef := w.definitions.GetObstacleDef(int(t.Type)); obstacleDef != nil {
 			obstacle := ThingFromDef(t.X, t.Y, 0, t.Angle, obstacleDef)
-			w.things = appendDoomThing(w.things, obstacle, doomLevel)
+			w.things = appendDoomThing(w.things, obstacle, w.levelRef)
 		}
 
-		if monsterDef := defs.GetMonsterDef(int(t.Type)); monsterDef != nil {
-			sprite := data.Sprite(monsterDef.Sprite)
+		if monsterDef := w.definitions.GetMonsterDef(int(t.Type)); monsterDef != nil {
+			sprite := w.gameData.Sprite(monsterDef.Sprite)
 			img := sprite.FirstFrame().Angles()[1]
 
 			monster := MonsterFromDef(
 				t.X,
 				t.Y,
-				float32(img.Width()),
-				float32(img.Height()),
+				float32(img.Width())/2,
+				float32(img.Width())/2,
 				0,
 				t.Angle,
 				monsterDef,
 			)
 			w.monsters = append(w.monsters, monster)
-			w.things = appendDoomThing(w.things, monster, doomLevel)
+			w.things = appendDoomThing(w.things, monster, w.levelRef)
 		}
 	}
-	return w
+
+	mus := w.levelRef.Name
+	if w.levelRef.Name == "MAP01" {
+		mus = "RUNNIN"
+	}
+	if err := w.audioDriver.PlayMusic(w.gameData.Music.Track(mus)); err != nil {
+		fmt.Println("could not play music:", err.Error())
+	}
+
+	return nil
 }
 
 // Me returns current player
@@ -257,10 +234,10 @@ func (w *World) checkWallCollision(thing *DoomThing, to mgl32.Vec2) mgl32.Vec2 {
 		x        = to.X()
 		y        = to.Y()
 		radius   = float32(24)
-		hitWall  Wall
+		hitWall  level.Wall
 		oldTo    = to
 	)
-	for _, wall := range w.walls {
+	for _, wall := range w.levelRef.Walls {
 		var (
 			d   = wall.Start.Dot(wall.Normal)
 			sd  = wall.Start.Dot(wall.Tangent)
@@ -305,7 +282,7 @@ func (w *World) checkWallCollision(thing *DoomThing, to mgl32.Vec2) mgl32.Vec2 {
 	}
 
 	if collided > 0 {
-		if hitWall.lineDef.Left != -1 {
+		if hitWall.IsTwoSided {
 			var (
 				lSector   = w.levelRef.Sectors[hitWall.Sides.Left.Sector]
 				chkHeight = thing.currentSector.FloorHeight() + 32

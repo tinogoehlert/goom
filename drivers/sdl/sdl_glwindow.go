@@ -3,7 +3,6 @@ package sdl
 import (
 	"fmt"
 
-	"github.com/go-gl/glfw/v3.2/glfw"
 	"github.com/tinogoehlert/go-sdl2/sdl"
 	"github.com/tinogoehlert/goom/drivers"
 )
@@ -33,8 +32,8 @@ type GLWindow struct {
 
 // NewGLWindow creates a new sdl window with GL context
 func NewGLWindow(title string, width, height int) (*GLWindow, error) {
-	sdl.GLSetAttribute(sdl.GL_DOUBLEBUFFER, 1)
-	sdl.GLSetAttribute(sdl.GL_DEPTH_SIZE, 16)
+	sdl.GLSetAttribute(sdl.GL_DOUBLEBUFFER, 2)
+	sdl.GLSetAttribute(sdl.GL_DEPTH_SIZE, 32)
 	sdl.GLSetAttribute(sdl.GL_CONTEXT_PROFILE_MASK, sdl.GL_CONTEXT_PROFILE_CORE)
 	sdl.GLSetAttribute(sdl.GL_CONTEXT_MAJOR_VERSION, 3)
 	sdl.GLSetAttribute(sdl.GL_CONTEXT_MINOR_VERSION, 2)
@@ -52,19 +51,18 @@ func NewGLWindow(title string, width, height int) (*GLWindow, error) {
 	}
 	fbWidth, fbHeight := sdlwin.GLGetDrawableSize()
 	var win = &GLWindow{
-		window:   sdlwin,
-		width:    width,
-		height:   height,
-		fbWidth:  int(fbWidth),
-		fbHeight: int(fbHeight),
+		window:        sdlwin,
+		width:         width,
+		height:        height,
+		secsPerUpdate: float64(1) / 60,
+		fbWidth:       int(fbWidth),
+		fbHeight:      int(fbHeight),
 	}
 
 	if win.glContext, err = sdlwin.GLCreateContext(); err != nil {
 		sdlwin.Destroy()
 		return nil, err
 	}
-
-	fmt.Println(sdlwin.GLMakeCurrent(win.glContext))
 
 	return win, nil
 }
@@ -90,25 +88,35 @@ func (w *GLWindow) ShouldClose() bool {
 }
 
 // Run runs the window loop
-func (w *GLWindow) Run(loop func(elapsed float32)) {
+func (w *GLWindow) Run(input func(), update func(), render func(float64)) {
 	var (
-		previous = float64(sdl.GetTicks())
+		previous         = float64(sdl.GetTicks()) / 1000
+		lag              = float64(0)
+		elapsed, current float64
 	)
 
-	for !w.shouldClose {
-		var (
-			frameTime = float64(sdl.GetTicks()) - previous
-			waitTime  = w.secsPerUpdate - frameTime
-		)
-		loop(float32(waitTime))
-		if waitTime > 0 {
-			glfw.WaitEventsTimeout(waitTime)
-		}
+	fmt.Println(w.secsPerUpdate)
+	for {
+		current = float64(sdl.GetTicks()) / 1000
+		elapsed = current - previous
+		previous = current
 
-		w.window.GLSwap()
+		lag += elapsed
+
 		sdl.PollEvent()
-		//w.window.UpdateSurface()
-		previous = float64(sdl.GetTicks())
+
+		for lag >= w.secsPerUpdate {
+			lag -= w.secsPerUpdate
+			input()
+			update()
+		}
+		// TODO: This tells the renderer close we are to the next tick, so if we
+		//       are between two ticks we can display (as an example) the movement
+		//       of a projectile by and additional 0.8 units instead of fixed 1 unit.
+		//       The todo is to implement this in the renderer ^^.
+
+		render(lag / w.secsPerUpdate)
+		w.window.GLSwap()
 	}
 }
 

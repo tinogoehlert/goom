@@ -49,9 +49,6 @@ func (s Sounds) LoadWAD(w *wad.WAD) error {
 				return fmt.Errorf("invalid DS header for LUMP %s: %x", l.Name, l.Data[:4])
 			}
 			s[l.Name] = &Sound{l}
-			if l.Name == "DSPISTOL" {
-				ioutil.WriteFile(l.Name, s[l.Name].SampleBytes(), 0644)
-			}
 		}
 	}
 	sounds = s
