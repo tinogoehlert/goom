@@ -40,7 +40,7 @@ func NewWindow(title string, width, height int) (*Window, error) {
 		inputDrv:      newInputDriver(glfwWin),
 	}
 
-	win.fbWidth, win.fbHeight = glfwWin.GetFramebufferSize()
+	win.fbWidth, win.fbHeight = glfwWin.GetSize()
 
 	glfwWin.SetFramebufferSizeCallback(func(w *glfw.Window, width int, height int) {
 		win.fbWidth = width
@@ -58,7 +58,7 @@ func NewWindow(title string, width, height int) (*Window, error) {
 	return win, nil
 }
 
-func (w *Window) Input() drivers.InputDriver {
+func (w *Window) GetInput() drivers.InputDriver {
 	return w.inputDrv
 }
 
@@ -67,13 +67,13 @@ func (w *Window) Size() (int, int) {
 	return w.width, w.height
 }
 
-// FrameBufferSize returns the current size of the Window
-func (w *Window) FrameBufferSize() (int, int) {
+// GetSize returns the current size of the Window
+func (w *Window) GetSize() (int, int) {
 	return w.fbWidth, w.fbHeight
 }
 
-// Run runs the window loop
-func (w *Window) Run(input func(), update func(), render func(float64)) {
+// RunGame runs the game loop
+func (w *Window) RunGame(input func(), update func(), render func(float64)) {
 	var (
 		previous         = glfw.GetTime()
 		lag              = float64(0)
@@ -95,7 +95,7 @@ func (w *Window) Run(input func(), update func(), render func(float64)) {
 			update()
 		}
 
-		// TODO: This tells the renderer close we are to the next tick, so if we
+		// TODO: This tells the renderer how close we are to the next tick, so if we
 		//       are between two ticks we can display (as an example) the movement
 		//       of a projectile by and additional 0.8 units instead of fixed 1 unit.
 		//       The todo is to implement this in the renderer ^^.

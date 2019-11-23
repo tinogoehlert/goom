@@ -294,3 +294,8 @@ func (w *World) checkWallCollision(thing *DoomThing, to mgl32.Vec2) mgl32.Vec2 {
 	}
 	return to
 }
+
+// GetLevel return the currently loaded level.
+func (w *World) GetLevel() *level.Level {
+	return w.levelRef
+}

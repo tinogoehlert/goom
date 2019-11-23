@@ -7,12 +7,12 @@ import (
 	"github.com/tinogoehlert/goom/drivers"
 )
 
-// Init inits SDL
-func InitSDLVideo() error {
+// InitVideo intializes SDL video
+func InitVideo() error {
 	return sdl.InitSubSystem(sdl.INIT_VIDEO)
 }
 
-// Destroy destroys sdl
+// QuitSDLVideo destroys SDL
 func QuitSDLVideo() {
 	sdl.QuitSubSystem(sdl.INIT_VIDEO)
 }
@@ -67,7 +67,7 @@ func NewGLWindow(title string, width, height int) (*GLWindow, error) {
 	return win, nil
 }
 
-func (w *GLWindow) Input() drivers.InputDriver {
+func (w *GLWindow) GetInput() drivers.InputDriver {
 	return w.inputDrv
 }
 
@@ -76,8 +76,8 @@ func (w *GLWindow) Size() (int, int) {
 	return w.width, w.height
 }
 
-// FrameBufferSize Returns the current size of the Window
-func (w *GLWindow) FrameBufferSize() (int, int) {
+// GetSize Returns the current size of the Window
+func (w *GLWindow) GetSize() (int, int) {
 	fbWidth, fbHeight := w.window.GLGetDrawableSize()
 	return int(fbWidth * 2), int(fbHeight * 2)
 }
@@ -87,8 +87,8 @@ func (w *GLWindow) ShouldClose() bool {
 	return w.shouldClose
 }
 
-// Run runs the window loop
-func (w *GLWindow) Run(input func(), update func(), render func(float64)) {
+// RunGame runs the game loop
+func (w *GLWindow) RunGame(input func(), update func(), render func(float64)) {
 	var (
 		previous         = float64(sdl.GetTicks()) / 1000
 		lag              = float64(0)

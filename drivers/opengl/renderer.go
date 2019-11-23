@@ -80,6 +80,7 @@ func NewRenderer(gd *goom.GameData) (*GLRenderer, error) {
 // LoadShaderProgram loads a shader program
 func (gr *GLRenderer) LoadShaderProgram(name, vertFile, fragFile string) error {
 	var shader = NewShaderProgram()
+
 	if err := shader.AddVertexShader(vertFile); err != nil {
 		return err
 	}

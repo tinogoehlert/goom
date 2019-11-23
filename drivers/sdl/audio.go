@@ -6,12 +6,11 @@ import (
 	"log"
 	"os"
 
+	"github.com/tinogoehlert/go-sdl2/mix"
+	"github.com/tinogoehlert/go-sdl2/sdl"
+
 	"github.com/tinogoehlert/goom/audio/music"
 	"github.com/tinogoehlert/goom/audio/sfx"
-
-	"github.com/tinogoehlert/go-sdl2/mix"
-
-	"github.com/tinogoehlert/go-sdl2/sdl"
 )
 
 type AudioDriver struct {

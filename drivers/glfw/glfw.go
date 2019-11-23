@@ -7,8 +7,8 @@ import (
 	"github.com/go-gl/glfw/v3.2/glfw"
 )
 
-// Init initialize glfw
-func Init() error {
+// InitVideo initializes glfw
+func InitVideo() error {
 	runtime.LockOSThread()
 
 	if err := glfw.Init(); err != nil {
