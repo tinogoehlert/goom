@@ -9,6 +9,7 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 
 	"github.com/tinogoehlert/goom/drivers"
+	"github.com/tinogoehlert/goom/drivers/noop"
 	"github.com/tinogoehlert/goom/goom"
 	"github.com/tinogoehlert/goom/level"
 	"github.com/tinogoehlert/goom/utils"
@@ -25,16 +26,20 @@ type World struct {
 	projectiles *list.List
 	me          *Player
 	levelRef    *level.Level
-	audioDriver drivers.AudioDriver
+	audioDriver drivers.Audio
 	gameData    *goom.GameData
 }
 
 // NewWorld Creates a new world
 func NewWorld(data *goom.GameData, defs *DefStore) *World {
+
+	// af := drivers.AudioDrivers[drivers.NoopAudio]
+	// noopAudio, _ := af(nil, "")
+
 	return &World{
 		definitions: defs,
 		gameData:    data,
-		audioDriver: &drivers.NOPlayer{},
+		audioDriver: noop.Audio{},
 	}
 }
 
@@ -43,7 +48,7 @@ func (w *World) Data() *goom.GameData {
 }
 
 // SetAudioDriver sets the audioDriver
-func (w *World) SetAudioDriver(drv drivers.AudioDriver) {
+func (w *World) SetAudioDriver(drv drivers.Audio) {
 	w.audioDriver = drv
 }
 

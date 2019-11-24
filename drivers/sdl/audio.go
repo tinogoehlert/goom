@@ -13,16 +13,19 @@ import (
 	"github.com/tinogoehlert/goom/audio/sfx"
 )
 
-type AudioDriver struct {
-	sounds           sfx.Sounds
+type Audio struct {
+	sounds           *sfx.Sounds
 	chunks           map[string]*mix.Chunk
 	currentTrackName string
 	currentTrack     *mix.Music
 	tempFolder       string
 }
 
-func NewAudioDriver(sounds sfx.Sounds, tempFolder string) (*AudioDriver, error) {
-	if err := sdl.InitSubSystem(sdl.INIT_AUDIO); err != nil {
+func NewAudio(sounds *sfx.Sounds, tempFolder string) (*Audio, error) {
+
+	err := initAudio()
+	if err != nil {
+		log.Println(err)
 		return nil, err
 	}
 
@@ -30,37 +33,41 @@ func NewAudioDriver(sounds sfx.Sounds, tempFolder string) (*AudioDriver, error) 
 		log.Println(err)
 		return nil, err
 	}
-	return &AudioDriver{
+
+	os.MkdirAll(tempFolder, 0700)
+
+	a := &Audio{
 		sounds:     sounds,
 		chunks:     make(map[string]*mix.Chunk),
 		tempFolder: tempFolder,
-	}, nil
+	}
 
+	return a, nil
 }
 
-func (sm *AudioDriver) PlayMusic(m *music.Track) error {
-	if m == nil {
+func (a Audio) PlayMusic(track *music.Track) error {
+	if track == nil {
 		return nil
 	}
-	sm.currentTrackName = sm.tempFolder + "/" + m.Name + ".mid"
-	if _, err := os.Stat(sm.currentTrackName); err != nil {
+	a.currentTrackName = a.tempFolder + "/" + track.Name + ".mid"
+	if _, err := os.Stat(a.currentTrackName); err != nil {
 		if !os.IsNotExist(err) {
 			return err
 		}
-		ioutil.WriteFile(sm.currentTrackName, m.MidiStream.Bytes(), 0644)
+		ioutil.WriteFile(a.currentTrackName, track.MidiStream.Bytes(), 0644)
 	}
 
 	var err error
-	if sm.currentTrack, err = mix.LoadMUS(sm.currentTrackName); err != nil {
+	if a.currentTrack, err = mix.LoadMUS(a.currentTrackName); err != nil {
 		return err
 	}
 
-	return sm.currentTrack.FadeIn(-1, 1000)
+	return a.currentTrack.FadeIn(-1, 1000)
 }
 
 // Play simply plays an audio chunk with the given name
-func (sm *AudioDriver) Play(name string) error {
-	chunk, err := sm.getChunk(name)
+func (a Audio) Play(name string) error {
+	chunk, err := a.getChunk(name)
 	if err != nil {
 		return err
 	}
@@ -68,8 +75,8 @@ func (sm *AudioDriver) Play(name string) error {
 	return err
 }
 
-func (sm *AudioDriver) PlayAtPosition(name string, distance float32, angle int16) error {
-	chunk, err := sm.getChunk(name)
+func (a Audio) PlayAtPosition(name string, distance float32, angle int16) error {
+	chunk, err := a.getChunk(name)
 	if err != nil {
 		return err
 	}
@@ -81,15 +88,15 @@ func (sm *AudioDriver) PlayAtPosition(name string, distance float32, angle int16
 	return err
 }
 
-func (sm *AudioDriver) getChunk(name string) (*mix.Chunk, error) {
-	if chunk, ok := sm.chunks[name]; ok {
+func (a *Audio) getChunk(name string) (*mix.Chunk, error) {
+	if chunk, ok := a.chunks[name]; ok {
 		return chunk, nil
 	}
-	return sm.createChunk(name)
+	return a.createChunk(name)
 }
 
-func (sm *AudioDriver) createChunk(name string) (*mix.Chunk, error) {
-	sound, ok := sm.sounds[name]
+func (a *Audio) createChunk(name string) (*mix.Chunk, error) {
+	sound, ok := sfx.Sounds(*a.sounds)[name]
 	if !ok {
 		return nil, fmt.Errorf("%s not found", name)
 	}
@@ -102,12 +109,11 @@ func (sm *AudioDriver) createChunk(name string) (*mix.Chunk, error) {
 	if err != nil {
 		return nil, fmt.Errorf("could not load WAV: %s", err.Error())
 	}
-	sm.chunks[name] = chunk
+	a.chunks[name] = chunk
 	return chunk, nil
 }
 
-func (sm *AudioDriver) Close() {
+func (a Audio) Close() {
 	mix.CloseAudio()
 	sdl.AudioQuit()
-	sdl.QuitSubSystem(sdl.INIT_AUDIO)
 }

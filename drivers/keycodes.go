@@ -18,6 +18,10 @@ package drivers
 
 type Keycode uint16
 
+func (k Keycode) Code() uint16 {
+	return uint16(k)
+}
+
 const (
 	KeyA Keycode = 4 + iota
 	KeyB

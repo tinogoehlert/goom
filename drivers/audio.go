@@ -1,22 +1,30 @@
 package drivers
 
-import "github.com/tinogoehlert/goom/audio/music"
+import (
+	"github.com/tinogoehlert/goom/audio/music"
+	"github.com/tinogoehlert/goom/audio/sfx"
+)
 
-// AudioDriver interface
-type AudioDriver interface {
+type audioDriver string
+
+const (
+	// NoopAudio is a stubbed audio driver
+	NoopAudio audioDriver = "noop"
+
+	// SdlAudio is the SDL audio driver
+	SdlAudio audioDriver = "Sdl"
+)
+
+// Audio interface
+type Audio interface {
 	PlayMusic(m *music.Track) error
 	Play(name string) error
 	PlayAtPosition(name string, distance float32, angle int16) error
+	Close()
 }
 
-// NOPlayer stub audio driver
-type NOPlayer struct{}
+// audioCreator is a function that creates a Audio driver
+type audioCreator func(sounds *sfx.Sounds, tempFolder string) (Audio, error)
 
-// PlayMusic does nothing
-func (nop *NOPlayer) PlayMusic(m *music.Track) error { return nil }
-
-// Play does nothing
-func (nop *NOPlayer) Play(name string) error { return nil }
-
-// PlayAtPosition does nothing
-func (nop *NOPlayer) PlayAtPosition(name string, distance float32, angle int16) error { return nil }
+// AudioDrivers contains all available audio drivers
+var AudioDrivers = make(map[audioDriver]audioCreator)

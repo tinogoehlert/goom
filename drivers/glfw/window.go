@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/go-gl/glfw/v3.2/glfw"
-	"github.com/tinogoehlert/goom/drivers"
 )
 
 // Window GLFW implementation for Window
@@ -21,6 +20,11 @@ type Window struct {
 
 // NewWindow creates a new GLFW Window
 func NewWindow(title string, width, height int) (*Window, error) {
+
+	if err := initVideo(); err != nil {
+		return nil, err
+	}
+
 	glfw.WindowHint(glfw.Resizable, glfw.True)
 	glfw.WindowHint(glfw.ContextVersionMajor, 3)
 	glfw.WindowHint(glfw.ContextVersionMinor, 2)
@@ -37,7 +41,6 @@ func NewWindow(title string, width, height int) (*Window, error) {
 		width:         width,
 		height:        height,
 		secsPerUpdate: 1.0 / 60.0,
-		inputDrv:      newInputDriver(glfwWin),
 	}
 
 	win.fbWidth, win.fbHeight = glfwWin.GetSize()
@@ -58,22 +61,18 @@ func NewWindow(title string, width, height int) (*Window, error) {
 	return win, nil
 }
 
-func (w *Window) GetInput() drivers.InputDriver {
-	return w.inputDrv
-}
-
 // Size Returns the current size of the Window
 func (w *Window) Size() (int, int) {
 	return w.width, w.height
 }
 
 // GetSize returns the current size of the Window
-func (w *Window) GetSize() (int, int) {
+func (w Window) GetSize() (int, int) {
 	return w.fbWidth, w.fbHeight
 }
 
 // RunGame runs the game loop
-func (w *Window) RunGame(input func(), update func(), render func(float64)) {
+func (w Window) RunGame(input func(), update func(), render func(float64)) {
 	var (
 		previous         = glfw.GetTime()
 		lag              = float64(0)
@@ -105,10 +104,6 @@ func (w *Window) RunGame(input func(), update func(), render func(float64)) {
 }
 
 // Close closes the window
-func (w *Window) Close() {
+func (w Window) Close() {
 	w.window.Destroy()
-}
-
-func GetGameTime() float64 {
-	return glfw.GetTime()
 }

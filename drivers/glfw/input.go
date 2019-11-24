@@ -2,20 +2,17 @@ package glfw
 
 import (
 	"github.com/go-gl/glfw/v3.2/glfw"
-	"github.com/tinogoehlert/goom/drivers"
 )
 
 // InputDriver handles GLFW Input Events
 type InputDriver struct {
-	keyStates chan drivers.Key
-	win       *glfw.Window
+	win *glfw.Window
 }
 
 // NewInputDriver creates a new GLFW Input Driver
-func newInputDriver(win *glfw.Window) *InputDriver {
+func NewInputDriver(win *Window) *InputDriver {
 	return &InputDriver{
-		keyStates: make(chan drivers.Key, 2),
-		win:       win,
+		win: win.window,
 	}
 }
 
@@ -24,23 +21,11 @@ func (id *InputDriver) poll() {
 	glfw.PollEvents()
 }
 
-// KeyStates returns a channel where key state changes will be published
-func (id *InputDriver) KeyStates() chan drivers.Key {
-	return id.keyStates
-}
-
 // IsPressed is keycode pressed? -.^
-func (id *InputDriver) IsPressed(keycode drivers.Keycode) bool {
-	if k, ok := driversKeyMap[keycode]; ok {
-		return id.win.GetKey(k) == glfw.Press
+func (id *InputDriver) IsPressed(keycode uint16) bool {
+	if keycode < 31 {
+		return false
 	}
-	return false
-}
 
-// NormalizeKeyCode returns drivers Keycode for equal glfw keycode
-func (id *InputDriver) NormalizeKeyCode(key glfw.Key) drivers.Keycode {
-	if normKey, ok := glfwKeyMap[key]; ok {
-		return normKey
-	}
-	return 0
+	return id.win.GetKey(glfw.Key(keycode)) == glfw.Press
 }

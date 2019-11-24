@@ -29,3 +29,7 @@ doc/extern
 
 # Non-VCS/Experimental Code
 audio/misc
+
+# editor stuff
+.vscode
+.idea

@@ -1,11 +1,18 @@
 package drivers
 
 type KeyState int
+type inputDriver string
 
 const (
 	KeyReleased KeyState = 0
 	KeyPressed  KeyState = 1
 	KeyRepeated KeyState = 2
+
+	// GlfwInput is the GLFW input driver
+	GlfwInput inputDriver = "glfw"
+
+	// SdlInput is the SDL input driver
+	SdlInput inputDriver = "sdl"
 )
 
 type Key struct {
@@ -13,7 +20,11 @@ type Key struct {
 	State   KeyState
 }
 
-type InputDriver interface {
-	KeyStates() chan Key
-	IsPressed(keycode Keycode) bool
+type Input interface {
+	IsPressed(keycode uint16) bool
 }
+
+type inputProvider func(Window) Input
+
+// InputProviders contains all available input providers
+var InputProviders = make(map[inputDriver]inputProvider)

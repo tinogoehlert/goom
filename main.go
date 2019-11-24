@@ -8,7 +8,6 @@ import (
 
 	"github.com/tinogoehlert/goom/drivers"
 	"github.com/tinogoehlert/goom/drivers/opengl"
-	"github.com/tinogoehlert/goom/engine"
 	"github.com/tinogoehlert/goom/game"
 	"github.com/tinogoehlert/goom/goom"
 	"github.com/tinogoehlert/goom/graphics"
@@ -25,9 +24,12 @@ var (
 	levelName = flag.String("level", "E1M1", "Level to start e.g. E1M1")
 	fpsMax    = flag.Int("fpsmax", 0, "Limit FPS")
 
-	// engines
-	graphicsEngine = engine.GlfwGraphics{}
-	audioEngine    = engine.SdlAudio{}
+	// engine functions
+	newWindow = drivers.WindowMakers[drivers.GlfwWindow]
+	newAudio  = drivers.AudioDrivers[drivers.SdlAudio]
+	getTime   = drivers.Timers[drivers.GlfwTimer]
+	// TODO: couple the keymap in here....
+	newInput = drivers.InputProviders[drivers.GlfwInput]
 )
 
 func main() {
@@ -42,8 +44,10 @@ func main() {
 
 	r.initialize()
 
+	inputDriver := newInput(r.window)
+
 	inputFunc := func() {
-		input(r.window.GetInput(), r.world.Me())
+		input(inputDriver, r.world.Me())
 	}
 
 	r.window.RunGame(inputFunc, r.world.Update, r.render)
@@ -71,9 +75,14 @@ func (r *runner) initialize() {
 
 	r.world.LoadLevel(mission)
 
-	audioEngine.Initialize(r.world)
+	audio, err := newAudio(&r.world.Data().Sounds, "temp/music")
+	if err != nil {
+		logger.Fatalf(err.Error())
+	}
 
-	r.window, err = graphicsEngine.GetWindow("GOOM", 800, 600)
+	r.world.SetAudioDriver(audio)
+
+	r.window, err = newWindow("GOOM", 800, 600)
 	if err != nil {
 		logger.Fatalf(err.Error())
 	}
@@ -115,7 +124,7 @@ func (r *runner) initialize() {
 }
 
 func (r *runner) render(interpolTime float64) {
-	started := graphicsEngine.GetTime()
+	started := getTime()
 	r.renderer.RenderNewFrame()
 	r.renderer.SetViewPort(r.window.GetSize())
 
@@ -142,7 +151,7 @@ func (r *runner) render(interpolTime float64) {
 
 	r.stats.showStats(r.gameData, r.renderer)
 	r.stats.countedFrames++
-	ft := graphicsEngine.GetTime() - started
+	ft := getTime() - started
 	r.stats.accumulatedTime += time.Duration(ft * float64(time.Second))
 
 	if *fpsMax > 0 {
@@ -199,29 +208,29 @@ func (rs *renderStats) showStats(gd *goom.GameData, gr *opengl.GLRenderer) {
 	drawText(gd.Fonts, graphics.FnCompositeRed, ftimeText, 800, 580, 0.6, gr)
 }
 
-func input(id drivers.InputDriver, player *game.Player) {
-	if id.IsPressed(drivers.KeyUp) || id.IsPressed(drivers.KeyW) {
+func input(id drivers.Input, player *game.Player) {
+	if id.IsPressed(drivers.KeyUp.Code()) || id.IsPressed(drivers.KeyW.Code()) {
 		player.Forward(1)
 	}
-	if id.IsPressed(drivers.KeyDown) || id.IsPressed(drivers.KeyS) {
+	if id.IsPressed(drivers.KeyDown.Code()) || id.IsPressed(drivers.KeyS.Code()) {
 		player.Forward(-1)
 	}
 
-	if id.IsPressed(drivers.KeyA) {
+	if id.IsPressed(drivers.KeyA.Code()) {
 		player.Strafe(-1)
 	}
-	if id.IsPressed(drivers.KeyD) {
+	if id.IsPressed(drivers.KeyD.Code()) {
 		player.Strafe(1)
 	}
 
-	if id.IsPressed(drivers.KeyLeft) {
+	if id.IsPressed(drivers.KeyLeft.Code()) {
 		player.Turn(-1.5)
 	}
-	if id.IsPressed(drivers.KeyRight) {
+	if id.IsPressed(drivers.KeyRight.Code()) {
 		player.Turn(1.5)
 	}
 
-	if id.IsPressed(drivers.KeyLShift) {
+	if id.IsPressed(drivers.KeyLShift.Code()) {
 		player.FireWeapon()
 	}
 }

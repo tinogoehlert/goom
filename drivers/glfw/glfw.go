@@ -1,23 +1,29 @@
 package glfw
 
 import (
-	"fmt"
 	"runtime"
 
 	"github.com/go-gl/glfw/v3.2/glfw"
 )
 
-// InitVideo initializes glfw
-func InitVideo() error {
-	runtime.LockOSThread()
+var videoInitialized bool
 
-	if err := glfw.Init(); err != nil {
-		return fmt.Errorf("could not initialize GLFW: %s", err.Error())
+func initVideo() error {
+	if videoInitialized {
+		return nil
 	}
-	return nil
+
+	runtime.LockOSThread()
+	err := glfw.Init()
+
+	if err == nil {
+		videoInitialized = true
+	}
+
+	return err
 }
 
-// Destroy terminates the GLFW Driver
+// Destroy terminates the GLFW driver
 func Destroy() {
 	glfw.Terminate()
 }

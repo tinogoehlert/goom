@@ -2,22 +2,12 @@ package sdl
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/tinogoehlert/go-sdl2/sdl"
-	"github.com/tinogoehlert/goom/drivers"
 )
 
-// InitVideo intializes SDL video
-func InitVideo() error {
-	return sdl.InitSubSystem(sdl.INIT_VIDEO)
-}
-
-// QuitSDLVideo destroys SDL
-func QuitSDLVideo() {
-	sdl.QuitSubSystem(sdl.INIT_VIDEO)
-}
-
-type GLWindow struct {
+type window struct {
 	window        *sdl.Window
 	width         int
 	height        int
@@ -26,12 +16,16 @@ type GLWindow struct {
 	glContext     sdl.GLContext
 	secsPerUpdate float64
 	fbSizeChanged func(width int, height int)
-	inputDrv      *InputDriver
 	shouldClose   bool
 }
 
-// NewGLWindow creates a new sdl window with GL context
-func NewGLWindow(title string, width, height int) (*GLWindow, error) {
+// NewWindow creates a new sdl window with GL context
+func NewWindow(title string, width, height int) (*window, error) {
+	if err := initVideo(); err != nil {
+		log.Println(err)
+		return nil, err
+	}
+
 	sdl.GLSetAttribute(sdl.GL_DOUBLEBUFFER, 2)
 	sdl.GLSetAttribute(sdl.GL_DEPTH_SIZE, 32)
 	sdl.GLSetAttribute(sdl.GL_CONTEXT_PROFILE_MASK, sdl.GL_CONTEXT_PROFILE_CORE)
@@ -47,10 +41,12 @@ func NewGLWindow(title string, width, height int) (*GLWindow, error) {
 		sdl.WINDOW_OPENGL|sdl.WINDOW_RESIZABLE,
 	)
 	if err != nil {
+		log.Println(err)
 		return nil, err
 	}
+
 	fbWidth, fbHeight := sdlwin.GLGetDrawableSize()
-	var win = &GLWindow{
+	var win = &window{
 		window:        sdlwin,
 		width:         width,
 		height:        height,
@@ -61,34 +57,31 @@ func NewGLWindow(title string, width, height int) (*GLWindow, error) {
 
 	if win.glContext, err = sdlwin.GLCreateContext(); err != nil {
 		sdlwin.Destroy()
+		log.Println(err)
 		return nil, err
 	}
 
 	return win, nil
 }
 
-func (w *GLWindow) GetInput() drivers.InputDriver {
-	return w.inputDrv
-}
-
 // Size Returns the current size of the Window
-func (w *GLWindow) Size() (int, int) {
+func (w *window) Size() (int, int) {
 	return w.width, w.height
 }
 
 // GetSize Returns the current size of the Window
-func (w *GLWindow) GetSize() (int, int) {
+func (w *window) GetSize() (int, int) {
 	fbWidth, fbHeight := w.window.GLGetDrawableSize()
 	return int(fbWidth * 2), int(fbHeight * 2)
 }
 
 // ShouldClose determines if the window should close
-func (w *GLWindow) ShouldClose() bool {
+func (w *window) ShouldClose() bool {
 	return w.shouldClose
 }
 
 // RunGame runs the game loop
-func (w *GLWindow) RunGame(input func(), update func(), render func(float64)) {
+func (w *window) RunGame(input func(), update func(), render func(float64)) {
 	var (
 		previous         = float64(sdl.GetTicks()) / 1000
 		lag              = float64(0)
@@ -121,6 +114,6 @@ func (w *GLWindow) RunGame(input func(), update func(), render func(float64)) {
 }
 
 // Close closes the window
-func (w *GLWindow) Close() {
+func (w *window) Close() {
 	w.window.Destroy()
 }
