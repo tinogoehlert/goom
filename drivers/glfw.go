@@ -19,7 +19,16 @@ func newGlfwWindow(title string, width, height int) (Window, error) {
 }
 
 func newGlfwInput(win Window) Input {
-	return Input(glfw_internal.NewInputDriver(win.(*glfw_internal.Window)))
+	drv := glfw_internal.NewInputDriver(
+		win.(*glfw_internal.Window),
+		mapGlfwKey,
+	)
+	return Input(drv)
+}
+
+func mapGlfwKey(keycode uint16) (glfw.Key, bool) {
+	key, ok := glfwDriversKeyMap[Keycode(keycode)]
+	return key, ok
 }
 
 var glfwKeyMap = map[glfw.Key]Keycode{

@@ -49,6 +49,7 @@ func (a Audio) PlayMusic(track *music.Track) error {
 	if track == nil {
 		return nil
 	}
+
 	a.currentTrackName = a.tempFolder + "/" + track.Name + ".mid"
 	if _, err := os.Stat(a.currentTrackName); err != nil {
 		if !os.IsNotExist(err) {

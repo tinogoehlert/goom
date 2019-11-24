@@ -26,7 +26,12 @@ func newSdlAudio(sounds *sfx.Sounds, tempFolder string) (Audio, error) {
 }
 
 func newSdlInput(win Window) Input {
-	return Input(sdl.NewInputDriver())
+	return Input(sdl.NewInputDriver(mapSdlKey))
+}
+
+func mapSdlKey(keycode uint16) (sdl_native.Keycode, bool) {
+	key, ok := sdlDriversKeyMap[Keycode(keycode)]
+	return key, ok
 }
 
 var sdlKeyMap = map[sdl_native.Keycode]Keycode{

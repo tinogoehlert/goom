@@ -4,16 +4,23 @@ import (
 	"github.com/tinogoehlert/go-sdl2/sdl"
 )
 
-type inputDriver struct{}
+type inputDriver struct {
+	mapper func(keycode uint16) (sdl.Keycode, bool)
+}
 
 // NewInputDriver creates a new input driver
-func NewInputDriver() *inputDriver {
-	return &inputDriver{}
+func NewInputDriver(mapper func(keycode uint16) (sdl.Keycode, bool)) *inputDriver {
+	return &inputDriver{mapper: mapper}
 }
 
 // IsPressed is keycode pressed? -.^
 func (id *inputDriver) IsPressed(keycode uint16) bool {
+	key, ok := id.mapper(keycode)
+	if !ok {
+		return false
+	}
+
 	states := sdl.GetKeyboardState()
-	scanCode := sdl.GetScancodeFromKey(sdl.Keycode(keycode))
+	scanCode := sdl.GetScancodeFromKey(key)
 	return states[scanCode] != 0
 }

@@ -9,7 +9,6 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 
 	"github.com/tinogoehlert/goom/drivers"
-	"github.com/tinogoehlert/goom/drivers/noop"
 	"github.com/tinogoehlert/goom/goom"
 	"github.com/tinogoehlert/goom/level"
 	"github.com/tinogoehlert/goom/utils"
@@ -32,14 +31,12 @@ type World struct {
 
 // NewWorld Creates a new world
 func NewWorld(data *goom.GameData, defs *DefStore) *World {
-
-	// af := drivers.AudioDrivers[drivers.NoopAudio]
-	// noopAudio, _ := af(nil, "")
+	noopAudio, _ := drivers.AudioDrivers[drivers.NoopAudio](nil, "")
 
 	return &World{
 		definitions: defs,
 		gameData:    data,
-		audioDriver: noop.Audio{},
+		audioDriver: noopAudio,
 	}
 }
 
@@ -105,6 +102,7 @@ func (w *World) LoadLevel(lvl *level.Level) error {
 	if w.levelRef.Name == "MAP01" {
 		mus = "RUNNIN"
 	}
+
 	if err := w.audioDriver.PlayMusic(w.gameData.Music.Track(mus)); err != nil {
 		fmt.Println("could not play music:", err.Error())
 	}

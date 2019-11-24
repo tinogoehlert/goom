@@ -6,13 +6,15 @@ import (
 
 // InputDriver handles GLFW Input Events
 type InputDriver struct {
-	win *glfw.Window
+	win    *glfw.Window
+	mapper func(keycode uint16) (glfw.Key, bool)
 }
 
 // NewInputDriver creates a new GLFW Input Driver
-func NewInputDriver(win *Window) *InputDriver {
+func NewInputDriver(win *Window, mapper func(keycode uint16) (glfw.Key, bool)) *InputDriver {
 	return &InputDriver{
-		win: win.window,
+		win:    win.window,
+		mapper: mapper,
 	}
 }
 
@@ -23,9 +25,10 @@ func (id *InputDriver) poll() {
 
 // IsPressed is keycode pressed? -.^
 func (id *InputDriver) IsPressed(keycode uint16) bool {
-	if keycode < 31 {
+	key, ok := id.mapper(keycode)
+	if !ok {
 		return false
 	}
 
-	return id.win.GetKey(glfw.Key(keycode)) == glfw.Press
+	return id.win.GetKey(key) == glfw.Press
 }

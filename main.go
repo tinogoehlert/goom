@@ -28,8 +28,7 @@ var (
 	newWindow = drivers.WindowMakers[drivers.GlfwWindow]
 	newAudio  = drivers.AudioDrivers[drivers.SdlAudio]
 	getTime   = drivers.Timers[drivers.GlfwTimer]
-	// TODO: couple the keymap in here....
-	newInput = drivers.InputProviders[drivers.GlfwInput]
+	newInput  = drivers.InputProviders[drivers.GlfwInput]
 )
 
 func main() {
@@ -73,8 +72,6 @@ func (r *runner) initialize() {
 	mission := r.gameData.Level(strings.ToUpper(*levelName))
 	r.world = game.NewWorld(r.gameData, game.NewDefStore("resources/defs.yaml"))
 
-	r.world.LoadLevel(mission)
-
 	audio, err := newAudio(&r.world.Data().Sounds, "temp/music")
 	if err != nil {
 		logger.Fatalf(err.Error())
@@ -108,6 +105,8 @@ func (r *runner) initialize() {
 	if err != nil {
 		logger.Red("could not init GL: %s", err.Error())
 	}
+
+	r.world.LoadLevel(mission)
 
 	player := r.world.Me()
 
