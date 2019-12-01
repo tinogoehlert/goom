@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/tinogoehlert/goom"
+	"github.com/tinogoehlert/goom/goom"
 	"github.com/tinogoehlert/goom/test"
 )
 

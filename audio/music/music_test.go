@@ -8,11 +8,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/tinogoehlert/goom"
 	gmidi "github.com/tinogoehlert/goom/audio/midi"
 	gmus "github.com/tinogoehlert/goom/audio/mus"
 	mus "github.com/tinogoehlert/goom/audio/mus"
 	"github.com/tinogoehlert/goom/audio/music"
+	"github.com/tinogoehlert/goom/goom"
 	"github.com/tinogoehlert/goom/test"
 	"github.com/tinogoehlert/goom/wad"
 )
@@ -325,11 +325,11 @@ type Mus struct {
 
 func allMus(t *testing.T) []Mus {
 	return []Mus{
-		Mus{"SAMPLE", sampleMus(t), 7},
-		Mus{"DOOM", doomSample(t), 6},
-		Mus{"INTROA", loadMus("INTROA", t), 214},
-		Mus{"INTRO", loadMus("INTRO", t), 498},
-		Mus{"E1M1", loadMus("E1M1", t), 5826},
+		{"SAMPLE", sampleMus(t), 7},
+		{"DOOM", doomSample(t), 6},
+		{"INTROA", loadMus("INTROA", t), 214},
+		{"INTRO", loadMus("INTRO", t), 498},
+		{"E1M1", loadMus("E1M1", t), 5826},
 	}
 }
 
@@ -358,13 +358,13 @@ func TestMusLoading(t *testing.T) {
 	}
 
 	cases := []Case{
-		Case{0, gmus.System, 10, 0, "0a"},
-		Case{1, gmus.Controller, 3, 0, "0364"},
-		Case{2, gmus.PlayNote, 16, 15, "10"},
-		Case{3, gmus.PlayNote, 32, 15, "20"},
-		Case{4, gmus.RelaseNote, 16, 261, "10"},
-		Case{5, gmus.RelaseNote, 32, 5, "20"},
-		Case{6, gmus.ScoreEnd, 0, 0, ""},
+		{0, gmus.System, 10, 0, "0a"},
+		{1, gmus.Controller, 3, 0, "0364"},
+		{2, gmus.PlayNote, 16, 15, "10"},
+		{3, gmus.PlayNote, 32, 15, "20"},
+		{4, gmus.RelaseNote, 16, 261, "10"},
+		{5, gmus.RelaseNote, 32, 5, "20"},
+		{6, gmus.ScoreEnd, 0, 0, ""},
 	}
 
 	for _, c := range cases {
