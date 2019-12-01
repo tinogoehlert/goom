@@ -80,10 +80,9 @@ func NewWADFromFile(file string) (*WAD, error) {
 		InfoTableOFS: int(binary.LittleEndian.Uint32(header[8:12])),
 	}
 
-	// load header
+	// check data
 	data := make([]byte, wad.InfoTableOFS-wadHeaderSize)
-	sz, err = fd.Read(data)
-	if err != nil {
+	if _, err = fd.Read(data); err != nil {
 		return nil, fmt.Errorf("could read WAD data: %s", err.Error())
 	}
 

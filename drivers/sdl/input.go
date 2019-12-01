@@ -1,8 +1,6 @@
 package sdl
 
 import (
-	"fmt"
-
 	"github.com/tinogoehlert/go-sdl2/sdl"
 )
 
@@ -23,7 +21,6 @@ func (id *inputDriver) IsPressed(keycode interface{}) bool {
 	}
 
 	states := sdl.GetKeyboardState()
-	fmt.Printf("%v\n", states)
 	scanCode := sdl.GetScancodeFromKey(key)
 	return states[scanCode] != 0
 }

@@ -29,7 +29,7 @@ var (
 	newWindow = drivers.WindowMakers[drivers.GlfwWindow]
 	newAudio  = drivers.AudioDrivers[drivers.SdlAudio]
 	getTime   = drivers.Timers[drivers.SdlTimer]
-	newInput  = drivers.InputProviders[drivers.SdlInput]
+	newInput  = drivers.InputProviders[drivers.GlfwInput]
 )
 
 func main() {

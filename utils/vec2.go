@@ -74,7 +74,7 @@ func (a Vec2) Add(b Vec2) Vec2 {
 	return V2(a.x+b.x, a.y+b.y)
 }
 
-// Sub substract two vectors.
+// Sub subtract two vectors.
 func (a Vec2) Sub(b Vec2) Vec2 {
 	return V2(a.x-b.x, a.y-b.y)
 }

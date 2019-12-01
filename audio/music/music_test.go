@@ -33,7 +33,7 @@ func concat(values ...[]byte) []byte {
 
 func sampleMus(t *testing.T) []byte {
 	/*
-		Artifical Example Track
+		Artificial Example Track
 
 		Composed using ModdingWiki MUS spec: http://www.shikadi.net/moddingwiki/MUS_Format
 
@@ -65,7 +65,7 @@ func sampleMus(t *testing.T) []byte {
 
 		Channels:       0
 		NumChannels:    1
-		Intruments:     16, 32
+		Instruments:    16, 32
 		NumInstruments: 2
 		NumScores:      7
 		NumBytes:       19

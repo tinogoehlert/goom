@@ -156,22 +156,22 @@ func (dt *DoomThing) CalcAngle(origin mgl32.Vec2) (int, int) {
 		angle += 360
 	}
 	switch {
-	case (angle >= 292.5 && angle < 337.5):
-		return 2, 1
-	case (angle >= 22.5 && angle < 67.5):
-		return 2, 0
-	case (angle >= 67.5 && angle < 112.5):
-		return 3, 0
-	case (angle >= 112.5 && angle < 157.5):
-		return 4, 0
-	case (angle >= 157.5 && angle < 202.5):
-		return 5, 0
-	case (angle >= 202.5 && angle < 247.5):
-		return 3, 1
-	case (angle >= 247.5 && angle < 292.5):
-		return 4, 1
 	case (angle >= 337.5 || angle < 22.5):
 		return 1, 0
+	case (angle < 67.5):
+		return 2, 0
+	case (angle < 112.5):
+		return 3, 0
+	case (angle < 157.5):
+		return 4, 0
+	case (angle < 202.5):
+		return 5, 0
+	case (angle < 247.5):
+		return 3, 1
+	case (angle < 292.5):
+		return 4, 1
+	case (angle < 337.5):
+		return 2, 1
 	default:
 		return 1, 0
 	}
