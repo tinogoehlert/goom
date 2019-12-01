@@ -6,5 +6,6 @@ import (
 
 // GetTime provides the game time
 func GetTime() float64 {
-	return float64(sdl.GetTicks())
+	// getTicks provides MS, we want seconds
+	return float64(sdl.GetTicks()) / 1000
 }

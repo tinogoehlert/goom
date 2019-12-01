@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -27,8 +28,8 @@ var (
 	// engine functions
 	newWindow = drivers.WindowMakers[drivers.GlfwWindow]
 	newAudio  = drivers.AudioDrivers[drivers.SdlAudio]
-	getTime   = drivers.Timers[drivers.GlfwTimer]
-	newInput  = drivers.InputProviders[drivers.GlfwInput]
+	getTime   = drivers.Timers[drivers.SdlTimer]
+	newInput  = drivers.InputProviders[drivers.SdlInput]
 )
 
 func main() {
@@ -202,34 +203,40 @@ func (rs *renderStats) showStats(gd *goom.GameData, gr *opengl.GLRenderer) {
 	}
 
 	fpsText := fmt.Sprintf("FPS: %d", rs.fps)
+	// TODO: position realtively to the window size
 	drawText(gd.Fonts, graphics.FnCompositeRed, fpsText, 800, 600, 0.6, gr)
 	ftimeText := fmt.Sprintf("frame time: %.6f ms", rs.meanFrameTime)
+	// TODO: position realtively to the window size
 	drawText(gd.Fonts, graphics.FnCompositeRed, ftimeText, 800, 580, 0.6, gr)
 }
 
 func input(id drivers.Input, player *game.Player) {
-	if id.IsPressed(drivers.KeyUp.Code()) || id.IsPressed(drivers.KeyW.Code()) {
+	if id.IsPressed(drivers.KeyUp) || id.IsPressed(drivers.KeyW) {
 		player.Forward(1)
 	}
-	if id.IsPressed(drivers.KeyDown.Code()) || id.IsPressed(drivers.KeyS.Code()) {
+	if id.IsPressed(drivers.KeyDown) || id.IsPressed(drivers.KeyS) {
 		player.Forward(-1)
 	}
 
-	if id.IsPressed(drivers.KeyA.Code()) {
+	if id.IsPressed(drivers.KeyA) {
 		player.Strafe(-1)
 	}
-	if id.IsPressed(drivers.KeyD.Code()) {
+	if id.IsPressed(drivers.KeyD) {
 		player.Strafe(1)
 	}
 
-	if id.IsPressed(drivers.KeyLeft.Code()) {
+	if id.IsPressed(drivers.KeyLeft) {
 		player.Turn(-1.5)
 	}
-	if id.IsPressed(drivers.KeyRight.Code()) {
+	if id.IsPressed(drivers.KeyRight) {
 		player.Turn(1.5)
 	}
 
-	if id.IsPressed(drivers.KeyLShift.Code()) {
+	if id.IsPressed(drivers.KeyLShift) {
 		player.FireWeapon()
+	}
+
+	if id.IsPressed(drivers.KeyQ) {
+		os.Exit(0)
 	}
 }

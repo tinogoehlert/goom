@@ -29,8 +29,10 @@ func newSdlInput(win Window) Input {
 	return Input(sdl.NewInputDriver(mapSdlKey))
 }
 
-func mapSdlKey(keycode uint16) (sdl_native.Keycode, bool) {
-	key, ok := sdlDriversKeyMap[Keycode(keycode)]
+func mapSdlKey(keycode interface{}) (sdl_native.Keycode, bool) {
+	// TODO: this may panic if keycode is NOT type Keycode
+	key, ok := sdlDriversKeyMap[keycode.(Keycode)]
+
 	return key, ok
 }
 

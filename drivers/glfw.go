@@ -26,8 +26,9 @@ func newGlfwInput(win Window) Input {
 	return Input(drv)
 }
 
-func mapGlfwKey(keycode uint16) (glfw.Key, bool) {
-	key, ok := glfwDriversKeyMap[Keycode(keycode)]
+func mapGlfwKey(keycode interface{}) (glfw.Key, bool) {
+	// TODO: this may panic if keycode is NOT type Keycode
+	key, ok := glfwDriversKeyMap[keycode.(Keycode)]
 	return key, ok
 }
 

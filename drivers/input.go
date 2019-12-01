@@ -21,7 +21,7 @@ type Key struct {
 }
 
 type Input interface {
-	IsPressed(keycode uint16) bool
+	IsPressed(keycode interface{}) bool
 }
 
 type inputProvider func(Window) Input

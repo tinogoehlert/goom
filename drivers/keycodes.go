@@ -70,7 +70,8 @@ const (
 	KeyBackspace
 	KeyTab
 	KeySpace
-	// keypad minus has different key code
+
+	// KeyMinus on keypad has different key code
 	KeyMinus
 	KeyEquals
 	KeyLeftBracket

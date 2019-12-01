@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"regexp"
 	"time"
 
@@ -91,7 +90,7 @@ func (s *Sound) ToWAV() []byte {
 	binary.Write(wavBuff, binary.LittleEndian, uint32(len(s.SampleBytes())))
 	wavBuff.Write(s.SampleBytes())
 
-	ioutil.WriteFile("new.wav", wavBuff.Bytes(), 0644)
+	// ioutil.WriteFile("new.wav", wavBuff.Bytes(), 0644)
 	return wavBuff.Bytes()
 }
 
