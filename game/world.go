@@ -49,6 +49,11 @@ func (w *World) SetAudioDriver(drv drivers.Audio) {
 	w.audioDriver = drv
 }
 
+// AudioDriver returns the current audio driver.
+func (w *World) AudioDriver() drivers.Audio {
+	return w.audioDriver
+}
+
 // LoadLevel a specific level of the world
 func (w *World) LoadLevel(lvl *level.Level) error {
 	w.nodes = lvl.Nodes(level.GLNodesName)
@@ -158,6 +163,12 @@ func (w *World) Update() {
 				dist := ppos.DistanceTo(mpos)
 				w.projectiles.Remove(e)
 				state := m.Hit(p.damage, dist)
+				id := m.sounds[state]
+				sound := w.gameData.Sounds.GetByID(id)
+				if sound == nil {
+					fmt.Printf("bad monster state sound: %s = %d\n", id, int(state))
+					break
+				}
 				if state > 0 {
 					distP := mgl32.Vec2(m.position).Sub(w.me.position)
 					angle := mgl32.RadToDeg(
@@ -167,7 +178,7 @@ func (w *World) Update() {
 					if angle < 0.0 {
 						angle += 360
 					}
-					w.audioDriver.PlayAtPosition(m.sounds[state], dist/2.6, int16(angle))
+					w.audioDriver.PlayAtPosition(sound.Name, dist/2.6, int16(angle))
 				}
 				break
 			}

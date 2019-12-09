@@ -3,8 +3,9 @@ package sdl
 import (
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
+	"path"
+	"time"
 
 	"github.com/tinogoehlert/go-sdl2/mix"
 	"github.com/tinogoehlert/go-sdl2/sdl"
@@ -13,25 +14,25 @@ import (
 	"github.com/tinogoehlert/goom/audio/sfx"
 )
 
+// Audio is the SDL audio driver.
 type Audio struct {
 	sounds           *sfx.Sounds
 	chunks           map[string]*mix.Chunk
 	currentTrackName string
 	currentTrack     *mix.Music
 	tempFolder       string
+	test             bool
 }
 
+// NewAudio returns an SDL audio driver.
 func NewAudio(sounds *sfx.Sounds, tempFolder string) (*Audio, error) {
-
 	err := initAudio()
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, fmt.Errorf("failed to init SDL subsystem: %s", err.Error())
 	}
 
 	if _, err := mix.OpenAudioDevice(22050, mix.DEFAULT_FORMAT, 2, 4096, "", sdl.AUDIO_ALLOW_ANY_CHANGE); err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, fmt.Errorf("failed to open audio device: %s", err.Error())
 	}
 
 	os.MkdirAll(tempFolder, 0700)
@@ -45,12 +46,20 @@ func NewAudio(sounds *sfx.Sounds, tempFolder string) (*Audio, error) {
 	return a, nil
 }
 
-func (a Audio) PlayMusic(track *music.Track) error {
+// TestMode silences all sounds and music and sets all delays to 0 for testing.
+func (a *Audio) TestMode() {
+	a.test = true
+}
+
+// PlayMusic plays a MUS track.
+// For SDL playback the MUS track is converted to a MID file and
+// stored in a temp dir unless the target MID file is already present.
+func (a *Audio) PlayMusic(track *music.Track) error {
 	if track == nil {
 		return nil
 	}
 
-	a.currentTrackName = a.tempFolder + "/" + track.Name + ".mid"
+	a.currentTrackName = path.Join(a.tempFolder, track.Name+".mid")
 	if _, err := os.Stat(a.currentTrackName); err != nil {
 		if !os.IsNotExist(err) {
 			return err
@@ -67,7 +76,7 @@ func (a Audio) PlayMusic(track *music.Track) error {
 }
 
 // Play simply plays an audio chunk with the given name
-func (a Audio) Play(name string) error {
+func (a *Audio) Play(name string) error {
 	chunk, err := a.getChunk(name)
 	if err != nil {
 		return err
@@ -76,7 +85,8 @@ func (a Audio) Play(name string) error {
 	return err
 }
 
-func (a Audio) PlayAtPosition(name string, distance float32, angle int16) error {
+// PlayAtPosition plays a sound in 2D virtual space using a given distance and angle.
+func (a *Audio) PlayAtPosition(name string, distance float32, angle int16) error {
 	chunk, err := a.getChunk(name)
 	if err != nil {
 		return err
@@ -114,7 +124,22 @@ func (a *Audio) createChunk(name string) (*mix.Chunk, error) {
 	return chunk, nil
 }
 
-func (a Audio) Close() {
-	mix.CloseAudio()
-	sdl.AudioQuit()
+// Close closes the mixer and quits the SDL audio driver.
+func (a *Audio) Close() {
+	defer mix.CloseAudio()
+	defer sdl.AudioQuit()
+	t := time.Now()
+	fadeOutDur := time.Second
+
+	fmt.Printf("waiting for audio channels to stop: #0")
+	for {
+		n := mix.Playing(-1)
+		// Wait up to 500 ms for playing channels when in non-test mode.
+		if time.Now().Sub(t) > fadeOutDur || n == 0 || a.test {
+			fmt.Printf(", OK\n")
+			break
+		}
+		fmt.Printf("\b%d", n)
+		time.Sleep(fadeOutDur / 10)
+	}
 }

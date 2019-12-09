@@ -8,8 +8,13 @@ import (
 // Audio stub audio driver
 type Audio struct{}
 
+// NewAudio returns a dummy audio driver.
 func NewAudio(sounds *sfx.Sounds, tempFolder string) (*Audio, error) {
 	return &Audio{}, nil
+}
+
+// TestMode does nothing.
+func (a Audio) TestMode() {
 }
 
 // PlayMusic does nothing

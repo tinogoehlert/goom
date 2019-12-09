@@ -17,7 +17,7 @@ type GameData struct {
 	Flats    graphics.FlatStore
 	Sprites  graphics.SpriteStore
 	Palettes *graphics.Palettes
-	Music    music.Suite
+	Music    music.TrackStore
 	Sounds   sfx.Sounds
 	Fonts    graphics.FontBook
 }
@@ -60,7 +60,7 @@ func LoadGameData(files ...string) (*GameData, error) {
 		Textures: graphics.NewTextureStore(),
 		Flats:    graphics.NewFlatStore(),
 		Sprites:  graphics.NewSpriteStore(),
-		Music:    music.NewSuite(),
+		Music:    music.NewTrackStore(),
 		Sounds:   sfx.Sounds{},
 		Fonts:    graphics.NewFontBook(),
 	}
@@ -72,9 +72,6 @@ func LoadGameData(files ...string) (*GameData, error) {
 		if err := gd.Levels.LoadWAD(wad); err != nil {
 			return nil, err
 		}
-		if err := gd.Music.LoadWAD(wad); err != nil {
-			return nil, err
-		}
 		if p, _ := graphics.NewPalettes(wad); p != nil {
 			gd.Palettes = p
 		}
@@ -84,6 +81,7 @@ func LoadGameData(files ...string) (*GameData, error) {
 		gd.Sprites.LoadWAD(wad)
 		gd.Flats.LoadWAD(wad)
 		gd.Textures.LoadWAD(wad)
+		gd.Music.LoadWAD(wad)
 		gd.Sounds.LoadWAD(wad)
 	}
 	gd.Textures.InitPatches()

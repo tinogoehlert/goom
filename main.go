@@ -13,6 +13,7 @@ import (
 	"github.com/tinogoehlert/goom/goom"
 	"github.com/tinogoehlert/goom/graphics"
 	"github.com/tinogoehlert/goom/level"
+	"github.com/tinogoehlert/goom/run"
 	"github.com/tinogoehlert/goom/utils"
 )
 
@@ -20,10 +21,13 @@ var (
 	logger = utils.GoomConsole
 
 	// flags
-	iwadfile  = flag.String("iwad", "DOOM1", "IWAD file to load (without extension)")
-	pwadfile  = flag.String("pwad", "", "PWAD file to load (without extension)")
-	levelName = flag.String("level", "E1M1", "Level to start e.g. E1M1")
-	fpsMax    = flag.Int("fpsmax", 0, "Limit FPS")
+	iwadfile     = flag.String("iwad", "DOOM1", "IWAD file to load (without extension)")
+	pwadfile     = flag.String("pwad", "", "PWAD file to load (without extension)")
+	levelName    = flag.String("level", "E1M1", "Level to start e.g. E1M1")
+	fpsMax       = flag.Int("fpsmax", 0, "Limit FPS")
+	windowHeight = 600
+	windowWidth  = 800
+	gameDefs     = "resources/defs.yaml"
 
 	// engine functions
 	newWindow = drivers.WindowMakers[drivers.GlfwWindow]
@@ -38,78 +42,39 @@ func main() {
 	logger.Green("GOOM - DOOM clone written in Go")
 	logger.Green("Press Q to exit GOOM.")
 
-	r := &runner{
-		stats: &renderStats{lastUpdate: time.Now()},
-	}
+	e := newEngine()
 
-	r.initialize()
-
-	inputDriver := newInput(r.window)
+	inputDriver := newInput(e.Window())
 
 	inputFunc := func() {
-		input(inputDriver, r.world.Me())
+		input(inputDriver, e.World().Me())
 	}
 
-	r.window.RunGame(inputFunc, r.world.Update, r.render)
+	e.Window().RunGame(inputFunc, e.World().Update, e.render)
 }
 
-type runner struct {
-	gameData *goom.GameData
-	world    *game.World
-	window   drivers.Window
-	renderer *opengl.GLRenderer
-	stats    *renderStats
+type engine struct {
+	*run.Runner
+	stats *renderStats
 }
 
-func (r *runner) initialize() {
+func newEngine() *engine {
 	var err error
-
-	logger.Green("loading %s", *iwadfile)
-	r.gameData, err = goom.LoadWAD(*iwadfile, *pwadfile)
-	if err != nil {
-		logger.Red("could not load WAD data: %s", err.Error())
+	e := &engine{
+		&run.Runner{},
+		&renderStats{lastUpdate: time.Now()},
 	}
 
-	mission := r.gameData.Level(strings.ToUpper(*levelName))
-	r.world = game.NewWorld(r.gameData, game.NewDefStore("resources/defs.yaml"))
+	// init all subsystems
+	e.InitWAD(*iwadfile, *pwadfile, gameDefs)
+	e.InitAudio(newAudio)
+	e.InitRenderer(newWindow, windowWidth, windowHeight)
 
-	audio, err := newAudio(&r.world.Data().Sounds, "temp/music")
-	if err != nil {
-		logger.Fatalf(err.Error())
-	}
-
-	r.world.SetAudioDriver(audio)
-
-	r.window, err = newWindow("GOOM", 800, 600)
-	if err != nil {
-		logger.Fatalf(err.Error())
-	}
-
-	err = opengl.Init()
-	if err != nil {
-		logger.Fatalf(err.Error())
-	}
-
-	r.renderer, err = opengl.NewRenderer(r.gameData)
-	if err != nil {
-		logger.Red("could not init GL: %s", err.Error())
-	}
-
-	err = r.renderer.LoadShaderProgram("main", "resources/shaders/main.vert", "resources/shaders/main.frag")
-	if err != nil {
-		logger.Red("could not init GL: %s", err.Error())
-	}
-
-	r.renderer.LoadLevel(mission, r.gameData)
-
-	err = r.renderer.SetShaderProgram("main")
-	if err != nil {
-		logger.Red("could not init GL: %s", err.Error())
-	}
-
-	r.world.LoadLevel(mission)
-
-	player := r.world.Me()
+	// load mission
+	mission := e.GameData().Level(strings.ToUpper(*levelName))
+	e.Renderer().LoadLevel(mission, e.GameData())
+	e.World().LoadLevel(mission)
+	player := e.World().Me()
 
 	ssect, err := mission.FindPositionInBsp(level.GLNodesName, player.Position()[0], player.Position()[1])
 	if err != nil {
@@ -119,25 +84,27 @@ func (r *runner) initialize() {
 		player.SetSector(sector)
 	}
 
-	r.renderer.Camera().SetCamera(player.Position(), player.Direction(), player.Height())
-	r.renderer.SetViewPort(r.window.GetSize())
+	e.Renderer().Camera().SetCamera(player.Position(), player.Direction(), player.Height())
+	e.Renderer().SetViewPort(e.Window().GetSize())
+
+	return e
 }
 
-func (r *runner) render(interpolTime float64) {
+func (e *engine) render(interpolTime float64) {
 	started := getTime()
-	r.renderer.RenderNewFrame()
-	r.renderer.SetViewPort(r.window.GetSize())
+	e.Renderer().RenderNewFrame()
+	e.Renderer().SetViewPort(e.Window().GetSize())
 
-	mission := r.world.GetLevel()
+	mission := e.World().GetLevel()
 
 	mission.WalkBsp(func(i int, n *level.Node, b level.BBox) {
-		r.renderer.DrawSubSector(i)
+		e.Renderer().DrawSubSector(i)
 	})
 
-	player := r.world.Me()
+	player := e.World().Me()
 
-	r.renderer.DrawThings(r.world.Things())
-	r.renderer.DrawHUD(player, interpolTime)
+	e.Renderer().DrawThings(e.World().Things())
+	e.Renderer().DrawHUD(player, interpolTime)
 
 	ssect, err := mission.FindPositionInBsp(level.GLNodesName, player.Position()[0], player.Position()[1])
 	if err != nil {
@@ -147,12 +114,12 @@ func (r *runner) render(interpolTime float64) {
 		player.SetSector(sector)
 		player.Lift(sector.FloorHeight())
 	}
-	r.renderer.Camera().SetCamera(player.Position(), player.Direction(), player.Height())
+	e.Renderer().Camera().SetCamera(player.Position(), player.Direction(), player.Height())
 
-	r.stats.showStats(r.gameData, r.renderer)
-	r.stats.countedFrames++
+	e.stats.showStats(e.GameData(), e.Renderer())
+	e.stats.countedFrames++
 	ft := getTime() - started
-	r.stats.accumulatedTime += time.Duration(ft * float64(time.Second))
+	e.stats.accumulatedTime += time.Duration(ft * float64(time.Second))
 
 	if *fpsMax > 0 {
 		time.Sleep(time.Second / time.Duration(*fpsMax))

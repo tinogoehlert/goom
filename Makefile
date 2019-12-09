@@ -28,4 +28,4 @@ test-run: TEST=-test
 test-run: run
 
 run: $(TARGETS)
-	cd cmd/doom && go run main.go -iwad $(CURDIR)/DOOM1 $(TEST)
+	go run main.go

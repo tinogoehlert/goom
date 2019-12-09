@@ -16,6 +16,23 @@ import (
 // SoundID defines the first 4 bytes of a DOOM sound.
 const SoundID = "0300"
 
+// sfxPrefix is the prefix used for sound lump names.
+var sfxPrefix string
+
+// sfxRegex is the regex used to indentify sound lumps.
+var sfxRegex *regexp.Regexp
+
+// SetPrefix sets the sound lump prefix.
+// Use this function to define different prefixes for different games.
+func SetPrefix(p string) {
+	sfxPrefix = p
+	sfxRegex = regexp.MustCompile("^" + p)
+}
+
+func init() {
+	SetPrefix("DS")
+}
+
 // vars for testing and development
 var test bool
 var sounds Sounds
@@ -34,18 +51,22 @@ type Sound struct {
 // Sounds is a suite of named Tracks.
 type Sounds map[string]*Sound
 
-// Get returns a Sound sample by name.
+// Get returns a Sound sample by name for the current game.
 func (s Sounds) Get(name string) *Sound {
-	return s["DS"+name]
+	return s[sfxPrefix+name]
+}
+
+// GetByID returns a Sound sample by its full lump name.
+func (s Sounds) GetByID(key string) *Sound {
+	return s[key]
 }
 
 // LoadWAD loads the sound data from the WAD.
 func (s Sounds) LoadWAD(w *wad.WAD) error {
-	sfxRegex := regexp.MustCompile(`^DS`)
 	for _, l := range w.Lumps() {
 		if sfxRegex.Match([]byte(l.Name)) {
 			if hex.EncodeToString(l.Data[:2]) != SoundID {
-				return fmt.Errorf("invalid DS header for LUMP %s: %x", l.Name, l.Data[:4])
+				return fmt.Errorf("invalid sound header for LUMP %s: %x", l.Name, l.Data[:4])
 			}
 			s[l.Name] = &Sound{l}
 		}

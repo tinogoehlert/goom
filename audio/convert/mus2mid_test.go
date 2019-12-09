@@ -5,11 +5,11 @@ import (
 	"path"
 	"testing"
 
-	"github.com/tinogoehlert/goom"
 	"github.com/tinogoehlert/goom/audio/convert"
 	"github.com/tinogoehlert/goom/audio/files"
 	gmidi "github.com/tinogoehlert/goom/audio/midi"
 	"github.com/tinogoehlert/goom/audio/music"
+	"github.com/tinogoehlert/goom/goom"
 	"github.com/tinogoehlert/goom/test"
 	"gitlab.com/gomidi/midi"
 	"gitlab.com/gomidi/midi/mid"
