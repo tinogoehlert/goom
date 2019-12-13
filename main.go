@@ -68,7 +68,10 @@ func newEngine() *engine {
 	// init all subsystems
 	e.InitWAD(*iwadfile, *pwadfile, gameDefs)
 	e.InitAudio(newAudio)
-	e.InitRenderer(newWindow, windowWidth, windowHeight)
+	err = e.InitRenderer(newWindow, windowWidth, windowHeight)
+	if err != nil {
+		logger.Redf("failed to init renderer %s", err.Error())
+	}
 
 	// load mission
 	mission := e.GameData().Level(strings.ToUpper(*levelName))

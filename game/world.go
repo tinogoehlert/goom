@@ -29,7 +29,7 @@ type World struct {
 	gameData    *goom.GameData
 }
 
-// NewWorld Creates a new world
+// NewWorld Creates a new world.
 func NewWorld(data *goom.GameData, defs *DefStore) *World {
 	noopAudio, _ := drivers.AudioDrivers[drivers.NoopAudio](nil, "")
 
@@ -40,7 +40,11 @@ func NewWorld(data *goom.GameData, defs *DefStore) *World {
 	}
 }
 
+// Data holds the worlds gamedata.
 func (w *World) Data() *goom.GameData {
+	if w == nil {
+		return nil
+	}
 	return w.gameData
 }
 
@@ -51,6 +55,9 @@ func (w *World) SetAudioDriver(drv drivers.Audio) {
 
 // AudioDriver returns the current audio driver.
 func (w *World) AudioDriver() drivers.Audio {
+	if w == nil {
+		return nil
+	}
 	return w.audioDriver
 }
 
@@ -117,16 +124,25 @@ func (w *World) LoadLevel(lvl *level.Level) error {
 
 // Me returns current player
 func (w *World) Me() *Player {
+	if w == nil {
+		return nil
+	}
 	return w.me
 }
 
 // Things returns things
 func (w *World) Things() []Thingable {
+	if w == nil {
+		return nil
+	}
 	return w.things
 }
 
 // Monsters returns monsters
 func (w *World) Monsters() []*Monster {
+	if w == nil {
+		return nil
+	}
 	return w.monsters
 }
 
@@ -311,5 +327,8 @@ func (w *World) checkWallCollision(thing *DoomThing, to mgl32.Vec2) mgl32.Vec2 {
 
 // GetLevel return the currently loaded level.
 func (w *World) GetLevel() *level.Level {
+	if w == nil {
+		return nil
+	}
 	return w.levelRef
 }

@@ -1,6 +1,7 @@
 package run
 
 import (
+	"fmt"
 	"path"
 
 	"github.com/tinogoehlert/goom/drivers"
@@ -19,41 +20,48 @@ type Runner struct {
 	gameDir  string
 }
 
-var (
-	testRunner *Runner
-	logger     = utils.GoomConsole
-)
+var logger = utils.GoomConsole
 
 // TestRunner return a non initalized runner for headless testing
 func TestRunner(gameDir ...string) *Runner {
-	if testRunner == nil {
-		r := &Runner{gameDir: path.Join(gameDir...)}
-		iwad := path.Join(r.gameDir, "DOOM1")
-		defs := path.Join(r.gameDir, "resources/defs.yaml")
-		r.InitWAD(iwad, "", defs)
-		r.InitAudio(drivers.AudioDrivers[drivers.SdlAudio])
-		testRunner = r
-	}
-	return testRunner
+	r := &Runner{gameDir: path.Join(gameDir...)}
+	iwad := path.Join(r.gameDir, "DOOM1")
+	defs := path.Join(r.gameDir, "resources", "defs.yaml")
+	r.InitWAD(iwad, "", defs)
+	r.InitAudio(drivers.AudioDrivers[drivers.SdlAudio])
+
+	return r
 }
 
 // Window returns the game window.
 func (r *Runner) Window() drivers.Window {
+	if r == nil {
+		return nil
+	}
 	return r.window
 }
 
 // World returns the game world.
 func (r *Runner) World() *game.World {
+	if r == nil {
+		return nil
+	}
 	return r.world
 }
 
 // Renderer returns the game world.
 func (r *Runner) Renderer() *opengl.GLRenderer {
+	if r == nil {
+		return nil
+	}
 	return r.renderer
 }
 
 // GameData returns the game world.
 func (r *Runner) GameData() *goom.GameData {
+	if r == nil {
+		return nil
+	}
 	return r.gameData
 }
 
@@ -96,14 +104,19 @@ func (r *Runner) InitRenderer(newWindow drivers.WindowCreator, w, h int) error {
 		return err
 	}
 
-	err = r.renderer.LoadShaderProgram("main", "resources/shaders/main.vert", "resources/shaders/main.frag")
+	err = r.renderer.LoadShaderProgram(
+		"main",
+		path.Join("resources", "shaders", "main.vert"),
+		path.Join("resources", "shaders", "main.frag"),
+	)
 	if err != nil {
-		logger.Red("failed to load shaders: %s", err.Error())
+		return fmt.Errorf("failed to load shaders: %w", err)
 	}
 
 	err = r.renderer.SetShaderProgram("main")
 	if err != nil {
-		logger.Red("failed to init shaders: %s", err.Error())
+		return fmt.Errorf("failed to init shaders: %w", err)
 	}
+
 	return nil
 }
