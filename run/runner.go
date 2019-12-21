@@ -28,7 +28,10 @@ func TestRunner(gameDir ...string) *Runner {
 	iwad := path.Join(r.gameDir, "DOOM1")
 	defs := path.Join(r.gameDir, "resources", "defs.yaml")
 	r.InitWAD(iwad, "", defs)
-	r.InitAudio(drivers.AudioDrivers[drivers.SdlAudio])
+	r.InitAudio(
+		drivers.AudioDrivers[drivers.SdlAudio],
+		drivers.MusicDrivers[drivers.SdlMusic],
+	)
 
 	return r
 }
@@ -77,13 +80,18 @@ func (r *Runner) InitWAD(iwadfile, pwadfile, gameDefs string) {
 }
 
 // InitAudio starts the audio driver.
-func (r *Runner) InitAudio(newAudio drivers.AudioCreator) {
-	audio, err := newAudio(&r.GameData().Sounds, path.Join(r.gameDir, "temp", "music"))
+func (r *Runner) InitAudio(audio drivers.Audio, music drivers.Music) {
+	err := audio.Init(&r.GameData().Sounds)
 	if err != nil {
 		logger.Red("failed to init audio system: %s", err.Error())
 	}
-
 	r.world.SetAudioDriver(audio)
+
+	err := music.Init(&r.GameData().Music, path.Join(r.gameDir, "temp", "music"))
+	if err != nil {
+		logger.Red("failed to init music system: %s", err.Error())
+	}
+	r.world.SetMusicDriver(music)
 }
 
 // InitRenderer starts the window driver and GL renderer.

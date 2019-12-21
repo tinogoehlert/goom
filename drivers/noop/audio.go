@@ -8,9 +8,9 @@ import (
 // Audio stub audio driver
 type Audio struct{}
 
-// NewAudio returns a dummy audio driver.
-func NewAudio(sounds *sfx.Sounds, tempFolder string) (*Audio, error) {
-	return &Audio{}, nil
+// Init returns a dummy audio driver.
+func (a Audio) Init(sounds *sfx.Sounds) error {
+	return nil
 }
 
 // TestMode does nothing.

@@ -26,6 +26,7 @@ type World struct {
 	me          *Player
 	levelRef    *level.Level
 	audioDriver drivers.Audio
+	nusicDriver drivers.Music
 	gameData    *goom.GameData
 }
 
@@ -53,12 +54,25 @@ func (w *World) SetAudioDriver(drv drivers.Audio) {
 	w.audioDriver = drv
 }
 
+// SetMusicDriver sets the musicDriver
+func (w *World) SetMusicDriver(drv drivers.Music) {
+	w.musicDriver = drv
+}
+
 // AudioDriver returns the current audio driver.
 func (w *World) AudioDriver() drivers.Audio {
 	if w == nil {
 		return nil
 	}
 	return w.audioDriver
+}
+
+// MusicDriver returns the current audio driver.
+func (w *World) MusicDriver() drivers.Music {
+	if w == nil {
+		return nil
+	}
+	return w.musicDriver
 }
 
 // LoadLevel a specific level of the world

@@ -60,7 +60,7 @@ func (p *Player) initDriver(providers ...Provider) error {
 		providers = []Provider{Any}
 	}
 
-	var initFunc drvInitFunc = nil
+	var initFunc drvInitFunc
 	for _, prov := range providers {
 		switch {
 		case prov.match(RTMidi):

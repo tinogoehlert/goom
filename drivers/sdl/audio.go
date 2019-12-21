@@ -14,47 +14,62 @@ import (
 	"github.com/tinogoehlert/goom/audio/sfx"
 )
 
-// Audio is the SDL audio driver.
-type Audio struct {
-	sounds           *sfx.Sounds
-	chunks           map[string]*mix.Chunk
-	currentTrackName string
-	currentTrack     *mix.Music
-	tempFolder       string
-	test             bool
+// TestDriver saves the test mode.
+type TestDriver struct {
+	test bool
 }
 
-// NewAudio returns an SDL audio driver.
-func NewAudio(sounds *sfx.Sounds, tempFolder string) (*Audio, error) {
-	err := initAudio()
-	if err != nil {
-		return nil, fmt.Errorf("failed to init SDL subsystem: %s", err.Error())
-	}
+// Audio is the SDL audio driver.
+type Audio struct {
+	TestDriver
+	sounds *sfx.Sounds
+	chunks map[string]*mix.Chunk
+	test   bool
+}
 
-	if _, err := mix.OpenAudioDevice(22050, mix.DEFAULT_FORMAT, 2, 4096, "", sdl.AUDIO_ALLOW_ANY_CHANGE); err != nil {
-		return nil, fmt.Errorf("failed to open audio device: %s", err.Error())
-	}
-
-	os.MkdirAll(tempFolder, 0700)
-
-	a := &Audio{
-		sounds:     sounds,
-		chunks:     make(map[string]*mix.Chunk),
-		tempFolder: tempFolder,
-	}
-
-	return a, nil
+// Music driver
+type Music struct {
+	TestDriver
+	tracks           *music.TrackStore
+	tempFolder       string
+	currentTrackName string
+	currentTrack     *mix.Music
 }
 
 // TestMode silences all sounds and music and sets all delays to 0 for testing.
-func (a *Audio) TestMode() {
-	a.test = true
+func (t *TestDriver) TestMode() {
+	t.test = true
+}
+
+// Init inits the driver.
+func (a *Audio) Init(sounds *sfx.Sounds) error {
+	err := initAudio()
+	if err != nil {
+		return fmt.Errorf("failed to init SDL subsystem: %s", err.Error())
+	}
+
+	if _, err := mix.OpenAudioDevice(22050, mix.DEFAULT_FORMAT, 2, 4096, "", sdl.AUDIO_ALLOW_ANY_CHANGE); err != nil {
+		return fmt.Errorf("failed to open audio device: %s", err.Error())
+	}
+
+	a.sounds = sounds
+	a.chunks = make(map[string]*mix.Chunk)
+
+	return nil
+}
+
+// Init starts the driver.
+func (a *Music) Init(tracks *music.TrackStore, tempFolder string) error {
+	os.MkdirAll(tempFolder, 0700)
+	a.tempFolder = tempFolder
+	a.tracks = tracks
+	return nil
 }
 
 // PlayMusic plays a MUS track.
 // For SDL playback the MUS track is converted to a MID file and
 // stored in a temp dir unless the target MID file is already present.
-func (a *Audio) PlayMusic(track *music.Track) error {
+func (a *Music) PlayMusic(track *music.Track) error {
 	if track == nil {
 		return nil
 	}

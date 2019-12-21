@@ -3,13 +3,13 @@ package drivers
 import (
 	sdl_native "github.com/tinogoehlert/go-sdl2/sdl"
 
-	"github.com/tinogoehlert/goom/audio/sfx"
 	"github.com/tinogoehlert/goom/drivers/sdl"
 )
 
 func init() {
 	WindowMakers[SdlWindow] = newSdlWindow
-	AudioDrivers[SdlAudio] = newSdlAudio
+	AudioDrivers[SdlAudio] = &sdl.Audio{}
+	MusicDrivers[SdlMusic] = &sdl.Music{}
 	Timers[SdlTimer] = sdl.GetTime
 	InputProviders[SdlInput] = newSdlInput
 }
@@ -18,11 +18,6 @@ func newSdlWindow(title string, width, height int) (Window, error) {
 	win, err := sdl.NewWindow(title, width, height)
 
 	return Window(win), err
-}
-
-func newSdlAudio(sounds *sfx.Sounds, tempFolder string) (Audio, error) {
-	audio, err := sdl.NewAudio(sounds, tempFolder)
-	return Audio(audio), err
 }
 
 func newSdlInput(win Window) Input {

@@ -10,6 +10,7 @@ github.com/rakyll/portmidi v0.0.0-20170620004031-e434d7284291 h1:hl7rQwLldjB+FCy
 github.com/rakyll/portmidi v0.0.0-20170620004031-e434d7284291/go.mod h1:tO1ylmFo6+hnYFvj/fd92q30wkNQwgWC/8mcHq0KkQU=
 github.com/rakyll/portmidi v0.0.0-20191102002215-74e95e8bc9b1 h1:ayxM9WkC6QRX0QnfrbZa98pfFqrNq1jo+58rWL1qjZs=
 github.com/rakyll/portmidi v0.0.0-20191102002215-74e95e8bc9b1/go.mod h1:xKffaBd7e1YUoLpR2azvJqkxEdUDNGNDMlsUNdv6Bcs=
+github.com/tinogoehlert/go-sdl2 v0.3.3 h1:PV1PEkrUbYk+Tm9kkX3oYhpyeAvnShwQPiQvfs9ZSKQ=
 github.com/tinogoehlert/go-sdl2 v0.4.0-rc.1 h1:g1HfctB7jd+DwSVThw1fCap9ZX7tlFqk67Y87w6K+50=
 github.com/tinogoehlert/go-sdl2 v0.4.0-rc.1/go.mod h1:/NoEJsuCqyTT8Vrm7qjTf9h61bNXLrTmJOcgwrZpS7c=
 github.com/ttacon/chalk v0.0.0-20160626202418-22c06c80ed31 h1:OXcKh35JaYsGMRzpvFkLv/MEyPuL49CThT1pZ8aSml4=
