@@ -14,22 +14,14 @@ import (
 	"github.com/tinogoehlert/goom/audio/sfx"
 )
 
-// TestDriver saves the test mode.
-type TestDriver struct {
-	test bool
-}
-
-// Audio is the SDL audio driver.
+// Audio is the SDL sound and music driver.
 type Audio struct {
-	TestDriver
+	// sound driver fields
 	sounds *sfx.Sounds
 	chunks map[string]*mix.Chunk
 	test   bool
-}
 
-// Music driver
-type Music struct {
-	TestDriver
+	// music driver fields
 	tracks           *music.TrackStore
 	tempFolder       string
 	currentTrackName string
@@ -37,12 +29,12 @@ type Music struct {
 }
 
 // TestMode silences all sounds and music and sets all delays to 0 for testing.
-func (t *TestDriver) TestMode() {
-	t.test = true
+func (a *Audio) TestMode() {
+	a.test = true
 }
 
-// Init inits the driver.
-func (a *Audio) Init(sounds *sfx.Sounds) error {
+// InitAudio inits the driver.
+func (a *Audio) InitAudio(sounds *sfx.Sounds) error {
 	err := initAudio()
 	if err != nil {
 		return fmt.Errorf("failed to init SDL subsystem: %s", err.Error())
@@ -58,8 +50,8 @@ func (a *Audio) Init(sounds *sfx.Sounds) error {
 	return nil
 }
 
-// Init starts the driver.
-func (a *Music) Init(tracks *music.TrackStore, tempFolder string) error {
+// InitMusic sets the music tracks.
+func (a *Audio) InitMusic(tracks *music.TrackStore, tempFolder string) error {
 	os.MkdirAll(tempFolder, 0700)
 	a.tempFolder = tempFolder
 	a.tracks = tracks
@@ -69,7 +61,7 @@ func (a *Music) Init(tracks *music.TrackStore, tempFolder string) error {
 // PlayMusic plays a MUS track.
 // For SDL playback the MUS track is converted to a MID file and
 // stored in a temp dir unless the target MID file is already present.
-func (a *Music) PlayMusic(track *music.Track) error {
+func (a *Audio) PlayMusic(track *music.Track) error {
 	if track == nil {
 		return nil
 	}

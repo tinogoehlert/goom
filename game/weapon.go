@@ -32,6 +32,7 @@ type Weapon struct {
 	bobPhase     float64
 }
 
+// Offset returns the weapons offset. TODO: better explanation!
 func (w *Weapon) Offset() [2]float32 {
 	return w.offset
 }

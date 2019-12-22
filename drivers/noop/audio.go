@@ -5,28 +5,33 @@ import (
 	"github.com/tinogoehlert/goom/audio/sfx"
 )
 
-// Audio stub audio driver
+// Audio is the dummy audio and music driver
 type Audio struct{}
 
-// Init returns a dummy audio driver.
-func (a Audio) Init(sounds *sfx.Sounds) error {
+// InitAudio does nothing.
+func (a *Audio) InitAudio(sounds *sfx.Sounds) error {
+	return nil
+}
+
+// InitMusic does nothing.
+func (a *Audio) InitMusic(tracks *music.TrackStore) error {
 	return nil
 }
 
 // TestMode does nothing.
-func (a Audio) TestMode() {
+func (a *Audio) TestMode() {
 }
 
 // PlayMusic does nothing
-func (a Audio) PlayMusic(m *music.Track) error {
+func (a *Audio) PlayMusic(m *music.Track) error {
 	return nil
 }
 
 // Play does nothing
-func (a Audio) Play(name string) error { return nil }
+func (a *Audio) Play(name string) error { return nil }
 
 // PlayAtPosition does nothing
-func (a Audio) PlayAtPosition(name string, distance float32, angle int16) error { return nil }
+func (a *Audio) PlayAtPosition(name string, distance float32, angle int16) error { return nil }
 
 // Close does nothing
-func (a Audio) Close() {}
+func (a *Audio) Close() {}

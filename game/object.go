@@ -145,6 +145,7 @@ func (dt *DoomThing) NextFrame() byte {
 	return dt.currentAnimation[dt.currentFrame]
 }
 
+// CalcAngle has really crazy math inside.
 func (dt *DoomThing) CalcAngle(origin mgl32.Vec2) (int, int) {
 	if !dt.hasAngles {
 		return 0, 0

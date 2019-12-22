@@ -8,6 +8,7 @@ import (
 
 var videoInitialized bool
 
+// InitVideo inits Glfw.
 func initVideo() error {
 	if videoInitialized {
 		return nil
@@ -26,4 +27,5 @@ func initVideo() error {
 // Destroy terminates the GLFW driver
 func Destroy() {
 	glfw.Terminate()
+	runtime.UnlockOSThread()
 }

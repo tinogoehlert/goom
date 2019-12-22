@@ -43,18 +43,21 @@ func NewPlayer(x, y, height, angle float32, w *World) *Player {
 	return p
 }
 
+// Forward sets the player to a forward moving state using the given speed.
 func (p *Player) Forward(speed float32) {
 	p.weapon.bobbing()
 	p.currSpeed = utils.Clamp(p.currSpeed+speed, -p.maxSpeed, p.maxSpeed)
 	p.velocityX += p.currSpeed
 }
 
+// Strafe sets the player to a sideways moving state using the given speed.
 func (p *Player) Strafe(speed float32) {
 	p.weapon.bobbing()
 	p.currSpeed = utils.Clamp(p.currSpeed+speed, -p.maxSpeed, p.maxSpeed)
 	p.velocityY += p.currSpeed
 }
 
+// Lift sets the player to an upward moving state towards the given height.
 func (p *Player) Lift(height float32) {
 	if p.targetHeight == height {
 		return
@@ -63,14 +66,17 @@ func (p *Player) Lift(height float32) {
 	p.velocityZ = (p.targetHeight - p.height) / 4
 }
 
+// Stop sets the player's velocity to 0.
 func (p *Player) Stop() {
 	p.velocityX = 0
 }
 
+// Height returns the player's height.
 func (p *Player) Height() float32 {
 	return p.DoomThing.height + 40
 }
 
+// Update updates all velocities and to deacclerate all types of movement.
 func (p *Player) Update() {
 	p.velocityX *= 0.90
 	p.Movable.Walk(p.velocityX)
@@ -93,6 +99,7 @@ func (p *Player) AddWeapon(weapon *Weapon) {
 	p.SwitchWeapon(weapon.Name)
 }
 
+// FireWeapon --> BOOOM!
 func (p *Player) FireWeapon() {
 	if p.weapon.Fire() {
 		// TODO: play correct sounds for other weapons

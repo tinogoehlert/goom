@@ -65,10 +65,13 @@ func NewMonster(x, y, height, angle float32, sprite string) *Monster {
 	}
 }
 
+// IsCorpse == DEADBEEF?
 func (m *Monster) IsCorpse() bool {
 	return m.state == StateDead
 }
 
+// Update updates the monster's state, making it Lurk after being hit
+// or makining it die after being killed.
 func (m *Monster) Update() {
 	if m.state == StateHurt {
 		if time.Now().Sub(m.lastChange) > 150*time.Millisecond {
@@ -109,6 +112,7 @@ func (m *Monster) Hit(damage int, distance float32) State {
 	return StateHurt
 }
 
+// Lurk GRRR!
 func (m *Monster) Lurk() {
 	if m.state != StateLurking {
 		m.currentAnimation = m.animations["walk"]
@@ -118,6 +122,7 @@ func (m *Monster) Lurk() {
 	}
 }
 
+// Think What?
 func (m *Monster) Think(player *Player) {
 	//m.Walk(12, frameTime)
 	//m.Turn(12, frameTime)
