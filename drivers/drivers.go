@@ -35,21 +35,22 @@ type Drivers struct {
 
 // Define common and specific driver names by name.
 const (
-	Noop      = "Noop"
+	Noop      = "noop"
 	NoopAudio = AudioDriver(Noop)
 	NoopMusic = MusicDriver(Noop)
 
-	Glfw       = "Glfw"
+	Glfw       = "glfw"
 	GlfwWindow = WindowDriver(Glfw)
 	GlfwTimer  = Timer(Glfw)
 	GlfwInput  = InputDriver(Glfw)
 
-	Sdl       = "Sdl"
+	Sdl       = "sdl"
 	SdlWindow = WindowDriver(Sdl)
 	SdlTimer  = Timer(Sdl)
 	SdlInput  = InputDriver(Sdl)
 	SdlAudio  = AudioDriver(Sdl)
 	SdlMusic  = MusicDriver(Sdl)
 
-	PortMidiMusic = MusicDriver("PortMidi")
+	RtMidiMusic   = MusicDriver("rtmidi")
+	PortMidiMusic = MusicDriver("portmidi")
 )

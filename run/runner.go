@@ -25,6 +25,7 @@ var logger = utils.GoomConsole
 // TestRunner returns a non initalized runner for headless testing.
 func TestRunner(gameDir ...string) *Runner {
 	r := &Runner{Drivers: drivers.SdlDrivers(), gameDir: path.Join(gameDir...)}
+	r.Drivers.Music = drivers.MusicDrivers[drivers.RtMidiMusic]
 	iwad := path.Join(r.gameDir, "DOOM1")
 	defs := path.Join(r.gameDir, "resources", "defs.yaml")
 	r.InitWAD(iwad, "", defs)

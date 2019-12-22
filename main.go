@@ -27,6 +27,7 @@ var (
 	pwadfile     = flag.String("pwad", "", "PWAD file to load (without extension)")
 	levelName    = flag.String("level", "E1M1", "Level to start e.g. E1M1")
 	fpsMax       = flag.Int("fpsmax", 0, "Limit FPS")
+	midiDrv      = flag.String("mididrv", "portmidi", "MIDI driver name")
 	windowHeight = 600
 	windowWidth  = 800
 	gameDefs     = "resources/defs.yaml"
@@ -34,7 +35,7 @@ var (
 	mainDrivers = drivers.Drivers{
 		Window:  drivers.WindowDrivers[drivers.GlfwWindow],
 		Audio:   drivers.AudioDrivers[drivers.SdlAudio],
-		Music:   drivers.MusicDrivers[drivers.SdlMusic],
+		Music:   drivers.MusicDrivers[drivers.MusicDriver(strings.ToLower(*midiDrv))],
 		Input:   drivers.InputDrivers[drivers.GlfwInput],
 		GetTime: drivers.TimerFuncs[drivers.SdlTimer],
 	}

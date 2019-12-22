@@ -1,9 +1,9 @@
 package drivers
 
-import "github.com/tinogoehlert/goom/drivers/sdl"
+import "github.com/tinogoehlert/goom/drivers/noop"
 
 func init() {
-	noopAudio := &sdl.Audio{}
+	noopAudio := &noop.Audio{}
 	AudioDrivers[NoopAudio] = noopAudio
 	MusicDrivers[NoopMusic] = noopAudio
 }

@@ -12,7 +12,7 @@ func TestPlaySound(t *testing.T) {
 	r := run.TestRunner("..", "..")
 	fmt.Printf("TestRunner: %v", r)
 	drv := r.World().Audio
-	// drv.TestMode()
+	drv.TestMode()
 	// 22 kHz
 	test.Check(drv.Play("DSITMBK"), t)
 	// 11 kHz
