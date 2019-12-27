@@ -43,7 +43,7 @@ func (p *MidiPlayer) PlayMusic(m *music.Track) error {
 	return nil
 }
 
-// Close does nothing
+// Close closes the midi outputs and driver.
 func (p *MidiPlayer) Close() {
 	defer p.Off()
 	defer p.out.Close()

@@ -3,7 +3,6 @@ package music_test
 import (
 	"encoding/binary"
 	"encoding/hex"
-	"fmt"
 	"path"
 	"strings"
 	"testing"
@@ -407,27 +406,5 @@ func TestTrackLoading(t *testing.T) {
 		// test the info methods
 		test.Assert(mu.Info()[0:8] == "mus.Data", "invalid mus info", t)
 		test.Assert(ev.Info()[0:9] == "mus.Event", "invalid event info", t)
-	}
-}
-
-func TestPlaybackProviders(t *testing.T) {
-	allProviders := []gmidi.Provider{gmidi.RTMidi, gmidi.PortMidi, gmidi.Any}
-	songs := allMus(t)[:3]
-	gmidi.TestMode()
-
-	for _, provider := range allProviders {
-		fmt.Println("starting player with provider: ", provider)
-		p, err := gmidi.NewPlayer(provider)
-		test.Check(err, t)
-		test.Assert(p != nil, "no midi device found cannot test playback", t)
-		defer p.Close()
-
-		for _, song := range songs {
-			track, err := music.NewTrack(wad.Lump{Data: song.Data})
-			test.Check(err, t)
-			fmt.Println("playing song", track.Name, "using provider", provider)
-			p.Play(track.MidiStream)
-		}
-		p.Close()
 	}
 }

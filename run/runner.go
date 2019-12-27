@@ -83,12 +83,14 @@ func (r *Runner) InitAudio() {
 		logger.Red("failed to init audio system: %s", err.Error())
 	}
 	r.world.Audio = r.Drivers.Audio
+	logger.Green("Using Audio Driver: %T", r.world.Audio)
 
 	err = r.Drivers.Music.InitMusic(&r.GameData().Music, path.Join(r.gameDir, "temp", "music"))
 	if err != nil {
 		logger.Red("failed to init music system: %s", err.Error())
 	}
 	r.world.Music = r.Drivers.Music
+	logger.Green("Using Music Driver: %T", r.world.Music)
 }
 
 // InitRenderer starts the window driver and GL renderer.

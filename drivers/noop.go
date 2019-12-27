@@ -11,7 +11,7 @@ func init() {
 // NoopDrivers returns all Noop drivers.
 func NoopDrivers() *Drivers {
 	return &Drivers{
-		Audio: AudioDrivers[SdlAudio],
-		Music: MusicDrivers[SdlMusic],
+		Audio: AudioDrivers[NoopAudio],
+		Music: MusicDrivers[NoopMusic],
 	}
 }

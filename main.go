@@ -22,30 +22,39 @@ import (
 var (
 	logger = utils.GoomConsole
 
+	midiOptions = strings.Join([]string{
+		string(drivers.PortMidiMusic),
+		string(drivers.RtMidiMusic),
+		string(drivers.SdlMusic),
+		string(drivers.Noop),
+	}, "|")
+
 	// flags
 	iwadfile     = flag.String("iwad", "DOOM1", "IWAD file to load (without extension)")
 	pwadfile     = flag.String("pwad", "", "PWAD file to load (without extension)")
 	levelName    = flag.String("level", "E1M1", "Level to start e.g. E1M1")
 	fpsMax       = flag.Int("fpsmax", 0, "Limit FPS")
-	midiDrv      = flag.String("mididrv", "portmidi", "MIDI driver name")
+	midiDrv      = flag.String("mididrv", "portmidi", "MIDI driver name ("+midiOptions+")")
 	windowHeight = 600
 	windowWidth  = 800
 	gameDefs     = "resources/defs.yaml"
+)
 
-	mainDrivers = drivers.Drivers{
+func main() {
+	flag.Parse()
+
+	mainDrivers := drivers.Drivers{
 		Window:  drivers.WindowDrivers[drivers.GlfwWindow],
 		Audio:   drivers.AudioDrivers[drivers.SdlAudio],
 		Music:   drivers.MusicDrivers[drivers.MusicDriver(strings.ToLower(*midiDrv))],
 		Input:   drivers.InputDrivers[drivers.GlfwInput],
 		GetTime: drivers.TimerFuncs[drivers.SdlTimer],
 	}
-)
-
-func main() {
-	flag.Parse()
 
 	logger.Green("GOOM - DOOM clone written in Go")
 	logger.Green("Press Q to exit GOOM.")
+
+	logger.Green("MUSIC: %T", mainDrivers.Music)
 
 	e := newEngine(&mainDrivers)
 
