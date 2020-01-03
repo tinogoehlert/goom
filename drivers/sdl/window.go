@@ -64,14 +64,10 @@ func (w *Window) Open(title string, width, height int) error {
 	return nil
 }
 
-// Size Returns the current size of the Window
-func (w *Window) Size() (int, int) {
-	return w.width, w.height
-}
-
 // GetSize Returns the current size of the Window
 func (w *Window) GetSize() (int, int) {
 	fbWidth, fbHeight := w.window.GLGetDrawableSize()
+	fmt.Println("here")
 	return int(fbWidth * 2), int(fbHeight * 2)
 }
 
