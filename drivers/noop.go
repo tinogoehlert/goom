@@ -1,15 +1,17 @@
 package drivers
 
-import (
-	"github.com/tinogoehlert/goom/audio/sfx"
-	"github.com/tinogoehlert/goom/drivers/noop"
-)
+import "github.com/tinogoehlert/goom/drivers/noop"
 
 func init() {
-	AudioDrivers[NoopAudio] = newNoopAudio
+	noopAudio := &noop.Audio{}
+	AudioDrivers[NoopAudio] = noopAudio
+	MusicDrivers[NoopMusic] = noopAudio
 }
 
-func newNoopAudio(sounds *sfx.Sounds, tempFolder string) (Audio, error) {
-	audio, err := noop.NewAudio(sounds, tempFolder)
-	return Audio(audio), err
+// NoopDrivers returns all Noop drivers.
+func NoopDrivers() *Drivers {
+	return &Drivers{
+		Audio: AudioDrivers[NoopAudio],
+		Music: MusicDrivers[NoopMusic],
+	}
 }

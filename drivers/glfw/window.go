@@ -15,14 +15,16 @@ type Window struct {
 	fbHeight      int
 	secsPerUpdate float64
 	fbSizeChanged func(width int, height int)
-	inputDrv      *InputDriver
 }
 
-// NewWindow creates a new GLFW Window
-func NewWindow(title string, width, height int) (*Window, error) {
+// Open creates a new GLFW Window.
+func (w *Window) Open(title string, width, height int) error {
+	w.width = width
+	w.height = height
+	w.secsPerUpdate = 1.0 / 60.0
 
 	if err := initVideo(); err != nil {
-		return nil, err
+		return err
 	}
 
 	glfw.WindowHint(glfw.Resizable, glfw.True)
@@ -31,34 +33,30 @@ func NewWindow(title string, width, height int) (*Window, error) {
 	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
 	glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
 
-	glfwWin, err := glfw.CreateWindow(width, height, title, nil, nil)
+	gw, err := glfw.CreateWindow(width, height, title, nil, nil)
 	if err != nil {
-		return nil, fmt.Errorf("could not create GLFW Window: %s", err.Error())
+		return fmt.Errorf("could not create GLFW Window: %s", err.Error())
 	}
-	glfwWin.MakeContextCurrent()
-	win := &Window{
-		window:        glfwWin,
-		width:         width,
-		height:        height,
-		secsPerUpdate: 1.0 / 60.0,
-	}
+	w.window = gw
 
-	win.fbWidth, win.fbHeight = glfwWin.GetSize()
+	gw.MakeContextCurrent()
 
-	glfwWin.SetFramebufferSizeCallback(func(w *glfw.Window, width int, height int) {
-		win.fbWidth = width
-		win.fbHeight = height
-		if win.fbSizeChanged != nil {
-			win.fbSizeChanged(width, height)
+	w.fbWidth, w.fbHeight = gw.GetSize()
+
+	gw.SetFramebufferSizeCallback(func(gw *glfw.Window, width int, height int) {
+		w.fbWidth = width
+		w.fbHeight = height
+		if w.fbSizeChanged != nil {
+			w.fbSizeChanged(width, height)
 		}
 	})
 
-	glfwWin.SetSizeCallback(func(w *glfw.Window, width int, height int) {
-		win.width = width
-		win.height = height
+	gw.SetSizeCallback(func(gw *glfw.Window, width int, height int) {
+		w.width = width
+		w.height = height
 	})
 
-	return win, nil
+	return nil
 }
 
 // Size Returns the current size of the Window
@@ -67,12 +65,12 @@ func (w *Window) Size() (int, int) {
 }
 
 // GetSize returns the current size of the Window
-func (w Window) GetSize() (int, int) {
+func (w *Window) GetSize() (int, int) {
 	return w.fbWidth, w.fbHeight
 }
 
 // RunGame runs the game loop
-func (w Window) RunGame(input func(), update func(), render func(float64)) {
+func (w *Window) RunGame(input func(), update func(), render func(float64)) {
 	var (
 		previous         = glfw.GetTime()
 		lag              = float64(0)
@@ -86,7 +84,7 @@ func (w Window) RunGame(input func(), update func(), render func(float64)) {
 
 		lag += elapsed
 
-		w.inputDrv.poll()
+		glfw.PollEvents()
 
 		for lag >= w.secsPerUpdate {
 			lag -= w.secsPerUpdate
@@ -104,6 +102,6 @@ func (w Window) RunGame(input func(), update func(), render func(float64)) {
 }
 
 // Close closes the window
-func (w Window) Close() {
+func (w *Window) Close() {
 	w.window.Destroy()
 }

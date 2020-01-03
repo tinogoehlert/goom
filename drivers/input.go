@@ -1,30 +1,26 @@
 package drivers
 
-type KeyState int
-type inputDriver string
+import (
+	shared "github.com/tinogoehlert/goom/drivers/pkg"
+)
 
+// KeyState is the state of the key.
+type KeyState int
+
+// Key states and input names
 const (
 	KeyReleased KeyState = 0
 	KeyPressed  KeyState = 1
 	KeyRepeated KeyState = 2
-
-	// GlfwInput is the GLFW input driver
-	GlfwInput inputDriver = "glfw"
-
-	// SdlInput is the SDL input driver
-	SdlInput inputDriver = "sdl"
 )
 
+// Key stores key code and press state.
 type Key struct {
-	Keycode Keycode
+	Keycode shared.Keycode
 	State   KeyState
 }
 
+// Input interface
 type Input interface {
-	IsPressed(keycode interface{}) bool
+	IsPressed(shared.Keycode) bool
 }
-
-type inputProvider func(Window) Input
-
-// InputProviders contains all available input providers
-var InputProviders = make(map[inputDriver]inputProvider)

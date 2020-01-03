@@ -14,41 +14,48 @@ import (
 	"github.com/tinogoehlert/goom/audio/sfx"
 )
 
-// Audio is the SDL audio driver.
+// Audio is the SDL sound and music driver.
 type Audio struct {
-	sounds           *sfx.Sounds
-	chunks           map[string]*mix.Chunk
+	// sound driver fields
+	sounds *sfx.Sounds
+	chunks map[string]*mix.Chunk
+	test   bool
+
+	// music driver fields
+	tracks           *music.TrackStore
+	tempFolder       string
 	currentTrackName string
 	currentTrack     *mix.Music
-	tempFolder       string
-	test             bool
-}
-
-// NewAudio returns an SDL audio driver.
-func NewAudio(sounds *sfx.Sounds, tempFolder string) (*Audio, error) {
-	err := initAudio()
-	if err != nil {
-		return nil, fmt.Errorf("failed to init SDL subsystem: %s", err.Error())
-	}
-
-	if _, err := mix.OpenAudioDevice(22050, mix.DEFAULT_FORMAT, 2, 4096, "", sdl.AUDIO_ALLOW_ANY_CHANGE); err != nil {
-		return nil, fmt.Errorf("failed to open audio device: %s", err.Error())
-	}
-
-	os.MkdirAll(tempFolder, 0700)
-
-	a := &Audio{
-		sounds:     sounds,
-		chunks:     make(map[string]*mix.Chunk),
-		tempFolder: tempFolder,
-	}
-
-	return a, nil
 }
 
 // TestMode silences all sounds and music and sets all delays to 0 for testing.
 func (a *Audio) TestMode() {
 	a.test = true
+}
+
+// InitAudio inits the driver.
+func (a *Audio) InitAudio(sounds *sfx.Sounds) error {
+	err := initAudio()
+	if err != nil {
+		return fmt.Errorf("failed to init SDL subsystem: %s", err.Error())
+	}
+
+	if _, err := mix.OpenAudioDevice(22050, mix.DEFAULT_FORMAT, 2, 4096, "", sdl.AUDIO_ALLOW_ANY_CHANGE); err != nil {
+		return fmt.Errorf("failed to open audio device: %s", err.Error())
+	}
+
+	a.sounds = sounds
+	a.chunks = make(map[string]*mix.Chunk)
+
+	return nil
+}
+
+// InitMusic sets the music tracks.
+func (a *Audio) InitMusic(tracks *music.TrackStore, tempFolder string) error {
+	os.MkdirAll(tempFolder, 0700)
+	a.tempFolder = tempFolder
+	a.tracks = tracks
+	return nil
 }
 
 // PlayMusic plays a MUS track.

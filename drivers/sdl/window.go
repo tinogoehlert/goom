@@ -7,7 +7,8 @@ import (
 	"github.com/tinogoehlert/go-sdl2/sdl"
 )
 
-type window struct {
+// Window is the SDL Window driver.
+type Window struct {
 	window        *sdl.Window
 	width         int
 	height        int
@@ -19,11 +20,15 @@ type window struct {
 	shouldClose   bool
 }
 
-// NewWindow creates a new sdl window with GL context
-func NewWindow(title string, width, height int) (*window, error) {
+// Open inits a new SQL window with GL context.
+func (w *Window) Open(title string, width, height int) error {
+	w.width = width
+	w.height = height
+	w.secsPerUpdate = float64(1) / 60
+
 	if err := initVideo(); err != nil {
 		log.Println(err)
-		return nil, err
+		return err
 	}
 
 	sdl.GLSetAttribute(sdl.GL_DOUBLEBUFFER, 2)
@@ -42,46 +47,41 @@ func NewWindow(title string, width, height int) (*window, error) {
 	)
 	if err != nil {
 		log.Println(err)
-		return nil, err
+		return err
 	}
 
 	fbWidth, fbHeight := sdlwin.GLGetDrawableSize()
-	var win = &window{
-		window:        sdlwin,
-		width:         width,
-		height:        height,
-		secsPerUpdate: float64(1) / 60,
-		fbWidth:       int(fbWidth),
-		fbHeight:      int(fbHeight),
-	}
+	w.window = sdlwin
+	w.fbWidth = int(fbWidth)
+	w.fbHeight = int(fbHeight)
 
-	if win.glContext, err = sdlwin.GLCreateContext(); err != nil {
+	if w.glContext, err = sdlwin.GLCreateContext(); err != nil {
 		sdlwin.Destroy()
 		log.Println(err)
-		return nil, err
+		return err
 	}
 
-	return win, nil
+	return nil
 }
 
 // Size Returns the current size of the Window
-func (w *window) Size() (int, int) {
+func (w *Window) Size() (int, int) {
 	return w.width, w.height
 }
 
 // GetSize Returns the current size of the Window
-func (w *window) GetSize() (int, int) {
+func (w *Window) GetSize() (int, int) {
 	fbWidth, fbHeight := w.window.GLGetDrawableSize()
 	return int(fbWidth * 2), int(fbHeight * 2)
 }
 
 // ShouldClose determines if the window should close
-func (w *window) ShouldClose() bool {
+func (w *Window) ShouldClose() bool {
 	return w.shouldClose
 }
 
 // RunGame runs the game loop
-func (w *window) RunGame(input func(), update func(), render func(float64)) {
+func (w *Window) RunGame(input func(), update func(), render func(float64)) {
 	var (
 		previous         = float64(sdl.GetTicks()) / 1000
 		lag              = float64(0)
@@ -114,6 +114,6 @@ func (w *window) RunGame(input func(), update func(), render func(float64)) {
 }
 
 // Close closes the window
-func (w *window) Close() {
+func (w *Window) Close() {
 	w.window.Destroy()
 }

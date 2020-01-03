@@ -13,23 +13,23 @@ import (
 
 // Runner stores game data and drivers.
 type Runner struct {
+	*drivers.Drivers
 	gameData *goom.GameData
 	world    *game.World
-	window   drivers.Window
-	renderer *opengl.GLRenderer
 	gameDir  string
+	renderer *opengl.GLRenderer
 }
 
 var logger = utils.GoomConsole
 
-// TestRunner return a non initalized runner for headless testing
+// TestRunner returns a non initalized runner for headless testing.
 func TestRunner(gameDir ...string) *Runner {
-	r := &Runner{gameDir: path.Join(gameDir...)}
+	r := &Runner{Drivers: drivers.SdlDrivers(), gameDir: path.Join(gameDir...)}
+	r.Drivers.Music = drivers.MusicDrivers[drivers.RtMidiMusic]
 	iwad := path.Join(r.gameDir, "DOOM1")
 	defs := path.Join(r.gameDir, "resources", "defs.yaml")
 	r.InitWAD(iwad, "", defs)
-	r.InitAudio(drivers.AudioDrivers[drivers.SdlAudio])
-
+	r.InitAudio()
 	return r
 }
 
@@ -38,7 +38,7 @@ func (r *Runner) Window() drivers.Window {
 	if r == nil {
 		return nil
 	}
-	return r.window
+	return r.Drivers.Window
 }
 
 // World returns the game world.
@@ -77,25 +77,31 @@ func (r *Runner) InitWAD(iwadfile, pwadfile, gameDefs string) {
 }
 
 // InitAudio starts the audio driver.
-func (r *Runner) InitAudio(newAudio drivers.AudioCreator) {
-	audio, err := newAudio(&r.GameData().Sounds, path.Join(r.gameDir, "temp", "music"))
+func (r *Runner) InitAudio() {
+	err := r.Drivers.Audio.InitAudio(&r.GameData().Sounds)
 	if err != nil {
 		logger.Red("failed to init audio system: %s", err.Error())
 	}
+	r.world.Audio = r.Drivers.Audio
+	logger.Green("Using Audio Driver: %T", r.world.Audio)
 
-	r.world.SetAudioDriver(audio)
+	err = r.Drivers.Music.InitMusic(&r.GameData().Music, path.Join(r.gameDir, "temp", "music"))
+	if err != nil {
+		logger.Red("failed to init music system: %s", err.Error())
+	}
+	r.world.Music = r.Drivers.Music
+	logger.Green("Using Music Driver: %T", r.world.Music)
 }
 
 // InitRenderer starts the window driver and GL renderer.
-func (r *Runner) InitRenderer(newWindow drivers.WindowCreator, w, h int) error {
+func (r *Runner) InitRenderer(w, h int) error {
 	var err error
-	r.window, err = newWindow("GOOM", w, h)
-	if err != nil {
+
+	if err = r.Window().Open("GOOM", w, h); err != nil {
 		return err
 	}
 
-	err = opengl.Init()
-	if err != nil {
+	if err = opengl.Init(); err != nil {
 		return err
 	}
 
@@ -104,17 +110,15 @@ func (r *Runner) InitRenderer(newWindow drivers.WindowCreator, w, h int) error {
 		return err
 	}
 
-	err = r.renderer.LoadShaderProgram(
+	if err = r.renderer.LoadShaderProgram(
 		"main",
 		path.Join("resources", "shaders", "main.vert"),
 		path.Join("resources", "shaders", "main.frag"),
-	)
-	if err != nil {
+	); err != nil {
 		return fmt.Errorf("failed to load shaders: %w", err)
 	}
 
-	err = r.renderer.SetShaderProgram("main")
-	if err != nil {
+	if err = r.renderer.SetShaderProgram("main"); err != nil {
 		return fmt.Errorf("failed to init shaders: %w", err)
 	}
 

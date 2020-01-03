@@ -25,18 +25,20 @@ type World struct {
 	projectiles *list.List
 	me          *Player
 	levelRef    *level.Level
-	audioDriver drivers.Audio
+	Audio       drivers.Audio
+	Music       drivers.Music
 	gameData    *goom.GameData
 }
 
 // NewWorld Creates a new world.
 func NewWorld(data *goom.GameData, defs *DefStore) *World {
-	noopAudio, _ := drivers.AudioDrivers[drivers.NoopAudio](nil, "")
+	noop := drivers.NoopDrivers()
 
 	return &World{
 		definitions: defs,
 		gameData:    data,
-		audioDriver: noopAudio,
+		Audio:       noop.Audio,
+		Music:       noop.Music,
 	}
 }
 
@@ -46,19 +48,6 @@ func (w *World) Data() *goom.GameData {
 		return nil
 	}
 	return w.gameData
-}
-
-// SetAudioDriver sets the audioDriver
-func (w *World) SetAudioDriver(drv drivers.Audio) {
-	w.audioDriver = drv
-}
-
-// AudioDriver returns the current audio driver.
-func (w *World) AudioDriver() drivers.Audio {
-	if w == nil {
-		return nil
-	}
-	return w.audioDriver
 }
 
 // LoadLevel a specific level of the world
@@ -115,7 +104,7 @@ func (w *World) LoadLevel(lvl *level.Level) error {
 		mus = "RUNNIN"
 	}
 
-	if err := w.audioDriver.PlayMusic(w.gameData.Music.Track(mus)); err != nil {
+	if err := w.Music.PlayMusic(w.gameData.Music.Track(mus)); err != nil {
 		fmt.Println("could not play music:", err.Error())
 	}
 
@@ -194,7 +183,7 @@ func (w *World) Update() {
 					if angle < 0.0 {
 						angle += 360
 					}
-					w.audioDriver.PlayAtPosition(sound.Name, dist/2.6, int16(angle))
+					w.Audio.PlayAtPosition(sound.Name, dist/2.6, int16(angle))
 				}
 				break
 			}
@@ -219,7 +208,7 @@ func (w *World) spawnShot(player *Player) {
 		player.weapon.Damage,
 		player.weapon.Range,
 	))
-	w.audioDriver.Play("DS" + player.weapon.Sound)
+	w.Audio.Play("DS" + player.weapon.Sound)
 }
 
 func (w *World) hitThing(t1, t2 Thingable, sx, sy float32) bool {
@@ -250,7 +239,7 @@ func (w *World) checkThingCollision(thing *DoomThing, to mgl32.Vec2) {
 				if t.category == "weapon" {
 					w.me.AddWeapon(w.definitions.GetWeapon(t.ref))
 					t.consumed = true
-					w.audioDriver.Play("DSWPNUP")
+					w.Audio.Play("DSWPNUP")
 				}
 			}
 		}
