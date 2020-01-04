@@ -16,7 +16,7 @@ type TestDriver interface {
 type Music interface {
 	TestDriver
 	// Init starts the driver.
-	InitMusic(tracks *music.TrackStore, tempFolder string) error
+	InitMusic(tracks *music.TrackStore) error
 	PlayMusic(m *music.Track) error
 	Close()
 }

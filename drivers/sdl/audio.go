@@ -2,9 +2,6 @@ package sdl
 
 import (
 	"fmt"
-	"io/ioutil"
-	"os"
-	"path"
 	"time"
 
 	"github.com/tinogoehlert/go-sdl2/mix"
@@ -22,15 +19,13 @@ type Audio struct {
 	test   bool
 
 	// music driver fields
-	tracks           *music.TrackStore
-	tempFolder       string
-	currentTrackName string
-	currentTrack     *mix.Music
+	tracks       *music.TrackStore
+	currentTrack *mix.Music
 }
 
 // TestMode silences all sounds and music and sets all delays to 0 for testing.
 func (a *Audio) TestMode() {
-	a.test = true
+	a.test = false
 }
 
 // InitAudio inits the driver.
@@ -51,9 +46,14 @@ func (a *Audio) InitAudio(sounds *sfx.Sounds) error {
 }
 
 // InitMusic sets the music tracks.
-func (a *Audio) InitMusic(tracks *music.TrackStore, tempFolder string) error {
-	os.MkdirAll(tempFolder, 0700)
-	a.tempFolder = tempFolder
+func (a *Audio) InitMusic(tracks *music.TrackStore) error {
+	err := initAudio()
+	if err != nil {
+		return fmt.Errorf("failed to init SDL subsystem: %s", err.Error())
+	}
+	if _, err := mix.OpenAudioDevice(22050, mix.DEFAULT_FORMAT, 2, 4096, "", sdl.AUDIO_ALLOW_ANY_CHANGE); err != nil {
+		return fmt.Errorf("failed to open audio device: %s", err.Error())
+	}
 	a.tracks = tracks
 	return nil
 }
@@ -63,22 +63,18 @@ func (a *Audio) InitMusic(tracks *music.TrackStore, tempFolder string) error {
 // stored in a temp dir unless the target MID file is already present.
 func (a *Audio) PlayMusic(track *music.Track) error {
 	if track == nil {
-		return nil
+		return fmt.Errorf("no track given (nil)")
 	}
 
-	a.currentTrackName = path.Join(a.tempFolder, track.Name+".mid")
-	if _, err := os.Stat(a.currentTrackName); err != nil {
-		if !os.IsNotExist(err) {
-			return err
-		}
-		ioutil.WriteFile(a.currentTrackName, track.MidiStream.Bytes(), 0644)
-	}
-
-	var err error
-	if a.currentTrack, err = mix.LoadMUS(a.currentTrackName); err != nil {
+	rwOps, err := sdl.RWFromMem(track.MidiStream.Bytes())
+	if err != nil {
 		return err
 	}
 
+	a.currentTrack, err = mix.LoadMUSTypeRW(rwOps, mix.MID, 0)
+	if err != nil {
+		return fmt.Errorf("could not load MIDI: %s", err.Error())
+	}
 	return a.currentTrack.FadeIn(-1, 1000)
 }
 

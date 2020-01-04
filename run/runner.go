@@ -85,7 +85,7 @@ func (r *Runner) InitAudio() {
 	r.world.Audio = r.Drivers.Audio
 	logger.Green("Using Audio Driver: %T", r.world.Audio)
 
-	err = r.Drivers.Music.InitMusic(&r.GameData().Music, path.Join(r.gameDir, "temp", "music"))
+	err = r.Drivers.Music.InitMusic(&r.GameData().Music)
 	if err != nil {
 		logger.Red("failed to init music system: %s", err.Error())
 	}

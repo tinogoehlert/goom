@@ -23,7 +23,7 @@ func NewMidiPlayer(drv mid.Driver) *MidiPlayer {
 }
 
 // InitMusic initializes the MIDI device.
-func (p *MidiPlayer) InitMusic(tracks *music.TrackStore, tempDir string) error {
+func (p *MidiPlayer) InitMusic(tracks *music.TrackStore) error {
 	p.TicksPerSecond = DefaultTicksPerSecond
 	if err := p.InitMidiOutput(); err != nil {
 		return err

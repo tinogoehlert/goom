@@ -14,7 +14,7 @@ func (a *Audio) InitAudio(sounds *sfx.Sounds) error {
 }
 
 // InitMusic does nothing.
-func (a *Audio) InitMusic(tracks *music.TrackStore, tempDir string) error {
+func (a *Audio) InitMusic(tracks *music.TrackStore) error {
 	return nil
 }
 
