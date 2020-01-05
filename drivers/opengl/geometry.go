@@ -15,6 +15,7 @@ type glWorldGeometry struct {
 	light    float32
 	position mgl32.Vec3
 	seqTime  time.Time
+	isSky    bool
 }
 
 func addGlWorldutils(dst []*glWorldGeometry, src *glWorldGeometry) []*glWorldGeometry {
