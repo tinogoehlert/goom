@@ -14,8 +14,9 @@ uniform int draw_phase;
 void main()
 {
     if (draw_phase == 3) {
-      vec2 uv = vec2(v_p.x, v_p.y) / v_p.w * vec2(1, -1);
-      uv = vec2(uv.x - 4.0 * v_r.x / 3.14159265358, uv.y + 1.0 + v_r.y);
+      vec2 uv = vec2(v_p.x, v_p.y) / v_p.w/1.6 * vec2(1, -1);
+      uv = vec2(uv.x - 3.0 * v_r.x / 3.14159265358, uv.y + 1.0 + v_r.y);
+      uv -= 0.3;
       outColor = texture(tex, uv);
       return;
     }

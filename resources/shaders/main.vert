@@ -20,9 +20,10 @@ out vec4 v_p;
 vec4 drawSky() {
 	mat4 transform = projection * model * view;
     vec4 forward = transform[2];
-    v_r = vec2(atan(forward.x, forward.z), forward.y);
-    vec4 projected_pos = transform * vec4(vertex, 1);
+    v_r = vec2(atan(forward.x, forward.z), 1);
+	vec4 projected_pos = transform * vec4(vertex, 1);
     v_p = projected_pos;
+	
     return projected_pos;
 }
 

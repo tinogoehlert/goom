@@ -104,7 +104,7 @@ func (gr *GLRenderer) SetShaderProgram(name string) error {
 
 // BuildLevel builds the level
 func (gr *GLRenderer) LoadLevel(m *level.Level, gd *goom.GameData) {
-	gr.currentLevel = RegisterMap(m, gd, gr.textures)
+	gr.currentLevel = RegisterMap(m, gd, gr.textures, "SKY1")
 }
 
 func (gr *GLRenderer) Camera() *Camera {
@@ -132,8 +132,10 @@ func (gr *GLRenderer) setModel() {
 func (gr *GLRenderer) DrawSubSector(idx int) {
 	var s = gr.currentLevel.subSectors[idx]
 
+	//gl.Disable(gl.DEPTH_TEST)
 	gr.shaders[gr.currentShader].Uniform1i("draw_phase", 3)
-	s.DrawSky(gr.textures)
+	s.DrawSky(gr.textures, gr.currentLevel.sky)
+	//gl.Enable(gl.DEPTH_TEST)
 	gr.shaders[gr.currentShader].Uniform1i("draw_phase", 0)
 	gr.SetLight(s.sector.LightLevel())
 	s.Draw(gr.textures)

@@ -1,8 +1,6 @@
 package opengl
 
 import (
-	"strings"
-
 	"github.com/go-gl/gl/v2.1/gl"
 	"github.com/tinogoehlert/goom/goom"
 	"github.com/tinogoehlert/goom/level"
@@ -12,6 +10,8 @@ type doomLevel struct {
 	name       string
 	subSectors []*subSector
 	mapRef     *level.Level
+	skyName    string
+	sky        *glTexture
 }
 
 type subSector struct {
@@ -22,19 +22,21 @@ type subSector struct {
 	ref      level.SubSector
 }
 
-func RegisterMap(m *level.Level, gd *goom.GameData, ts glTextureStore) *doomLevel {
+func RegisterMap(m *level.Level, gd *goom.GameData, ts glTextureStore, skyName string) *doomLevel {
 	l := doomLevel{
 		name:       m.Name,
 		mapRef:     m,
 		subSectors: make([]*subSector, 0, len(m.SubSectors(level.GLNodesName))),
 	}
-
 	for _, ssect := range m.SubSectors(level.GLSsectsName) {
 		var s = &subSector{ref: ssect}
 		s.addFlats(m, gd, ts)
 		s.addWalls(m, gd, ts)
 		l.subSectors = append(l.subSectors, s)
 	}
+
+	l.sky = makeGLTexture(gd.Texture(skyName))
+
 	return &l
 }
 
@@ -83,9 +85,8 @@ func (s *subSector) addFlats(md *level.Level, gd *goom.GameData, ts glTextureSto
 			tex   = sector.CeilTexture()
 			isSky = false
 		)
-		if strings.Contains(sector.CeilTexture(), "SKY") {
+		if sector.CeilTexture() == "F_SKY1" {
 			isSky = true
-			tex = "SKY1"
 		}
 		cm := newGlWorldutils(ceilData, md.Sectors[side.Sector].LightLevel(), ts[tex])
 		cm.isSky = isSky
@@ -104,6 +105,7 @@ func (s *subSector) addWalls(md *level.Level, gd *goom.GameData, ts glTextureSto
 
 		otherSide := md.OtherSide(&line, seg)
 		sector := md.Sectors[side.Sector]
+		//isSky := false
 
 		var (
 			start  = md.Vert(uint32(line.Start))
@@ -158,6 +160,9 @@ func (s *subSector) addWalls(md *level.Level, gd *goom.GameData, ts glTextureSto
 			}
 			if gd.Texture(upTex) != nil {
 				wm := newGlWorldutils(wallData, sector.LightLevel(), ts[upTex])
+				if oppositeSector.CeilTexture() == "F_SKY1" {
+					wm.isSky = true
+				}
 				s.walls = addGlWorldutils(s.walls, wm)
 			}
 		}
@@ -184,6 +189,9 @@ func (s *subSector) addWalls(md *level.Level, gd *goom.GameData, ts glTextureSto
 			}
 			if gd.Texture(lowTex) != nil {
 				wm := newGlWorldutils(wallData, sector.LightLevel(), ts[lowTex])
+				if lowTex == "F_SKY1" {
+					wm.isSky = true
+				}
 				s.walls = addGlWorldutils(s.walls, wm)
 			}
 		}
@@ -207,6 +215,9 @@ func (s *subSector) addWalls(md *level.Level, gd *goom.GameData, ts glTextureSto
 				-start.X(), sector.FloorHeight(), start.Y(), 0, height / th,
 			}
 			wm := newGlWorldutils(wallData, sector.LightLevel(), ts[midTex])
+			if midTex == "F_SKY1" {
+				wm.isSky = true
+			}
 			s.walls = addGlWorldutils(s.walls, wm)
 		}
 	}
@@ -220,14 +231,21 @@ func (s *subSector) Draw(ts glTextureStore) {
 		}
 	}
 	for _, w := range s.walls {
-		w.Draw(gl.TRIANGLES)
+		if !w.isSky {
+			w.Draw(gl.TRIANGLES)
+		}
 	}
 }
 
-func (s *subSector) DrawSky(ts glTextureStore) {
+func (s *subSector) DrawSky(ts glTextureStore, sky *glTexture) {
 	for i := 0; i < len(s.floors); i++ {
 		if s.ceilings[i].isSky {
-			s.ceilings[i].Draw(gl.TRIANGLE_FAN)
+			s.ceilings[i].DrawWithTexture(gl.TRIANGLE_FAN, sky)
+		}
+	}
+	for _, w := range s.walls {
+		if w.isSky {
+			w.DrawWithTexture(gl.TRIANGLES, sky)
 		}
 	}
 }
