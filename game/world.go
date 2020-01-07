@@ -249,14 +249,16 @@ func (w *World) checkThingCollision(thing *DoomThing, to mgl32.Vec2) {
 
 func (w *World) checkWallCollision(thing *DoomThing, to mgl32.Vec2) mgl32.Vec2 {
 	var (
-		collided = 0
-		x        = to.X()
-		y        = to.Y()
-		radius   = float32(24)
-		hitWall  level.Wall
-		oldTo    = to
+		x      = to.X()
+		y      = to.Y()
+		radius = float32(16)
 	)
 	for _, wall := range w.levelRef.Walls {
+		if wall.IsTwoSided {
+			if wall.Sectors.Left.FloorHeight() < thing.currentSector.FloorHeight()+20 {
+				continue
+			}
+		}
 		var (
 			d   = wall.Start.Dot(wall.Normal)
 			sd  = wall.Start.Dot(wall.Tangent)
@@ -273,8 +275,6 @@ func (w *World) checkWallCollision(thing *DoomThing, to mgl32.Vec2) mgl32.Vec2 {
 				toPushOut := radius - pd + 0.001
 				to[0] += wall.Normal.X() * toPushOut * mul
 				to[1] += wall.Normal.Y() * toPushOut * mul
-				hitWall = wall
-				collided++
 			} else {
 				var (
 					tmpxd float32
@@ -293,24 +293,11 @@ func (w *World) checkWallCollision(thing *DoomThing, to mgl32.Vec2) mgl32.Vec2 {
 					toPushOut := radius - dist + 0.001
 					to[0] += tmpxd / dist * toPushOut
 					to[1] += tmpyd / dist * toPushOut
-					hitWall = wall
-					collided++
 				}
 			}
 		}
 	}
 
-	if collided > 0 {
-		if hitWall.IsTwoSided {
-			var (
-				lSector   = w.levelRef.Sectors[hitWall.Sides.Left.Sector]
-				chkHeight = thing.currentSector.FloorHeight() + 32
-			)
-			if lSector.FloorHeight() < chkHeight {
-				return oldTo
-			}
-		}
-	}
 	return to
 }
 
