@@ -1,10 +1,9 @@
 package drivers
 
-// Window a generic window
+// Window interface for the DOOM engine
 type Window interface {
-	Size() (int, int)
+	Open(title string, width, height int) error
 	Close()
-	Input() InputDriver
-	FrameBufferSize() (int, int)
-	Run(func(), func(), func(float64))
+	GetSize() (width, height int)
+	RunGame(input func(), update func(), render func(nextFrameDelta float64))
 }

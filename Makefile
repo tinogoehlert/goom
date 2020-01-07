@@ -3,19 +3,22 @@
 export GO111MODULE=auto
 
 FILES = DOOM1.gwa go.mod
-TARGETS = $(FILES)
+TARGETS = $(FILES) .temp
 
 all: $(TARGETS) tidy test
 
 clean:
 	rm -f $(FILES)
-	rm -rf .test
+	rm -rf .test .temp
 
 tidy:
 	go mod tidy
 
 test: $(TARGETS)
 	go test -v ./...
+
+.temp:
+	mkdir -p .temp
 
 go.mod:
 	go mod init github.com/tinogoehlert/goom
@@ -28,4 +31,4 @@ test-run: TEST=-test
 test-run: run
 
 run: $(TARGETS)
-	cd cmd/doom && go run main.go -iwad $(CURDIR)/DOOM1 $(TEST)
+	go run main.go

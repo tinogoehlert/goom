@@ -1,22 +1,32 @@
 package drivers
 
-import "github.com/tinogoehlert/goom/audio/music"
+import (
+	"github.com/tinogoehlert/goom/audio/music"
+	"github.com/tinogoehlert/goom/audio/sfx"
+)
 
-// AudioDriver interface
-type AudioDriver interface {
-	PlayMusic(m *music.Track) error
-	Play(name string) error
-	PlayAtPosition(name string, distance float32, angle int16) error
+// TestDriver inferface
+type TestDriver interface {
+	// TestMode sets the driver into test mode with silenced sounds and music and zero delays.
+	// Call this function before playing music in unit test.
+	TestMode()
 }
 
-// NOPlayer stub audio driver
-type NOPlayer struct{}
+// Music driver interface
+type Music interface {
+	TestDriver
+	// Init starts the driver.
+	InitMusic(tracks *music.TrackStore) error
+	PlayMusic(m *music.Track) error
+	Close()
+}
 
-// PlayMusic does nothing
-func (nop *NOPlayer) PlayMusic(m *music.Track) error { return nil }
-
-// Play does nothing
-func (nop *NOPlayer) Play(name string) error { return nil }
-
-// PlayAtPosition does nothing
-func (nop *NOPlayer) PlayAtPosition(name string, distance float32, angle int16) error { return nil }
+// Audio driver interface
+type Audio interface {
+	TestDriver
+	// Init starts the driver.
+	InitAudio(sounds *sfx.Sounds) error
+	Play(name string) error
+	PlayAtPosition(name string, distance float32, angle int16) error
+	Close()
+}

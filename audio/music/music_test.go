@@ -3,16 +3,14 @@ package music_test
 import (
 	"encoding/binary"
 	"encoding/hex"
-	"fmt"
 	"path"
 	"strings"
 	"testing"
 
-	"github.com/tinogoehlert/goom"
 	gmidi "github.com/tinogoehlert/goom/audio/midi"
-	gmus "github.com/tinogoehlert/goom/audio/mus"
 	mus "github.com/tinogoehlert/goom/audio/mus"
 	"github.com/tinogoehlert/goom/audio/music"
+	"github.com/tinogoehlert/goom/goom"
 	"github.com/tinogoehlert/goom/test"
 	"github.com/tinogoehlert/goom/wad"
 )
@@ -33,7 +31,7 @@ func concat(values ...[]byte) []byte {
 
 func sampleMus(t *testing.T) []byte {
 	/*
-		Artifical Example Track
+		Artificial Example Track
 
 		Composed using ModdingWiki MUS spec: http://www.shikadi.net/moddingwiki/MUS_Format
 
@@ -65,7 +63,7 @@ func sampleMus(t *testing.T) []byte {
 
 		Channels:       0
 		NumChannels:    1
-		Intruments:     16, 32
+		Instruments:    16, 32
 		NumInstruments: 2
 		NumScores:      7
 		NumBytes:       19
@@ -91,16 +89,16 @@ func sampleMus(t *testing.T) []byte {
 	// create header and append events
 	data := concat(
 		// Value               Description            Bytes  ByteIndex
-		[]byte(gmus.LumpID), // MUS ID                 4       0
-		b16(len(events)),    // score size             2       4
-		b16(20),             // score offset           2       6   <--.
-		b16(1),              // primary channels       2       8      |
-		b16(0),              // secondary channels     2      10      |
-		b16(numInst),        // number of instruments  2      12      |
-		b16(0),              // dummy                  2      14      |
-		b16(inst1),          // instrument 1           2      16      |
-		b16(inst2),          // instrument 2           2      18      |
-		events,              // event bytes            8      20   ---'
+		[]byte(mus.LumpID), // MUS ID                 4       0
+		b16(len(events)),   // score size             2       4
+		b16(20),            // score offset           2       6   <--.
+		b16(1),             // primary channels       2       8      |
+		b16(0),             // secondary channels     2      10      |
+		b16(numInst),       // number of instruments  2      12      |
+		b16(0),             // dummy                  2      14      |
+		b16(inst1),         // instrument 1           2      16      |
+		b16(inst2),         // instrument 2           2      18      |
+		events,             // event bytes            8      20   ---'
 		// EOF                                         0      28
 	)
 
@@ -325,11 +323,11 @@ type Mus struct {
 
 func allMus(t *testing.T) []Mus {
 	return []Mus{
-		Mus{"SAMPLE", sampleMus(t), 7},
-		Mus{"DOOM", doomSample(t), 6},
-		Mus{"INTROA", loadMus("INTROA", t), 214},
-		Mus{"INTRO", loadMus("INTRO", t), 498},
-		Mus{"E1M1", loadMus("E1M1", t), 5826},
+		{"SAMPLE", sampleMus(t), 7},
+		{"DOOM", doomSample(t), 6},
+		{"INTROA", loadMus("INTROA", t), 214},
+		{"INTRO", loadMus("INTRO", t), 498},
+		{"E1M1", loadMus("E1M1", t), 5826},
 	}
 }
 
@@ -351,20 +349,20 @@ func TestMusLoading(t *testing.T) {
 
 	type Case struct {
 		Index int
-		Type  gmus.EventType
+		Type  mus.EventType
 		Note  uint8
 		Delay uint16
 		Hex   string
 	}
 
 	cases := []Case{
-		Case{0, gmus.System, 10, 0, "0a"},
-		Case{1, gmus.Controller, 3, 0, "0364"},
-		Case{2, gmus.PlayNote, 16, 15, "10"},
-		Case{3, gmus.PlayNote, 32, 15, "20"},
-		Case{4, gmus.RelaseNote, 16, 261, "10"},
-		Case{5, gmus.RelaseNote, 32, 5, "20"},
-		Case{6, gmus.ScoreEnd, 0, 0, ""},
+		{0, mus.System, 10, 0, "0a"},
+		{1, mus.Controller, 3, 0, "0364"},
+		{2, mus.PlayNote, 16, 15, "10"},
+		{3, mus.PlayNote, 32, 15, "20"},
+		{4, mus.RelaseNote, 16, 261, "10"},
+		{5, mus.RelaseNote, 32, 5, "20"},
+		{6, mus.ScoreEnd, 0, 0, ""},
 	}
 
 	for _, c := range cases {
@@ -373,7 +371,7 @@ func TestMusLoading(t *testing.T) {
 		if s.Type != c.Type {
 			t.Errorf("invalid mus type %d, expected %d.", s.Type, c.Type)
 		}
-		if s.Type == gmus.RelaseNote && s.GetNote() != c.Note {
+		if s.Type == mus.RelaseNote && s.GetNote() != c.Note {
 			t.Errorf("invalid note %d, expected %d.", s.GetNote(), c.Note)
 		}
 		if s.Delay != c.Delay {
@@ -408,27 +406,5 @@ func TestTrackLoading(t *testing.T) {
 		// test the info methods
 		test.Assert(mu.Info()[0:8] == "mus.Data", "invalid mus info", t)
 		test.Assert(ev.Info()[0:9] == "mus.Event", "invalid event info", t)
-	}
-}
-
-func TestPlaybackProviders(t *testing.T) {
-	allProviders := []gmidi.Provider{gmidi.RTMidi, gmidi.PortMidi, gmidi.Any}
-	songs := allMus(t)[:3]
-	gmidi.TestMode()
-
-	for _, provider := range allProviders {
-		fmt.Println("starting player with provider: ", provider)
-		p, err := gmidi.NewPlayer(provider)
-		test.Check(err, t)
-		test.Assert(p != nil, "no midi device found cannot test playback", t)
-		defer p.Close()
-
-		for _, song := range songs {
-			track, err := music.NewTrack(wad.Lump{Data: song.Data})
-			test.Check(err, t)
-			fmt.Println("playing song", track.Name, "using provider", provider)
-			p.Play(track.MidiStream)
-		}
-		p.Close()
 	}
 }

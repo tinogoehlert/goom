@@ -1,7 +1,7 @@
 // The contents of this file is free and unencumbered software released into
 // the public domain. Refer to <http://unlicense.org/> for more information.
 
-package drivers
+package pkg
 
 // note: similar keys have different key codes, like Enter and
 //       Keypad Enter
@@ -16,8 +16,15 @@ package drivers
 // 2 - POSTFail
 // 3 - ErrorUndefined
 
+// Keycode defines a driver-independent keycode.
 type Keycode uint16
 
+// Code returns the key code's value.
+func (k Keycode) Code() uint16 {
+	return uint16(k)
+}
+
+// Define character codes
 const (
 	KeyA Keycode = 4 + iota
 	KeyB
@@ -46,6 +53,8 @@ const (
 	KeyY
 	KeyZ
 )
+
+// Define number codes.
 const (
 	Key1 Keycode = 30 + iota
 	Key2
@@ -58,6 +67,8 @@ const (
 	Key9
 	Key0
 )
+
+// Define special key codes 40-50
 const (
 	// choice is to use Enter name instead of Return
 	// and the key code is different from Keypad Enter
@@ -66,7 +77,8 @@ const (
 	KeyBackspace
 	KeyTab
 	KeySpace
-	// keypad minus has different key code
+
+	// KeyMinus on keypad has different key code
 	KeyMinus
 	KeyEquals
 	KeyLeftBracket
@@ -77,6 +89,7 @@ const (
 // key code number 50 is skipped, because it is unclear
 // where is the key, and what is its name and function
 
+// Define special key codes 51-57
 const (
 	// different name from SDL2 for brevity
 	KeyColon Keycode = 51 + iota
@@ -89,9 +102,14 @@ const (
 	Slash
 	CapsLock
 )
-const KeyTilde = KeyGrave
-const KeyDot = KeyPeriod
 
+// define aliases
+const (
+	KeyTilde = KeyGrave
+	KeyDot   = KeyPeriod
+)
+
+// Define special key codes 58-69
 const (
 	KeyF1 Keycode = 58 + iota
 	KeyF2
@@ -106,6 +124,8 @@ const (
 	KeyF11
 	KeyF12
 )
+
+// Define special key codes 70-82
 const (
 	KeyPrintScreen Keycode = 70 + iota
 	KeyScrollLock
@@ -121,6 +141,8 @@ const (
 	KeyDown
 	KeyUp
 )
+
+// Define special key codes 83-99
 const (
 	KeyNumLock Keycode = 83 + iota
 	KeyKpDivide
@@ -138,15 +160,17 @@ const (
 	KeyKp8
 	KeyKp9
 	KeyKp0
-	// KeyKpDot is an alias
 	KeyKpPeriod
 )
+
+// KeyKpDot alias for period
 const KeyKpDot = KeyKpPeriod
 
 // key code 100 is skipped, because I can not find the key
 // key code 101 is not present on Mac
 // key codes 102-223 are not present on PC
 
+// define modifiers
 const (
 	KeyLCtrl Keycode = 224 + iota
 	KeyLShift
@@ -159,5 +183,9 @@ const (
 	// KeyRWin is an alias
 	KeyRGUI
 )
-const KeyLWin = KeyLGUI
-const KeyRWin = KeyRGUI
+
+// define modifier aliases
+const (
+	KeyLWin = KeyLGUI
+	KeyRWin = KeyRGUI
+)

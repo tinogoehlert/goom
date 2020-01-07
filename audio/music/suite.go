@@ -8,17 +8,17 @@ import (
 	"github.com/tinogoehlert/goom/wad"
 )
 
-// Suite is a suite of named Tracks.
-type Suite map[string]*Track
+// TrackStore is a suite of named Tracks.
+type TrackStore map[string]*Track
 
-// NewSuite creates a new music.Suite.
-func NewSuite() Suite {
-	return make(Suite)
+// NewTrackStore creates a new music.TrackStore.
+func NewTrackStore() TrackStore {
+	return make(TrackStore)
 }
 
 // LoadWAD loads the music data from the WAD and returns it
 // as playble music tracks.
-func (suite Suite) LoadWAD(w *wad.WAD) error {
+func (s TrackStore) LoadWAD(w *wad.WAD) {
 	var (
 		midiRegex = regexp.MustCompile(`^D_`)
 		lumps     = w.Lumps()
@@ -31,24 +31,23 @@ func (suite Suite) LoadWAD(w *wad.WAD) error {
 			if err != nil {
 				fmt.Printf("failed to load track: %s, err: %s\n", t.Name, err)
 			}
-			suite[l.Name] = t
+			s[l.Name] = t
 		}
 	}
-	return nil
 }
 
 // Info shows a summary of the loaded tracks.
-func (suite Suite) Info() string {
+func (s TrackStore) Info() string {
 	var text []string
-	for _, t := range suite {
+	for _, t := range s {
 		text = append(text, fmt.Sprintf("%s (%d): %v", t.Name, t.Size, t.MidiStream.Info()))
 	}
 	return strings.Join(text, "\n")
 }
 
 // Track returns a specific MusicTrack.
-func (suite Suite) Track(name string) *Track {
-	if t, ok := suite["D_"+name]; ok {
+func (s TrackStore) Track(name string) *Track {
+	if t, ok := s["D_"+name]; ok {
 		return t
 	}
 	fmt.Println("invalid music track", name)

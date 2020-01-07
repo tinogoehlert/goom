@@ -25,26 +25,29 @@ type World struct {
 	projectiles *list.List
 	me          *Player
 	levelRef    *level.Level
-	audioDriver drivers.AudioDriver
+	Audio       drivers.Audio
+	Music       drivers.Music
 	gameData    *goom.GameData
 }
 
-// NewWorld Creates a new world
+// NewWorld Creates a new world.
 func NewWorld(data *goom.GameData, defs *DefStore) *World {
+	noop := drivers.NoopDrivers()
+
 	return &World{
 		definitions: defs,
 		gameData:    data,
-		audioDriver: &drivers.NOPlayer{},
+		Audio:       noop.Audio,
+		Music:       noop.Music,
 	}
 }
 
+// Data holds the worlds gamedata.
 func (w *World) Data() *goom.GameData {
+	if w == nil {
+		return nil
+	}
 	return w.gameData
-}
-
-// SetAudioDriver sets the audioDriver
-func (w *World) SetAudioDriver(drv drivers.AudioDriver) {
-	w.audioDriver = drv
 }
 
 // LoadLevel a specific level of the world
@@ -100,7 +103,8 @@ func (w *World) LoadLevel(lvl *level.Level) error {
 	if w.levelRef.Name == "MAP01" {
 		mus = "RUNNIN"
 	}
-	if err := w.audioDriver.PlayMusic(w.gameData.Music.Track(mus)); err != nil {
+
+	if err := w.Music.PlayMusic(w.gameData.Music.Track(mus)); err != nil {
 		fmt.Println("could not play music:", err.Error())
 	}
 
@@ -109,16 +113,25 @@ func (w *World) LoadLevel(lvl *level.Level) error {
 
 // Me returns current player
 func (w *World) Me() *Player {
+	if w == nil {
+		return nil
+	}
 	return w.me
 }
 
 // Things returns things
 func (w *World) Things() []Thingable {
+	if w == nil {
+		return nil
+	}
 	return w.things
 }
 
 // Monsters returns monsters
 func (w *World) Monsters() []*Monster {
+	if w == nil {
+		return nil
+	}
 	return w.monsters
 }
 
@@ -155,6 +168,12 @@ func (w *World) Update() {
 				dist := ppos.DistanceTo(mpos)
 				w.projectiles.Remove(e)
 				state := m.Hit(p.damage, dist)
+				id := m.sounds[state]
+				sound := w.gameData.Sounds.GetByID(id)
+				if sound == nil {
+					fmt.Printf("bad monster state sound: %s = %d\n", id, int(state))
+					break
+				}
 				if state > 0 {
 					distP := mgl32.Vec2(m.position).Sub(w.me.position)
 					angle := mgl32.RadToDeg(
@@ -164,7 +183,7 @@ func (w *World) Update() {
 					if angle < 0.0 {
 						angle += 360
 					}
-					w.audioDriver.PlayAtPosition(m.sounds[state], dist/2.6, int16(angle))
+					w.Audio.PlayAtPosition(sound.Name, dist/2.6, int16(angle))
 				}
 				break
 			}
@@ -189,7 +208,7 @@ func (w *World) spawnShot(player *Player) {
 		player.weapon.Damage,
 		player.weapon.Range,
 	))
-	w.audioDriver.Play("DS" + player.weapon.Sound)
+	w.Audio.Play("DS" + player.weapon.Sound)
 }
 
 func (w *World) hitThing(t1, t2 Thingable, sx, sy float32) bool {
@@ -220,7 +239,7 @@ func (w *World) checkThingCollision(thing *DoomThing, to mgl32.Vec2) {
 				if t.category == "weapon" {
 					w.me.AddWeapon(w.definitions.GetWeapon(t.ref))
 					t.consumed = true
-					w.audioDriver.Play("DSWPNUP")
+					w.Audio.Play("DSWPNUP")
 				}
 			}
 		}
@@ -230,14 +249,16 @@ func (w *World) checkThingCollision(thing *DoomThing, to mgl32.Vec2) {
 
 func (w *World) checkWallCollision(thing *DoomThing, to mgl32.Vec2) mgl32.Vec2 {
 	var (
-		collided = 0
-		x        = to.X()
-		y        = to.Y()
-		radius   = float32(24)
-		hitWall  level.Wall
-		oldTo    = to
+		x      = to.X()
+		y      = to.Y()
+		radius = float32(16)
 	)
 	for _, wall := range w.levelRef.Walls {
+		if wall.IsTwoSided {
+			if wall.Sectors.Left.FloorHeight() < thing.currentSector.FloorHeight()+25 {
+				continue
+			}
+		}
 		var (
 			d   = wall.Start.Dot(wall.Normal)
 			sd  = wall.Start.Dot(wall.Tangent)
@@ -254,8 +275,6 @@ func (w *World) checkWallCollision(thing *DoomThing, to mgl32.Vec2) mgl32.Vec2 {
 				toPushOut := radius - pd + 0.001
 				to[0] += wall.Normal.X() * toPushOut * mul
 				to[1] += wall.Normal.Y() * toPushOut * mul
-				hitWall = wall
-				collided++
 			} else {
 				var (
 					tmpxd float32
@@ -274,23 +293,18 @@ func (w *World) checkWallCollision(thing *DoomThing, to mgl32.Vec2) mgl32.Vec2 {
 					toPushOut := radius - dist + 0.001
 					to[0] += tmpxd / dist * toPushOut
 					to[1] += tmpyd / dist * toPushOut
-					hitWall = wall
-					collided++
 				}
 			}
 		}
 	}
 
-	if collided > 0 {
-		if hitWall.IsTwoSided {
-			var (
-				lSector   = w.levelRef.Sectors[hitWall.Sides.Left.Sector]
-				chkHeight = thing.currentSector.FloorHeight() + 32
-			)
-			if lSector.FloorHeight() < chkHeight {
-				return oldTo
-			}
-		}
-	}
 	return to
+}
+
+// GetLevel return the currently loaded level.
+func (w *World) GetLevel() *level.Level {
+	if w == nil {
+		return nil
+	}
+	return w.levelRef
 }

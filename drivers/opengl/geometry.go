@@ -15,6 +15,7 @@ type glWorldGeometry struct {
 	light    float32
 	position mgl32.Vec3
 	seqTime  time.Time
+	isSky    bool
 }
 
 func addGlWorldutils(dst []*glWorldGeometry, src *glWorldGeometry) []*glWorldGeometry {
@@ -44,7 +45,15 @@ func (m *glWorldGeometry) Draw(method uint32) {
 	if m == nil {
 		return
 	}
-	gl.BindTexture(gl.TEXTURE_2D, m.texture[0].ID)
+	m.DrawWithTexture(method, m.texture[0])
+}
+
+func (m *glWorldGeometry) DrawWithTexture(method uint32, tex *glTexture) {
+
+	if m == nil {
+		return
+	}
+	gl.BindTexture(gl.TEXTURE_2D, tex.ID)
 	gl.BindVertexArray(m.vao)
 	gl.DrawArrays(method, 0, int32(len(m.data)/5))
 }

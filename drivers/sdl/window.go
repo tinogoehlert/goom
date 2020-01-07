@@ -2,22 +2,13 @@ package sdl
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/tinogoehlert/go-sdl2/sdl"
-	"github.com/tinogoehlert/goom/drivers"
 )
 
-// Init inits SDL
-func InitSDLVideo() error {
-	return sdl.InitSubSystem(sdl.INIT_VIDEO)
-}
-
-// Destroy destroys sdl
-func QuitSDLVideo() {
-	sdl.QuitSubSystem(sdl.INIT_VIDEO)
-}
-
-type GLWindow struct {
+// Window is the SDL Window driver.
+type Window struct {
 	window        *sdl.Window
 	width         int
 	height        int
@@ -26,12 +17,20 @@ type GLWindow struct {
 	glContext     sdl.GLContext
 	secsPerUpdate float64
 	fbSizeChanged func(width int, height int)
-	inputDrv      *InputDriver
 	shouldClose   bool
 }
 
-// NewGLWindow creates a new sdl window with GL context
-func NewGLWindow(title string, width, height int) (*GLWindow, error) {
+// Open inits a new SQL window with GL context.
+func (w *Window) Open(title string, width, height int) error {
+	w.width = width
+	w.height = height
+	w.secsPerUpdate = float64(1) / 60
+
+	if err := initVideo(); err != nil {
+		log.Println(err)
+		return err
+	}
+
 	sdl.GLSetAttribute(sdl.GL_DOUBLEBUFFER, 2)
 	sdl.GLSetAttribute(sdl.GL_DEPTH_SIZE, 32)
 	sdl.GLSetAttribute(sdl.GL_CONTEXT_PROFILE_MASK, sdl.GL_CONTEXT_PROFILE_CORE)
@@ -47,48 +46,38 @@ func NewGLWindow(title string, width, height int) (*GLWindow, error) {
 		sdl.WINDOW_OPENGL|sdl.WINDOW_RESIZABLE,
 	)
 	if err != nil {
-		return nil, err
+		log.Println(err)
+		return err
 	}
+
 	fbWidth, fbHeight := sdlwin.GLGetDrawableSize()
-	var win = &GLWindow{
-		window:        sdlwin,
-		width:         width,
-		height:        height,
-		secsPerUpdate: float64(1) / 60,
-		fbWidth:       int(fbWidth),
-		fbHeight:      int(fbHeight),
-	}
+	w.window = sdlwin
+	w.fbWidth = int(fbWidth)
+	w.fbHeight = int(fbHeight)
 
-	if win.glContext, err = sdlwin.GLCreateContext(); err != nil {
+	if w.glContext, err = sdlwin.GLCreateContext(); err != nil {
 		sdlwin.Destroy()
-		return nil, err
+		log.Println(err)
+		return err
 	}
 
-	return win, nil
+	return nil
 }
 
-func (w *GLWindow) Input() drivers.InputDriver {
-	return w.inputDrv
-}
-
-// Size Returns the current size of the Window
-func (w *GLWindow) Size() (int, int) {
-	return w.width, w.height
-}
-
-// FrameBufferSize Returns the current size of the Window
-func (w *GLWindow) FrameBufferSize() (int, int) {
+// GetSize Returns the current size of the Window
+func (w *Window) GetSize() (int, int) {
 	fbWidth, fbHeight := w.window.GLGetDrawableSize()
+	fmt.Println("here")
 	return int(fbWidth * 2), int(fbHeight * 2)
 }
 
 // ShouldClose determines if the window should close
-func (w *GLWindow) ShouldClose() bool {
+func (w *Window) ShouldClose() bool {
 	return w.shouldClose
 }
 
-// Run runs the window loop
-func (w *GLWindow) Run(input func(), update func(), render func(float64)) {
+// RunGame runs the game loop
+func (w *Window) RunGame(input func(), update func(), render func(float64)) {
 	var (
 		previous         = float64(sdl.GetTicks()) / 1000
 		lag              = float64(0)
@@ -121,6 +110,6 @@ func (w *GLWindow) Run(input func(), update func(), render func(float64)) {
 }
 
 // Close closes the window
-func (w *GLWindow) Close() {
+func (w *Window) Close() {
 	w.window.Destroy()
 }

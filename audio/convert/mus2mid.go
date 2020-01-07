@@ -47,7 +47,7 @@ func ClampVolume(vol uint8) uint8 {
 	return vol
 }
 
-// Mus2Mid converst MUS data to MIDI data.
+// Mus2Mid converts MUS data to MIDI data.
 func Mus2Mid(in *mus.Stream) (*midi.Stream, error) {
 	p := midi.NewStream(numChans)
 

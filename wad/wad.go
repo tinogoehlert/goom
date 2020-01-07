@@ -21,18 +21,17 @@ const (
 	TypePatch Type = "PWAD"
 )
 
-// WadManager holds list of wads
-type WadManager struct {
+type manager struct {
 	wads []*WAD
 }
 
-// NewWadManager creates a new WAD Manager
-func NewWadManager() *WadManager {
-	return &WadManager{}
+// NewManager creates a new WAD Manager
+func newManager() *manager {
+	return &manager{}
 }
 
 // LoadFile processes a WAD file
-func (wm *WadManager) LoadFile(file string) error {
+func (wm *manager) LoadFile(file string) error {
 	w, err := NewWADFromFile(file)
 	if err != nil {
 		return err
@@ -81,10 +80,9 @@ func NewWADFromFile(file string) (*WAD, error) {
 		InfoTableOFS: int(binary.LittleEndian.Uint32(header[8:12])),
 	}
 
-	// load header
+	// check data
 	data := make([]byte, wad.InfoTableOFS-wadHeaderSize)
-	sz, err = fd.Read(data)
-	if err != nil {
+	if _, err = fd.Read(data); err != nil {
 		return nil, fmt.Errorf("could read WAD data: %s", err.Error())
 	}
 

@@ -25,8 +25,10 @@ func (ts glTextureStore) initTexture(name string, count int) {
 	ts[name] = make([]*glTexture, count)
 }
 
-func (ts glTextureStore) addTexture(name string, idx int, img graphics.Image) {
-	ts[name][idx] = makeGLTexture(img)
+func (ts glTextureStore) addTexture(name string, idx int, img graphics.Image) *glTexture {
+	var tex = makeGLTexture(img)
+	ts[name][idx] = tex
+	return tex
 }
 
 func (ts glTextureStore) Get(name string, idx int) *glTexture {

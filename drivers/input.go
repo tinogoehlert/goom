@@ -1,19 +1,26 @@
 package drivers
 
+import (
+	shared "github.com/tinogoehlert/goom/drivers/pkg"
+)
+
+// KeyState is the state of the key.
 type KeyState int
 
+// Key states and input names
 const (
 	KeyReleased KeyState = 0
 	KeyPressed  KeyState = 1
 	KeyRepeated KeyState = 2
 )
 
+// Key stores key code and press state.
 type Key struct {
-	Keycode Keycode
+	Keycode shared.Keycode
 	State   KeyState
 }
 
-type InputDriver interface {
-	KeyStates() chan Key
-	IsPressed(keycode Keycode) bool
+// Input interface
+type Input interface {
+	IsPressed(shared.Keycode) bool
 }

@@ -69,7 +69,7 @@ func HeaderStart(data []byte) int {
 		return 0
 	}
 	for i := 0; i < len(data)-4; i++ {
-		if string(data[i:4]) == LumpID {
+		if string(data[i:i+4]) == LumpID {
 			return i
 		}
 	}

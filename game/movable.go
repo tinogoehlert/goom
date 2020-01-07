@@ -22,6 +22,7 @@ func NewMovable(x, y, height, angle float32, sprite string) *Movable {
 	return m
 }
 
+// SetCollision sets the collision callback.
 func (m *Movable) SetCollision(cb func(thing *DoomThing, to mgl32.Vec2) mgl32.Vec2) {
 	m.collisionCB = cb
 }
