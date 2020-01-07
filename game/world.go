@@ -255,7 +255,7 @@ func (w *World) checkWallCollision(thing *DoomThing, to mgl32.Vec2) mgl32.Vec2 {
 	)
 	for _, wall := range w.levelRef.Walls {
 		if wall.IsTwoSided {
-			if wall.Sectors.Left.FloorHeight() < thing.currentSector.FloorHeight()+20 {
+			if wall.Sectors.Left.FloorHeight() < thing.currentSector.FloorHeight()+25 {
 				continue
 			}
 		}
