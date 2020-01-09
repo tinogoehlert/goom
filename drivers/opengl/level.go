@@ -143,8 +143,8 @@ func (s *subSector) addWalls(md *level.Level, gd *goom.GameData, ts glTextureSto
 
 			tex := ts[upTex][0]
 			var (
-				tw     = float32(tex.image.Width())
-				th     = float32(tex.image.Height())
+				tw     = float32(tex.image.Width()) + float32(tex.image.Left())
+				th     = float32(tex.image.Height()) + float32(tex.image.Top())
 				height = oppositeSector.CeilHeight() - sector.CeilHeight()
 				el     = dist / tw
 			)
@@ -172,8 +172,8 @@ func (s *subSector) addWalls(md *level.Level, gd *goom.GameData, ts glTextureSto
 
 			tex := ts[lowTex][0]
 			var (
-				tw     = -float32(tex.image.Width())
-				th     = -float32(tex.image.Height())
+				tw     = float32(tex.image.Width()) + float32(tex.image.Left())
+				th     = float32(tex.image.Height()) + float32(tex.image.Top())
 				height = sector.FloorHeight() - oppositeSector.FloorHeight()
 				el     = dist / tw
 			)
@@ -199,8 +199,8 @@ func (s *subSector) addWalls(md *level.Level, gd *goom.GameData, ts glTextureSto
 		if midTex != "-" {
 			tex := ts[midTex][0]
 			var (
-				tw     = float32(tex.image.Width())
-				th     = float32(tex.image.Height())
+				tw     = float32(tex.image.Width()) + float32(tex.image.Left())
+				th     = float32(tex.image.Height()) + float32(tex.image.Top())
 				height = sector.CeilHeight() - sector.FloorHeight()
 				el     = dist / tw
 			)
