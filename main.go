@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-gl/mathgl/mgl32"
+
 	"github.com/tinogoehlert/goom/drivers"
 
 	"github.com/tinogoehlert/goom/drivers/opengl"
@@ -34,7 +36,8 @@ var (
 	pwadfile     = flag.String("pwad", "", "PWAD file to load (without extension)")
 	levelName    = flag.String("level", "E1M1", "Level to start e.g. E1M1")
 	fpsMax       = flag.Int("fpsmax", 0, "Limit FPS")
-	midiDrv      = flag.String("mididrv", "portmidi", "MIDI driver name ("+midiOptions+")")
+	midiDrv      = flag.String("mididrv", "sdl", "MIDI driver name ("+midiOptions+")")
+	winDrv       = flag.String("windowdrv", "sdl", "Window and Input driver name")
 	windowHeight = 600
 	windowWidth  = 800
 	gameDefs     = "resources/defs.yaml"
@@ -44,10 +47,10 @@ func main() {
 	flag.Parse()
 
 	mainDrivers := drivers.Drivers{
-		Window:  drivers.WindowDrivers[drivers.GlfwWindow],
+		Window:  drivers.WindowDrivers[drivers.WindowDriver(strings.ToLower(*winDrv))],
 		Audio:   drivers.AudioDrivers[drivers.SdlAudio],
 		Music:   drivers.MusicDrivers[drivers.MusicDriver(strings.ToLower(*midiDrv))],
-		Input:   drivers.InputDrivers[drivers.GlfwInput],
+		Input:   drivers.InputDrivers[drivers.InputDriver(strings.ToLower(*winDrv))],
 		GetTime: drivers.TimerFuncs[drivers.SdlTimer],
 	}
 
@@ -130,7 +133,11 @@ func (e *engine) render(interpolTime float64) {
 		player.Lift(sector.FloorHeight())
 	}
 	e.Renderer().Camera().SetCamera(player.Position(), player.Direction(), player.Height())
-
+	e.Renderer().SetPlayerPosition(mgl32.Vec3{
+		-player.Position()[0],
+		player.Height(),
+		player.Position()[1],
+	})
 	e.stats.showStats(e.GameData(), e.Renderer())
 	e.stats.countedFrames++
 	ft := e.GetTime() - started

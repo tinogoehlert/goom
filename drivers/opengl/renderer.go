@@ -82,17 +82,21 @@ func (gr *GLRenderer) LoadShaderProgram(name, vertFile, fragFile string) error {
 	var shader = NewShaderProgram()
 
 	if err := shader.AddVertexShader(vertFile); err != nil {
+		fmt.Println(err)
 		return err
 	}
 
 	if err := shader.AddFragmentShader(fragFile); err != nil {
+		fmt.Println(err)
 		return err
 	}
 
 	if err := shader.Link(); err != nil {
+		fmt.Println(err)
 		return err
 	}
 	gr.shaders[name] = shader
+	fmt.Println("success")
 	return nil
 }
 
@@ -127,6 +131,10 @@ func (gr *GLRenderer) setView() {
 
 func (gr *GLRenderer) setModel() {
 	gr.shaders[gr.currentShader].UniformMatrix4fv("model", gr.modelMatrix)
+}
+
+func (gr *GLRenderer) SetPlayerPosition(pos mgl32.Vec3) {
+	gr.shaders[gr.currentShader].Uniform3f("player_pos", pos)
 }
 
 func (gr *GLRenderer) DrawSubSector(idx int) {
@@ -254,4 +262,5 @@ func (gr *GLRenderer) RenderNewFrame() {
 	gr.shaders[gr.currentShader].Use()
 	gr.setView()
 	gr.setModel()
+
 }

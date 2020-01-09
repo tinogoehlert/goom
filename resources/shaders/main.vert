@@ -8,6 +8,9 @@ uniform mat4 view;
 uniform mat4 model;
 uniform mat4 ortho;
 uniform int draw_phase;
+
+uniform vec3 player_pos;
+
 uniform int billboard_flipped;
 uniform vec3 billboard_pos;
 uniform vec2 billboard_size;
@@ -16,6 +19,8 @@ out vec2 fragTexCoord;
 out float light;
 flat out vec2 v_r;
 out vec4 v_p;
+out float dist;
+
 
 vec4 drawSky() {
 	mat4 transform = projection * model * view;
@@ -48,6 +53,7 @@ vec4 DrawHUD() {
 
 void main()
 {
+	dist = 1000;
 	fragTexCoord = vertTexCoord;
 	// things code
 	if (draw_phase == 1) {
@@ -55,6 +61,7 @@ void main()
 			fragTexCoord.x = -fragTexCoord.x;
 		}
 		gl_Position = drawBillboard();	
+		dist = abs(distance(player_pos,billboard_pos));
 		return;
 	}
 	// hud code
@@ -67,5 +74,6 @@ void main()
 		gl_Position = drawSky();
 		return;
 	}
+	dist = abs(distance(player_pos,vertex));
 	gl_Position = projection * view  * model * vec4(vertex, 1.0);
 }
