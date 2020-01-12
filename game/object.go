@@ -45,8 +45,8 @@ type DoomThing struct {
 }
 
 // ThingFromDef creates thing from definition
-func ThingFromDef(x, y, height, angle float32, def *ThingDef) *DoomThing {
-	var m = NewDoomThing(x, y, height, angle, def.Sprite, false)
+func ThingFromDef(x, y, angle float32, def *ThingDef) *DoomThing {
+	var m = NewDoomThing(x, y, angle, def.Sprite, false)
 	m.animations["idle"] = []byte(def.Animation)
 	m.currentAnimation = m.animations["idle"]
 	m.id = def.ID
@@ -54,10 +54,9 @@ func ThingFromDef(x, y, height, angle float32, def *ThingDef) *DoomThing {
 }
 
 // NewDoomThing creates a new DOOM Thing.
-func NewDoomThing(x, y, height, angle float32, sprite string, hasAngles bool) *DoomThing {
+func NewDoomThing(x, y, angle float32, sprite string, hasAngles bool) *DoomThing {
 	return &DoomThing{
 		position:   mgl32.Vec2{x, y},
-		height:     height,
 		hAngle:     angle,
 		sprite:     sprite,
 		animations: make(map[string][]byte),

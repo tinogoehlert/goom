@@ -22,12 +22,11 @@ type Player struct {
 }
 
 // NewPlayer creates a new player with the given values
-func NewPlayer(x, y, height, hAngle, vAngle float32, w *World) *Player {
+func NewPlayer(x, y, hAngle, vAngle float32, w *World) *Player {
 	p := &Player{
 		Movable: &Movable{
 			DoomThing: &DoomThing{
 				position: [2]float32{x, y},
-				height:   height,
 				hAngle:   hAngle,
 				vAngle:   vAngle,
 			},
@@ -37,7 +36,8 @@ func NewPlayer(x, y, height, hAngle, vAngle float32, w *World) *Player {
 		maxSpeed:  0.5,
 	}
 
-	p.Turn(hAngle, vAngle)
+	p.Turn(hAngle)
+	p.Pitch(vAngle)
 
 	return p
 }
@@ -72,7 +72,8 @@ func (p *Player) Stop() {
 
 // Height returns the player's height.
 func (p *Player) Height() float32 {
-	return p.DoomThing.height + 40
+	// the players viewport height is 41 according to https://eev.ee/blog/2016/10/10/doom-scale/
+	return p.DoomThing.height + 41
 }
 
 // Update updates all velocities and to deacclerate all types of movement.

@@ -102,7 +102,6 @@ func newEngine(drivers *drivers.Drivers) *engine {
 		player.SetSector(sector)
 	}
 
-	e.Renderer().Camera().SetCamera(player.Position(), player.Direction(), player.Height())
 	e.Renderer().SetViewPort(e.Window().GetSize())
 
 	return e
@@ -218,17 +217,17 @@ func input(e *engine) {
 	}
 
 	if in.IsPressed(drvShared.KeyLeft) {
-		player.Turn(-1.5, 0)
+		player.Turn(-1.5)
 	}
 	if in.IsPressed(drvShared.KeyRight) {
-		player.Turn(1.5, 0)
+		player.Turn(1.5)
 	}
 
 	if in.IsPressed(drvShared.KeyUp) {
-		player.Turn(0, 1.5)
+		player.Pitch(1.5)
 	}
 	if in.IsPressed(drvShared.KeyDown) {
-		player.Turn(0, -1.5)
+		player.Pitch(-1.5)
 	}
 
 	if in.IsPressed(drvShared.KeyLShift) || in.IsMousePressed(drvShared.MouseLeft) {
