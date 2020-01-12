@@ -94,6 +94,8 @@ var glfwDriversKeyMap = map[shared.Keycode]glfw.Key{
 	shared.KeyZ:      glfw.KeyZ,
 	shared.KeyF5:     glfw.KeyF5,
 	shared.KeyF6:     glfw.KeyF6,
+	shared.KeyF7:     glfw.KeyF7,
+	shared.KeyF8:     glfw.KeyF8,
 }
 
 var glfwMouseButtonMap = map[shared.MouseButton]glfw.MouseButton{

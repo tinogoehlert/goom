@@ -88,6 +88,13 @@ func (m *Movable) Pitch(angle float32) {
 	m.updateDirection()
 }
 
+// ResetPitch makes the player look to the horizon
+func (m *Movable) ResetPitch() {
+	m.vAngle = 0
+
+	m.updateDirection()
+}
+
 func (m *Movable) updateDirection() {
 	y, x := math.Sincos(float64(m.hAngle) * math.Pi / 180)
 	z := math.Pi * m.vAngle / 90

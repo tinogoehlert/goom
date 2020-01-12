@@ -34,11 +34,13 @@ var (
 	pwadfile     = flag.String("pwad", "", "PWAD file to load (without extension)")
 	levelName    = flag.String("level", "E1M1", "Level to start e.g. E1M1")
 	fpsMax       = flag.Int("fpsmax", 0, "Limit FPS")
-	midiDrv      = flag.String("mididrv", "noop", "MIDI driver name ("+midiOptions+")")
+	midiDrv      = flag.String("mididrv", "sdl", "MIDI driver name ("+midiOptions+")")
 	winDrv       = flag.String("windowdrv", "glfw", "Window and Input driver name")
 	windowHeight = 600
 	windowWidth  = 800
 	gameDefs     = "resources/defs.yaml"
+
+	verticalMouse = false
 )
 
 func main() {
@@ -235,6 +237,7 @@ func input(e *engine) {
 	}
 
 	if in.IsPressed(drvShared.KeyQ) {
+		in.SetMouseCameraEnabled(false)
 		os.Exit(0)
 	}
 
@@ -246,9 +249,24 @@ func input(e *engine) {
 		in.SetMouseCameraEnabled(false)
 	}
 
-	if xpos, _ := in.GetCursorPos(); xpos != e.cursorXpos {
-		cursorDelta := xpos - e.cursorXpos
-		player.Turn(float32(cursorDelta / 10))
+	if in.IsPressed(drvShared.KeyF7) {
+		verticalMouse = true
+	}
+
+	if in.IsPressed(drvShared.KeyF8) {
+		verticalMouse = false
+		player.ResetPitch()
+	}
+
+	if xpos, ypos := in.GetCursorPos(); xpos != e.cursorXpos {
+		cursorXDelta := xpos - e.cursorXpos
+		player.Turn(float32(cursorXDelta / 10))
 		e.cursorXpos = xpos
+
+		if verticalMouse {
+			cursorYDelta := e.cursorYpos - ypos
+			player.Pitch(float32(cursorYDelta / 10))
+			e.cursorYpos = ypos
+		}
 	}
 }
