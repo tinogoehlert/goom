@@ -68,8 +68,8 @@ func main() {
 
 type engine struct {
 	*run.Runner
-	stats      *renderStats
-	xpos, ypos float64
+	stats                  *renderStats
+	cursorXpos, cursorYpos float64
 }
 
 func newEngine(drivers *drivers.Drivers) *engine {
@@ -244,5 +244,11 @@ func input(e *engine) {
 
 	if in.IsPressed(drvShared.KeyF6) {
 		in.SetMouseCameraEnabled(false)
+	}
+
+	if xpos, _ := in.GetCursorPos(); xpos != e.cursorXpos {
+		cursorDelta := xpos - e.cursorXpos
+		player.Turn(float32(cursorDelta / 10))
+		e.cursorXpos = xpos
 	}
 }
