@@ -18,7 +18,7 @@ func NewMovable(x, y, height, angle float32, sprite string) *Movable {
 	var m = &Movable{
 		DoomThing: NewDoomThing(x, y, height, angle, sprite, true),
 	}
-	m.Turn(0)
+	m.Turn(0, 0)
 	return m
 }
 
@@ -59,8 +59,15 @@ func (m *Movable) Lift(steps float32, timePassed float32) {
 }
 
 // Turn player
-func (m *Movable) Turn(angle float32) {
-	m.angle += angle
-	y, x := math.Sincos(float64(m.angle) * math.Pi / 180)
-	m.direction = mgl32.Vec2{float32(x), float32(y)}
+func (m *Movable) Turn(hAngle, vAngle float32) {
+	m.hAngle += hAngle
+
+	if (vAngle > 0 && m.vAngle < 90) || (vAngle < 0 && m.vAngle > -90) {
+		m.vAngle += vAngle
+	}
+
+	y, x := math.Sincos(float64(m.hAngle) * math.Pi / 180)
+	z := math.Pi * m.vAngle / 90
+
+	m.direction = mgl32.Vec3{float32(x), float32(y), float32(z)}
 }

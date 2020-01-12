@@ -58,7 +58,7 @@ func (w *World) LoadLevel(lvl *level.Level) error {
 
 	for _, t := range w.levelRef.Things {
 		if t.Type < 5 {
-			player := NewPlayer(t.X, t.Y, 0, t.Angle, w)
+			player := NewPlayer(t.X, t.Y, 0, t.Angle, 0, w)
 			w.players = append(w.players, player)
 			if t.Type == 1 {
 				w.me = player
@@ -179,7 +179,7 @@ func (w *World) Update() {
 					angle := mgl32.RadToDeg(
 						float32(math.Atan2(float64(distP.Y()),
 							float64(distP.X()))),
-					) - m.angle
+					) - m.hAngle
 					if angle < 0.0 {
 						angle += 360
 					}

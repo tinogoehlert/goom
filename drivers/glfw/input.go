@@ -1,12 +1,9 @@
 package glfw
 
 import (
-	"github.com/go-gl/glfw/v3.2/glfw"
+	"github.com/go-gl/glfw/v3.3/glfw"
 	shared "github.com/tinogoehlert/goom/drivers/pkg"
 )
-
-// Input handling is done via the GLFW window, thus we can implement
-// IsPressed as part of the Window.
 
 // IsPressed returns if a key is pressed.
 func (in *Window) IsPressed(k shared.Keycode) bool {
@@ -17,52 +14,38 @@ func (in *Window) IsPressed(k shared.Keycode) bool {
 	return in.window.GetKey(key) == glfw.Press
 }
 
-/*
-var glfwKeyMap = map[glfw.Key]Keycode{
-	glfw.KeyUp:    KeyUp,
-	glfw.KeyLeft:  KeyLeft,
-	glfw.KeyRight: KeyRight,
-	glfw.KeyDown:  KeyDown,
-	glfw.KeySpace: KeySpace,
-	glfw.KeyEnter: KeyEnter,
-	glfw.Key0:     Key0,
-	glfw.Key1:     Key1,
-	glfw.Key2:     Key2,
-	glfw.Key3:     Key3,
-	glfw.Key4:     Key4,
-	glfw.Key5:     Key5,
-	glfw.Key6:     Key6,
-	glfw.Key7:     Key7,
-	glfw.Key8:     Key8,
-	glfw.Key9:     Key9,
-	glfw.KeyA:     KeyA,
-	glfw.KeyB:     KeyB,
-	glfw.KeyC:     KeyC,
-	glfw.KeyD:     KeyD,
-	glfw.KeyE:     KeyE,
-	glfw.KeyF:     KeyF,
-	glfw.KeyG:     KeyG,
-	glfw.KeyH:     KeyH,
-	glfw.KeyI:     KeyI,
-	glfw.KeyJ:     KeyJ,
-	glfw.KeyK:     KeyK,
-	glfw.KeyL:     KeyL,
-	glfw.KeyM:     KeyM,
-	glfw.KeyN:     KeyN,
-	glfw.KeyO:     KeyO,
-	glfw.KeyP:     KeyP,
-	glfw.KeyQ:     KeyQ,
-	glfw.KeyR:     KeyR,
-	glfw.KeyS:     KeyS,
-	glfw.KeyT:     KeyT,
-	glfw.KeyU:     KeyU,
-	glfw.KeyV:     KeyV,
-	glfw.KeyW:     KeyW,
-	glfw.KeyX:     KeyX,
-	glfw.KeyY:     KeyY,
-	glfw.KeyZ:     KeyZ,
+// GetCursorPos returns the last reported position of the cursor.
+func (in *Window) GetCursorPos() (xpos, ypos float64) {
+	x, y := in.window.GetCursorPos()
+
+	// // reset the mouse pos (only useful for camera positioning to not "run out of space")
+	// // needs to be somewhere else once we actually want to use a cursor
+	// in.window.SetCursorPos(0, 0)
+
+	return x, y
 }
-*/
+
+// IsMousePressed returns the corresponding Button is pressed.
+func (in *Window) IsMousePressed(b shared.MouseButton) bool {
+	btn, ok := glfwMouseButtonMap[b]
+	if !ok {
+		return false
+	}
+	return in.window.GetMouseButton(btn) == glfw.Press
+}
+
+// SetMouseCameraEnabled enables or disables mouse camera control.
+func (in *Window) SetMouseCameraEnabled(en bool) {
+	if !en {
+		in.window.SetInputMode(glfw.CursorMode, glfw.CursorNormal)
+		return
+	}
+
+	in.window.SetInputMode(glfw.CursorMode, glfw.CursorDisabled)
+	if glfw.RawMouseMotionSupported() {
+		in.window.SetInputMode(glfw.RawMouseMotion, glfw.True)
+	}
+}
 
 var glfwDriversKeyMap = map[shared.Keycode]glfw.Key{
 	shared.KeyUp:     glfw.KeyUp,
@@ -109,4 +92,17 @@ var glfwDriversKeyMap = map[shared.Keycode]glfw.Key{
 	shared.KeyX:      glfw.KeyX,
 	shared.KeyY:      glfw.KeyY,
 	shared.KeyZ:      glfw.KeyZ,
+	shared.KeyF5:     glfw.KeyF5,
+	shared.KeyF6:     glfw.KeyF6,
+}
+
+var glfwMouseButtonMap = map[shared.MouseButton]glfw.MouseButton{
+	shared.MouseLeft:   glfw.MouseButton1,
+	shared.MouseMiddle: glfw.MouseButton3,
+	shared.MouseRight:  glfw.MouseButton2,
+	shared.Mouse4:      glfw.MouseButton4,
+	shared.Mouse5:      glfw.MouseButton5,
+	shared.Mouse6:      glfw.MouseButton6,
+	shared.Mouse7:      glfw.MouseButton7,
+	shared.Mouse8:      glfw.MouseButton8,
 }

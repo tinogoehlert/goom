@@ -3,7 +3,7 @@ package glfw
 import (
 	"fmt"
 
-	"github.com/go-gl/glfw/v3.2/glfw"
+	"github.com/go-gl/glfw/v3.3/glfw"
 )
 
 // Window GLFW implementation for Window

@@ -8,7 +8,7 @@ type Projectile struct {
 }
 
 // NewProjectile returns a new projectile.
-func NewProjectile(pos, dir [2]float32, damage, maxRange int) *Projectile {
+func NewProjectile(pos [2]float32, dir [3]float32, damage, maxRange int) *Projectile {
 	return &Projectile{
 		Movable: &Movable{
 			DoomThing: &DoomThing{

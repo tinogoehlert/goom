@@ -1,12 +1,9 @@
 package game
 
 import (
-	"math"
 	"time"
 
 	"github.com/tinogoehlert/goom/utils"
-
-	"github.com/go-gl/mathgl/mgl32"
 )
 
 // Player DOOM SLAYER!!
@@ -25,21 +22,23 @@ type Player struct {
 }
 
 // NewPlayer creates a new player with the given values
-func NewPlayer(x, y, height, angle float32, w *World) *Player {
-	dy, dx := math.Sincos(float64(angle) * math.Pi / 180)
+func NewPlayer(x, y, height, hAngle, vAngle float32, w *World) *Player {
 	p := &Player{
 		Movable: &Movable{
 			DoomThing: &DoomThing{
-				position:  [2]float32{x, y},
-				height:    height,
-				angle:     angle,
-				direction: mgl32.Vec2{float32(dx), float32(dy)},
+				position: [2]float32{x, y},
+				height:   height,
+				hAngle:   hAngle,
+				vAngle:   vAngle,
 			},
 		},
 		world:     w,
 		weaponBag: make(map[string]*Weapon),
 		maxSpeed:  0.5,
 	}
+
+	p.Turn(hAngle, vAngle)
+
 	return p
 }
 
