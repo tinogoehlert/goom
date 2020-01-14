@@ -8,13 +8,16 @@ import (
 
 // Window GLFW implementation for Window
 type Window struct {
-	window        *glfw.Window
-	width         int
-	height        int
-	fbWidth       int
-	fbHeight      int
-	secsPerUpdate float64
-	fbSizeChanged func(width int, height int)
+	window             *glfw.Window
+	width              int
+	height             int
+	fbWidth            int
+	fbHeight           int
+	secsPerUpdate      float64
+	fbSizeChanged      func(width int, height int)
+	mouseCameraEnabled bool
+	lastMouseX         float64
+	lastMouseY         float64
 }
 
 // Open creates a new GLFW Window.

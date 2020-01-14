@@ -36,8 +36,7 @@ func NewPlayer(x, y, hAngle, vAngle float32, w *World) *Player {
 		maxSpeed:  0.5,
 	}
 
-	p.Turn(hAngle)
-	p.Pitch(vAngle)
+	p.SetDirectionAngles(hAngle, vAngle)
 
 	return p
 }

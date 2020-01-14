@@ -14,15 +14,20 @@ func (in *Window) IsPressed(k shared.Keycode) bool {
 	return in.window.GetKey(key) == glfw.Press
 }
 
-// GetCursorPos returns the last reported position of the cursor.
-func (in *Window) GetCursorPos() (xpos, ypos float64) {
+// GetCursorDelta returns the mouse movement since last call.
+func (in *Window) GetCursorDelta() (float64, float64) {
+	if !in.mouseCameraEnabled {
+		return 0, 0
+	}
+
 	x, y := in.window.GetCursorPos()
+	deltaX := x - in.lastMouseX
+	deltaY := y - in.lastMouseY
 
-	// // reset the mouse pos (only useful for camera positioning to not "run out of space")
-	// // needs to be somewhere else once we actually want to use a cursor
-	// in.window.SetCursorPos(0, 0)
+	in.lastMouseX = x
+	in.lastMouseY = y
 
-	return x, y
+	return deltaX, deltaY
 }
 
 // IsMousePressed returns the corresponding Button is pressed.
@@ -36,6 +41,8 @@ func (in *Window) IsMousePressed(b shared.MouseButton) bool {
 
 // SetMouseCameraEnabled enables or disables mouse camera control.
 func (in *Window) SetMouseCameraEnabled(en bool) {
+	in.mouseCameraEnabled = en
+
 	if !en {
 		in.window.SetInputMode(glfw.CursorMode, glfw.CursorNormal)
 		return
@@ -45,6 +52,8 @@ func (in *Window) SetMouseCameraEnabled(en bool) {
 	if glfw.RawMouseMotionSupported() {
 		in.window.SetInputMode(glfw.RawMouseMotion, glfw.True)
 	}
+
+	in.lastMouseX, in.lastMouseY = in.window.GetCursorPos()
 }
 
 var glfwDriversKeyMap = map[shared.Keycode]glfw.Key{
