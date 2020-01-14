@@ -35,7 +35,7 @@ var (
 	levelName    = flag.String("level", "E1M1", "Level to start e.g. E1M1")
 	fpsMax       = flag.Int("fpsmax", 0, "Limit FPS")
 	midiDrv      = flag.String("mididrv", "sdl", "MIDI driver name ("+midiOptions+")")
-	winDrv       = flag.String("windowdrv", "glfw", "Window and Input driver name")
+	winDrv       = flag.String("windowdrv", "sdl", "Window and Input driver name")
 	windowHeight = 600
 	windowWidth  = 800
 	gameDefs     = "resources/defs.yaml"
@@ -70,8 +70,7 @@ func main() {
 
 type engine struct {
 	*run.Runner
-	stats                  *renderStats
-	cursorXpos, cursorYpos float64
+	stats *renderStats
 }
 
 func newEngine(drivers *drivers.Drivers) *engine {
@@ -79,7 +78,6 @@ func newEngine(drivers *drivers.Drivers) *engine {
 	e := &engine{
 		&run.Runner{Drivers: drivers},
 		&renderStats{lastUpdate: time.Now()},
-		0, 0,
 	}
 
 	// init all subsystems
@@ -87,7 +85,7 @@ func newEngine(drivers *drivers.Drivers) *engine {
 	e.InitAudio()
 	err = e.InitRenderer(windowWidth, windowHeight)
 	if err != nil {
-		logger.Redf("failed to init renderer %s", err.Error())
+		logger.Red("failed to init renderer %s", err.Error())
 	}
 
 	// load mission
@@ -103,8 +101,6 @@ func newEngine(drivers *drivers.Drivers) *engine {
 		sector := mission.SectorFromSSect(ssect)
 		player.SetSector(sector)
 	}
-
-	e.Renderer().SetViewPort(e.Window().GetSize())
 
 	return e
 }
@@ -241,11 +237,11 @@ func input(e *engine) {
 		os.Exit(0)
 	}
 
-	if in.IsPressed(drvShared.KeyF5) {
+	if in.IsPressed(drvShared.KeyM) {
 		in.SetMouseCameraEnabled(true)
 	}
 
-	if in.IsPressed(drvShared.KeyF6) {
+	if in.IsPressed(drvShared.KeyK) {
 		in.SetMouseCameraEnabled(false)
 	}
 
@@ -258,15 +254,11 @@ func input(e *engine) {
 		player.ResetPitch()
 	}
 
-	if xpos, ypos := in.GetCursorPos(); xpos != e.cursorXpos {
-		cursorXDelta := xpos - e.cursorXpos
-		player.Turn(float32(cursorXDelta / 10))
-		e.cursorXpos = xpos
+	if xDelta, yDelta := in.GetCursorDelta(); xDelta != 0 || yDelta != 0 {
+		player.Turn(float32(xDelta / 10))
 
 		if verticalMouse {
-			cursorYDelta := e.cursorYpos - ypos
-			player.Pitch(float32(cursorYDelta / 10))
-			e.cursorYpos = ypos
+			player.Pitch(float32(-yDelta / 10))
 		}
 	}
 }

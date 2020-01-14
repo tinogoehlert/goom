@@ -9,7 +9,7 @@ func init() {
 	AudioDrivers[SdlAudio] = sdlAudio
 	MusicDrivers[SdlMusic] = sdlAudio
 	WindowDrivers[SdlWindow] = &sdl.Window{}
-	InputDrivers[SdlInput] = &sdl.Input{}
+	InputDrivers[SdlInput] = &sdl.Window{}
 	TimerFuncs[SdlTimer] = sdl.GetTime
 }
 

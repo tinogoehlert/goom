@@ -18,8 +18,6 @@ func NewMovable(x, y, angle float32, sprite string) *Movable {
 	var m = &Movable{
 		DoomThing: NewDoomThing(x, y, angle, sprite, true),
 	}
-	m.Turn(0)
-	m.Pitch(0)
 	return m
 }
 
@@ -91,6 +89,14 @@ func (m *Movable) Pitch(angle float32) {
 // ResetPitch makes the player look to the horizon
 func (m *Movable) ResetPitch() {
 	m.vAngle = 0
+
+	m.updateDirection()
+}
+
+// SetDirection of the movable.
+func (m *Movable) SetDirectionAngles(hAngle, vAngle float32) {
+	m.hAngle = hAngle
+	m.vAngle = vAngle
 
 	m.updateDirection()
 }

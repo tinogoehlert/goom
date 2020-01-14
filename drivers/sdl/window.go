@@ -9,15 +9,16 @@ import (
 
 // Window is the SDL Window driver.
 type Window struct {
-	window        *sdl.Window
-	width         int
-	height        int
-	fbWidth       int
-	fbHeight      int
-	glContext     sdl.GLContext
-	secsPerUpdate float64
-	fbSizeChanged func(width int, height int)
-	shouldClose   bool
+	window             *sdl.Window
+	width              int
+	height             int
+	fbWidth            int
+	fbHeight           int
+	glContext          sdl.GLContext
+	secsPerUpdate      float64
+	fbSizeChanged      func(width int, height int)
+	shouldClose        bool
+	mouseCameraEnabled bool
 }
 
 // Open inits a new SQL window with GL context.
@@ -30,12 +31,6 @@ func (w *Window) Open(title string, width, height int) error {
 		log.Println(err)
 		return err
 	}
-
-	sdl.GLSetAttribute(sdl.GL_DOUBLEBUFFER, 2)
-	sdl.GLSetAttribute(sdl.GL_DEPTH_SIZE, 32)
-	sdl.GLSetAttribute(sdl.GL_CONTEXT_PROFILE_MASK, sdl.GL_CONTEXT_PROFILE_CORE)
-	sdl.GLSetAttribute(sdl.GL_CONTEXT_MAJOR_VERSION, 3)
-	sdl.GLSetAttribute(sdl.GL_CONTEXT_MINOR_VERSION, 2)
 
 	sdlwin, err := sdl.CreateWindow(
 		title,
@@ -55,6 +50,12 @@ func (w *Window) Open(title string, width, height int) error {
 	w.fbWidth = int(fbWidth)
 	w.fbHeight = int(fbHeight)
 
+	sdl.GLSetAttribute(sdl.GL_DOUBLEBUFFER, 2)
+	sdl.GLSetAttribute(sdl.GL_DEPTH_SIZE, 32)
+	sdl.GLSetAttribute(sdl.GL_CONTEXT_PROFILE_MASK, sdl.GL_CONTEXT_PROFILE_CORE)
+	sdl.GLSetAttribute(sdl.GL_CONTEXT_MAJOR_VERSION, 3)
+	sdl.GLSetAttribute(sdl.GL_CONTEXT_MINOR_VERSION, 2)
+
 	if w.glContext, err = sdlwin.GLCreateContext(); err != nil {
 		sdlwin.Destroy()
 		log.Println(err)
@@ -66,8 +67,7 @@ func (w *Window) Open(title string, width, height int) error {
 
 // GetSize Returns the current size of the Window
 func (w *Window) GetSize() (int, int) {
-	fbWidth, fbHeight := w.window.GLGetDrawableSize()
-	return int(fbWidth * 2), int(fbHeight * 2)
+	return int(w.fbWidth), int(w.fbHeight)
 }
 
 // ShouldClose determines if the window should close
