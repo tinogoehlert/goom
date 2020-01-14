@@ -10,10 +10,8 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 
 	"github.com/tinogoehlert/goom/drivers"
-
 	"github.com/tinogoehlert/goom/drivers/opengl"
-	keys "github.com/tinogoehlert/goom/drivers/pkg"
-	"github.com/tinogoehlert/goom/game"
+	drvShared "github.com/tinogoehlert/goom/drivers/pkg"
 	"github.com/tinogoehlert/goom/goom"
 	"github.com/tinogoehlert/goom/graphics"
 	"github.com/tinogoehlert/goom/level"
@@ -37,10 +35,12 @@ var (
 	levelName    = flag.String("level", "E1M1", "Level to start e.g. E1M1")
 	fpsMax       = flag.Int("fpsmax", 0, "Limit FPS")
 	midiDrv      = flag.String("mididrv", "sdl", "MIDI driver name ("+midiOptions+")")
-	winDrv       = flag.String("windowdrv", "sdl", "Window and Input driver name")
+	winDrv       = flag.String("windowdrv", "glfw", "Window and Input driver name")
 	windowHeight = 600
 	windowWidth  = 800
 	gameDefs     = "resources/defs.yaml"
+
+	verticalMouse = false
 )
 
 func main() {
@@ -62,7 +62,7 @@ func main() {
 	e := newEngine(&mainDrivers)
 
 	inputFunc := func() {
-		input(e.Input, e.World().Me())
+		input(e)
 	}
 
 	e.Window().RunGame(inputFunc, e.World().Update, e.render)
@@ -70,7 +70,8 @@ func main() {
 
 type engine struct {
 	*run.Runner
-	stats *renderStats
+	stats                  *renderStats
+	cursorXpos, cursorYpos float64
 }
 
 func newEngine(drivers *drivers.Drivers) *engine {
@@ -78,6 +79,7 @@ func newEngine(drivers *drivers.Drivers) *engine {
 	e := &engine{
 		&run.Runner{Drivers: drivers},
 		&renderStats{lastUpdate: time.Now()},
+		0, 0,
 	}
 
 	// init all subsystems
@@ -102,7 +104,6 @@ func newEngine(drivers *drivers.Drivers) *engine {
 		player.SetSector(sector)
 	}
 
-	e.Renderer().Camera().SetCamera(player.Position(), player.Direction(), player.Height())
 	e.Renderer().SetViewPort(e.Window().GetSize())
 
 	return e
@@ -149,7 +150,7 @@ func (e *engine) render(interpolTime float64) {
 }
 
 // DrawText draws a string on the screen
-func drawText(fonts graphics.FontBook, fontName graphics.FontName, text string, xpos, ypos float32, scaleFactor float32, gr *opengl.GLRenderer) {
+func drawText(fonts graphics.FontBook, fontName graphics.FontName, text string, xpos, ypos, scaleFactor float32, gr *opengl.GLRenderer) {
 	font := fonts[fontName]
 	spacing := float32(font.GetSpacing()) * scaleFactor
 
@@ -192,40 +193,80 @@ func (rs *renderStats) showStats(gd *goom.GameData, gr *opengl.GLRenderer) {
 	}
 
 	fpsText := fmt.Sprintf("FPS: %d", rs.fps)
-	// TODO: position realtively to the window size
+	// TODO: position relatively to the window size
 	drawText(gd.Fonts, graphics.FnCompositeRed, fpsText, 800, 600, 0.6, gr)
 	ftimeText := fmt.Sprintf("frame time: %.6f ms", rs.meanFrameTime)
-	// TODO: position realtively to the window size
+	// TODO: position relatively to the window size
 	drawText(gd.Fonts, graphics.FnCompositeRed, ftimeText, 800, 580, 0.6, gr)
 }
 
-func input(in drivers.Input, player *game.Player) {
-	if in.IsPressed(keys.KeyUp) || in.IsPressed(keys.KeyW) {
+func input(e *engine) {
+	in := e.Input
+	player := e.World().Me()
+
+	if in.IsPressed(drvShared.KeyW) {
 		player.Forward(1)
 	}
-	if in.IsPressed(keys.KeyDown) || in.IsPressed(keys.KeyS) {
+	if in.IsPressed(drvShared.KeyS) {
 		player.Forward(-1)
 	}
 
-	if in.IsPressed(keys.KeyA) {
+	if in.IsPressed(drvShared.KeyA) {
 		player.Strafe(-1)
 	}
-	if in.IsPressed(keys.KeyD) {
+	if in.IsPressed(drvShared.KeyD) {
 		player.Strafe(1)
 	}
 
-	if in.IsPressed(keys.KeyLeft) {
+	if in.IsPressed(drvShared.KeyLeft) {
 		player.Turn(-1.5)
 	}
-	if in.IsPressed(keys.KeyRight) {
+	if in.IsPressed(drvShared.KeyRight) {
 		player.Turn(1.5)
 	}
 
-	if in.IsPressed(keys.KeyLShift) {
+	if in.IsPressed(drvShared.KeyUp) {
+		player.Pitch(1.5)
+	}
+	if in.IsPressed(drvShared.KeyDown) {
+		player.Pitch(-1.5)
+	}
+
+	if in.IsPressed(drvShared.KeyLShift) || in.IsMousePressed(drvShared.MouseLeft) {
 		player.FireWeapon()
 	}
 
-	if in.IsPressed(keys.KeyQ) {
+	if in.IsPressed(drvShared.KeyQ) {
+		in.SetMouseCameraEnabled(false)
 		os.Exit(0)
+	}
+
+	if in.IsPressed(drvShared.KeyF5) {
+		in.SetMouseCameraEnabled(true)
+	}
+
+	if in.IsPressed(drvShared.KeyF6) {
+		in.SetMouseCameraEnabled(false)
+	}
+
+	if in.IsPressed(drvShared.KeyF7) {
+		verticalMouse = true
+	}
+
+	if in.IsPressed(drvShared.KeyF8) {
+		verticalMouse = false
+		player.ResetPitch()
+	}
+
+	if xpos, ypos := in.GetCursorPos(); xpos != e.cursorXpos {
+		cursorXDelta := xpos - e.cursorXpos
+		player.Turn(float32(cursorXDelta / 10))
+		e.cursorXpos = xpos
+
+		if verticalMouse {
+			cursorYDelta := e.cursorYpos - ypos
+			player.Pitch(float32(cursorYDelta / 10))
+			e.cursorYpos = ypos
+		}
 	}
 }

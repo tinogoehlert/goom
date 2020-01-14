@@ -8,7 +8,7 @@ import (
 // Input is the SDL input driver.
 type Input struct{}
 
-// IsPressed returns if a the corresponding Key is pressed.
+// IsPressed returns if the corresponding Key is pressed.
 func (id *Input) IsPressed(k shared.Keycode) bool {
 	key, ok := sdlDriversKeyMap[k]
 	if !ok {
@@ -18,6 +18,24 @@ func (id *Input) IsPressed(k shared.Keycode) bool {
 	states := sdl.GetKeyboardState()
 	scanCode := sdl.GetScancodeFromKey(key)
 	return states[scanCode] != 0
+}
+
+// GetCursorPos returns the last reported position of the cursor.
+func (id *Input) GetCursorPos() (xpos, ypos float64) {
+	// TODO
+	return
+}
+
+// IsMousePressed returns the corresponding Button is pressed.
+func (id *Input) IsMousePressed(b shared.MouseButton) bool {
+	// TODO
+	return false
+}
+
+// SetMouseCameraEnabled enables or disables mouse camera control.
+func (id *Input) SetMouseCameraEnabled(bool) {
+	// TODO
+	return
 }
 
 var sdlDriversKeyMap = map[shared.Keycode]sdl.Keycode{

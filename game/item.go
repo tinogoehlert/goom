@@ -9,8 +9,8 @@ type Item struct {
 }
 
 // ItemFromDef creates item from definition
-func ItemFromDef(x, y, height, angle float32, def *ItemDef) *Item {
-	item := &Item{DoomThing: NewDoomThing(x, y, height, angle, def.Sprite, false)}
+func ItemFromDef(x, y, angle float32, def *ItemDef) *Item {
+	item := &Item{DoomThing: NewDoomThing(x, y, angle, def.Sprite, false)}
 	item.animations["idle"] = []byte(def.Animation)
 	item.currentAnimation = item.animations["idle"]
 	item.id = def.ID

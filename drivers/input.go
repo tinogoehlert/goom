@@ -23,4 +23,7 @@ type Key struct {
 // Input interface
 type Input interface {
 	IsPressed(shared.Keycode) bool
+	GetCursorPos() (xpos, ypos float64)
+	IsMousePressed(shared.MouseButton) bool
+	SetMouseCameraEnabled(bool)
 }

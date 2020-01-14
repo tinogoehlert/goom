@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/go-gl/mathgl/mgl32"
+
 	"github.com/tinogoehlert/goom/level"
 )
 
@@ -14,7 +15,7 @@ type Thingable interface {
 	GetID() int
 	CollidedWithThing(thing *DoomThing)
 	Position() [2]float32
-	Direction() [2]float32
+	Direction() [3]float32
 	Height() float32
 	NextFrame() byte
 	SetHeight(height float32)
@@ -28,10 +29,11 @@ type Thingable interface {
 // DoomThing a doom thing
 type DoomThing struct {
 	id               int
-	angle            float32
+	hAngle           float32
+	vAngle           float32
 	height           float32
 	sprite           string
-	direction        [2]float32
+	direction        [3]float32
 	position         [2]float32
 	animations       map[string][]byte
 	currentAnimation []byte
@@ -43,8 +45,8 @@ type DoomThing struct {
 }
 
 // ThingFromDef creates thing from definition
-func ThingFromDef(x, y, height, angle float32, def *ThingDef) *DoomThing {
-	var m = NewDoomThing(x, y, height, angle, def.Sprite, false)
+func ThingFromDef(x, y, angle float32, def *ThingDef) *DoomThing {
+	var m = NewDoomThing(x, y, angle, def.Sprite, false)
 	m.animations["idle"] = []byte(def.Animation)
 	m.currentAnimation = m.animations["idle"]
 	m.id = def.ID
@@ -52,11 +54,10 @@ func ThingFromDef(x, y, height, angle float32, def *ThingDef) *DoomThing {
 }
 
 // NewDoomThing creates a new DOOM Thing.
-func NewDoomThing(x, y, height, angle float32, sprite string, hasAngles bool) *DoomThing {
+func NewDoomThing(x, y, angle float32, sprite string, hasAngles bool) *DoomThing {
 	return &DoomThing{
 		position:   mgl32.Vec2{x, y},
-		height:     height,
-		angle:      angle,
+		hAngle:     angle,
 		sprite:     sprite,
 		animations: make(map[string][]byte),
 		hasAngles:  hasAngles,
@@ -99,8 +100,8 @@ func (dt *DoomThing) Position() [2]float32 {
 	return dt.position
 }
 
-// Direction get XY direction
-func (dt *DoomThing) Direction() [2]float32 {
+// Direction get XYZ direction
+func (dt *DoomThing) Direction() [3]float32 {
 	return dt.direction
 }
 
@@ -151,7 +152,7 @@ func (dt *DoomThing) CalcAngle(origin mgl32.Vec2) (int, int) {
 		return 0, 0
 	}
 	dist := origin.Sub(dt.position)
-	angle := mgl32.RadToDeg(float32(math.Atan2(float64(dist.Y()), float64(dist.X())))) - dt.angle
+	angle := mgl32.RadToDeg(float32(math.Atan2(float64(dist.Y()), float64(dist.X())))) - dt.hAngle
 
 	if angle < 0.0 {
 		angle += 360

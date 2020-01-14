@@ -35,8 +35,8 @@ type Monster struct {
 }
 
 // MonsterFromDef creates monster from definition
-func MonsterFromDef(x, y, sx, sy, height, angle float32, def *MonsterDef) *Monster {
-	var m = NewMonster(x, y, height, angle, def.Sprite)
+func MonsterFromDef(x, y, sx, sy, angle float32, def *MonsterDef) *Monster {
+	var m = NewMonster(x, y, angle, def.Sprite)
 	m.health = def.Health
 	m.sizeX = sx
 	m.sizeY = sy
@@ -58,9 +58,9 @@ func MonsterFromDef(x, y, sx, sy, height, angle float32, def *MonsterDef) *Monst
 }
 
 // NewMonster converts ID to name and sequence
-func NewMonster(x, y, height, angle float32, sprite string) *Monster {
+func NewMonster(x, y, angle float32, sprite string) *Monster {
 	return &Monster{
-		Movable: NewMovable(x, y, height, angle, sprite),
+		Movable: NewMovable(x, y, angle, sprite),
 		sounds:  make(map[State]string),
 	}
 }

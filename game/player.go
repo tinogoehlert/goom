@@ -1,12 +1,9 @@
 package game
 
 import (
-	"math"
 	"time"
 
 	"github.com/tinogoehlert/goom/utils"
-
-	"github.com/go-gl/mathgl/mgl32"
 )
 
 // Player DOOM SLAYER!!
@@ -25,21 +22,23 @@ type Player struct {
 }
 
 // NewPlayer creates a new player with the given values
-func NewPlayer(x, y, height, angle float32, w *World) *Player {
-	dy, dx := math.Sincos(float64(angle) * math.Pi / 180)
+func NewPlayer(x, y, hAngle, vAngle float32, w *World) *Player {
 	p := &Player{
 		Movable: &Movable{
 			DoomThing: &DoomThing{
-				position:  [2]float32{x, y},
-				height:    height,
-				angle:     angle,
-				direction: mgl32.Vec2{float32(dx), float32(dy)},
+				position: [2]float32{x, y},
+				hAngle:   hAngle,
+				vAngle:   vAngle,
 			},
 		},
 		world:     w,
 		weaponBag: make(map[string]*Weapon),
 		maxSpeed:  0.5,
 	}
+
+	p.Turn(hAngle)
+	p.Pitch(vAngle)
+
 	return p
 }
 
@@ -73,7 +72,8 @@ func (p *Player) Stop() {
 
 // Height returns the player's height.
 func (p *Player) Height() float32 {
-	return p.DoomThing.height + 40
+	// the players viewport height is 41 according to https://eev.ee/blog/2016/10/10/doom-scale/
+	return p.DoomThing.height + 41
 }
 
 // Update updates all velocities and to deacclerate all types of movement.

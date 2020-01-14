@@ -58,7 +58,7 @@ func (w *World) LoadLevel(lvl *level.Level) error {
 
 	for _, t := range w.levelRef.Things {
 		if t.Type < 5 {
-			player := NewPlayer(t.X, t.Y, 0, t.Angle, w)
+			player := NewPlayer(t.X, t.Y, t.Angle, 0, w)
 			w.players = append(w.players, player)
 			if t.Type == 1 {
 				w.me = player
@@ -67,17 +67,17 @@ func (w *World) LoadLevel(lvl *level.Level) error {
 			player.SetCollision(w.doesCollide)
 		}
 		if obstacleDef := w.definitions.GetObstacleDef(int(t.Type)); obstacleDef != nil {
-			obstacle := ThingFromDef(t.X, t.Y, 0, t.Angle, obstacleDef)
+			obstacle := ThingFromDef(t.X, t.Y, t.Angle, obstacleDef)
 			w.things = appendDoomThing(w.things, obstacle, w.levelRef)
 		}
 
 		if itemDef := w.definitions.GetItemDef(int(t.Type)); itemDef != nil {
-			item := ItemFromDef(t.X, t.Y, 0, t.Angle, itemDef)
+			item := ItemFromDef(t.X, t.Y, t.Angle, itemDef)
 			w.things = appendDoomThing(w.things, item, w.levelRef)
 		}
 
 		if obstacleDef := w.definitions.GetObstacleDef(int(t.Type)); obstacleDef != nil {
-			obstacle := ThingFromDef(t.X, t.Y, 0, t.Angle, obstacleDef)
+			obstacle := ThingFromDef(t.X, t.Y, t.Angle, obstacleDef)
 			w.things = appendDoomThing(w.things, obstacle, w.levelRef)
 		}
 
@@ -90,7 +90,6 @@ func (w *World) LoadLevel(lvl *level.Level) error {
 				t.Y,
 				float32(img.Width())/2,
 				float32(img.Width())/2,
-				0,
 				t.Angle,
 				monsterDef,
 			)
@@ -179,7 +178,7 @@ func (w *World) Update() {
 					angle := mgl32.RadToDeg(
 						float32(math.Atan2(float64(distP.Y()),
 							float64(distP.X()))),
-					) - m.angle
+					) - m.hAngle
 					if angle < 0.0 {
 						angle += 360
 					}
