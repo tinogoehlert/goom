@@ -29,7 +29,7 @@ func (s TrackStore) LoadWAD(w *wad.WAD) {
 		case midiRegex.Match([]byte(l.Name)):
 			t, err := NewTrack(l)
 			if err != nil {
-				fmt.Printf("failed to load track: %s, err: %s\n", t.Name, err)
+				fmt.Printf("failed to load track: %s, err: %s\n", l.Name, err)
 			}
 			s[l.Name] = t
 		}

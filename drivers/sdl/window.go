@@ -45,11 +45,6 @@ func (w *Window) Open(title string, width, height int) error {
 		return err
 	}
 
-	fbWidth, fbHeight := sdlwin.GLGetDrawableSize()
-	w.window = sdlwin
-	w.fbWidth = int(fbWidth)
-	w.fbHeight = int(fbHeight)
-
 	sdl.GLSetAttribute(sdl.GL_DOUBLEBUFFER, 2)
 	sdl.GLSetAttribute(sdl.GL_DEPTH_SIZE, 32)
 	sdl.GLSetAttribute(sdl.GL_CONTEXT_PROFILE_MASK, sdl.GL_CONTEXT_PROFILE_CORE)
@@ -61,6 +56,11 @@ func (w *Window) Open(title string, width, height int) error {
 		log.Println(err)
 		return err
 	}
+
+	fbWidth, fbHeight := sdlwin.GLGetDrawableSize()
+	w.window = sdlwin
+	w.fbWidth = int(fbWidth) * 2
+	w.fbHeight = int(fbHeight) * 2
 
 	return nil
 }

@@ -252,7 +252,7 @@ func (gr *GLRenderer) SetViewPort(fbWidth, fbHeight int) {
 	gr.fbWidth = fbWidth
 	gr.fbHeight = fbHeight
 	gr.fbAspectRatio = float32(gr.fbWidth) / float32(gr.fbHeight)
-	gl.Viewport(0, 0, int32(fbWidth), int32(fbHeight))
+	gl.Viewport(0, 0, int32(gr.fbWidth), int32(gr.fbHeight))
 	gr.setProjection()
 }
 

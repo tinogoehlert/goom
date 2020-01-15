@@ -45,7 +45,6 @@ func (w *Window) Open(title string, width, height int) error {
 	gw.MakeContextCurrent()
 
 	w.fbWidth, w.fbHeight = gw.GetFramebufferSize()
-
 	gw.SetFramebufferSizeCallback(func(gw *glfw.Window, width int, height int) {
 		w.fbWidth = width
 		w.fbHeight = height

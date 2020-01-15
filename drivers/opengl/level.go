@@ -226,7 +226,7 @@ func (s *subSector) addWalls(md *level.Level, gd *goom.GameData, ts glTextureSto
 func (s *subSector) Draw(ts glTextureStore) {
 	for i := 0; i < len(s.floors); i++ {
 		s.floors[i].Draw(gl.TRIANGLE_FAN)
-		if !s.ceilings[i].isSky {
+		if len(s.ceilings) > i && !s.ceilings[i].isSky {
 			s.ceilings[i].Draw(gl.TRIANGLE_FAN)
 		}
 	}
@@ -238,7 +238,7 @@ func (s *subSector) Draw(ts glTextureStore) {
 }
 
 func (s *subSector) DrawSky(ts glTextureStore, sky *glTexture) {
-	for i := 0; i < len(s.floors); i++ {
+	for i := 0; i < len(s.ceilings); i++ {
 		if s.ceilings[i].isSky {
 			s.ceilings[i].DrawWithTexture(gl.TRIANGLE_FAN, sky)
 		}
