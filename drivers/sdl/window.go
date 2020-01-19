@@ -1,7 +1,6 @@
 package sdl
 
 import (
-	"fmt"
 	"log"
 
 	"github.com/tinogoehlert/go-sdl2/sdl"
@@ -38,7 +37,7 @@ func (w *Window) Open(title string, width, height int) error {
 		sdl.WINDOWPOS_UNDEFINED,
 		int32(width),
 		int32(height),
-		sdl.WINDOW_OPENGL|sdl.WINDOW_RESIZABLE,
+		sdl.WINDOW_OPENGL|sdl.WINDOW_RESIZABLE|sdl.WINDOW_ALLOW_HIGHDPI,
 	)
 	if err != nil {
 		log.Println(err)
@@ -59,8 +58,8 @@ func (w *Window) Open(title string, width, height int) error {
 
 	fbWidth, fbHeight := sdlwin.GLGetDrawableSize()
 	w.window = sdlwin
-	w.fbWidth = int(fbWidth) * 2
-	w.fbHeight = int(fbHeight) * 2
+	w.fbWidth = int(fbWidth)
+	w.fbHeight = int(fbHeight)
 
 	return nil
 }
@@ -83,7 +82,6 @@ func (w *Window) RunGame(input func(), update func(), render func(float64)) {
 		elapsed, current float64
 	)
 
-	fmt.Println(w.secsPerUpdate)
 	for {
 		current = float64(sdl.GetTicks()) / 1000
 		elapsed = current - previous
