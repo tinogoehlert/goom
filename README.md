@@ -40,9 +40,13 @@ On Ubuntu, install the following system packages:
 
 For other systems, please check the above requirements and use your corresponding packages.
 
-## OSX
+## macOS
 
-TBD
+On macOS you can install the dependencies with brew:
+
+```bash
+brew install sdl2 sdl2_mixer portaudio portmidi glfw pkg-config
+```
 
 ## Windows
 
