@@ -36,6 +36,7 @@ var (
 	fpsMax       = flag.Int("fpsmax", 0, "Limit FPS")
 	midiDrv      = flag.String("mididrv", "sdl", "MIDI driver name ("+midiOptions+")")
 	winDrv       = flag.String("windowdrv", "sdl", "Window and Input driver name")
+	freeLook     = flag.Bool("freelook", false, "Allow to look up and down")
 	windowHeight = 600
 	windowWidth  = 800
 	gameDefs     = "resources/defs.yaml"
@@ -221,11 +222,13 @@ func input(e *engine) {
 		player.Turn(1.5)
 	}
 
-	if in.IsPressed(drvShared.KeyUp) {
-		player.Pitch(1.5)
-	}
-	if in.IsPressed(drvShared.KeyDown) {
-		player.Pitch(-1.5)
+	if *freeLook {
+		if in.IsPressed(drvShared.KeyUp) {
+			player.Pitch(1.5)
+		}
+		if in.IsPressed(drvShared.KeyDown) {
+			player.Pitch(-1.5)
+		}
 	}
 
 	if in.IsPressed(drvShared.KeyLShift) || in.IsMousePressed(drvShared.MouseLeft) {
@@ -249,16 +252,20 @@ func input(e *engine) {
 		verticalMouse = true
 	}
 
-	if in.IsPressed(drvShared.KeyF8) {
-		verticalMouse = false
-		player.ResetPitch()
+	if *freeLook {
+		if in.IsPressed(drvShared.KeyF8) {
+			verticalMouse = false
+			player.ResetPitch()
+		}
 	}
 
 	if xDelta, yDelta := in.GetCursorDelta(); xDelta != 0 || yDelta != 0 {
 		player.Turn(float32(xDelta / 10))
 
-		if verticalMouse {
-			player.Pitch(float32(-yDelta / 10))
+		if *freeLook {
+			if verticalMouse {
+				player.Pitch(float32(-yDelta / 10))
+			}
 		}
 	}
 }
