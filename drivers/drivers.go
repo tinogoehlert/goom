@@ -50,7 +50,4 @@ const (
 	SdlInput  = InputDriver(Sdl)
 	SdlAudio  = AudioDriver(Sdl)
 	SdlMusic  = MusicDriver(Sdl)
-
-	RtMidiMusic   = MusicDriver("rtmidi")
-	PortMidiMusic = MusicDriver("portmidi")
 )

@@ -100,7 +100,7 @@ func (w *World) LoadLevel(lvl *level.Level) error {
 
 	mus := w.levelRef.Name
 	if w.levelRef.Name == "MAP01" {
-		mus = "RUNNIN"
+		mus = "THE_DA"
 	}
 
 	if err := w.Music.PlayMusic(w.gameData.Music.Track(mus)); err != nil {

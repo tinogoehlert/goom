@@ -8,7 +8,8 @@ import (
 
 // Data stores parsed MIDI events.
 type Data struct {
-	Events []Event
+	rawBytes []byte
+	Events   []Event
 }
 
 // Stream describes MIDI data stream.
@@ -30,14 +31,27 @@ func NewStream(numChannels int) *Stream {
 	}
 }
 
+func NewStreamFromBytes(bytes []byte) *Stream {
+	return &Stream{
+		Data: Data{
+			rawBytes: bytes,
+		},
+	}
+}
+
 // Bytes returns the MIDI bytes for a mid file.
 func (d *Data) Bytes() []byte {
-	// TODO: convert events to bytes
+	if d.rawBytes != nil {
+		return d.rawBytes
+	}
+
 	var data []byte
 	for _, ev := range d.Events {
 		data = append(data, ev.Bytes()...)
 	}
-	return append(append(MidHeader(), TrackLength(data)...), data...)
+
+	d.rawBytes = append(append(MidHeader(), TrackLength(data)...), data...)
+	return d.rawBytes
 }
 
 // Info returns summarized header information as string.

@@ -5,11 +5,9 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
-	"io"
 	"regexp"
 	"time"
 
-	pa "github.com/gordonklaus/portaudio"
 	"github.com/tinogoehlert/goom/wad"
 )
 
@@ -134,86 +132,4 @@ func (s *Sound) Info() string {
 		"Sound(name=%s, bits=%d, rate=%d, num=%d, size=%d, dur=%s)\n%s",
 		s.Name, s.BitDepth(), s.SampleRate(), s.NumSamples(), len(s.SampleBytes()), dur,
 		head)
-}
-
-func init() {
-	if err := pa.Initialize(); err != nil {
-		panic(err)
-	}
-}
-
-// Play plays a Sound using portaudio.
-func Play(s *Sound) error {
-	fmt.Println("playing sound:", s.Name, s.Size)
-	fmt.Println(s.Info())
-
-	//defer pa.Terminate()
-	api, err := pa.DefaultHostApi()
-	if err != nil {
-		return err
-	}
-	fmt.Println("using portaudio api:", api.Type)
-
-	/*
-		devs, err := pa.Devices()
-		if err != nil {
-			return err
-		}
-		for devNum, dev := range devs {
-			fmt.Printf("found portaudio device %d: %s\n", devNum, dev.Name)
-		}
-	*/
-
-	dev := api.DefaultOutputDevice
-	fmt.Println("using portaudio device:", dev.Name)
-
-	data := s.SampleBytes()
-
-	if test {
-		for i := range data {
-			data[i] = 127 // silence
-		}
-	}
-
-	rate := float64(s.SampleRate())
-	stream, err := pa.OpenDefaultStream(0, 1, rate, pa.FramesPerBufferUnspecified, &data)
-	if err == pa.DeviceUnavailable {
-		fmt.Println("skipping unavailable device:", dev.Name)
-		return nil
-	}
-	if err != nil {
-		return err
-	}
-
-	stream.Start()
-	//defer stream.Stop()
-	//defer stream.Close()
-
-	// fmt.Println("started playback on device:", dev.Name)
-	// t := time.Now()
-	if err := stream.Write(); err != nil && err != io.EOF {
-		return err
-	}
-	if !test {
-		time.Sleep(s.Duration())
-	}
-	// d := time.Now().Sub(t)
-	// fmt.Printf("finished playback on device: %s, after: %s\n", dev.Name, d)
-
-	return nil
-}
-
-// PlaySounds plays all given sounds.
-func PlaySounds(names ...string) error {
-	if len(sounds) == 0 {
-		fmt.Println("no sounds loaded")
-		return fmt.Errorf("no sounds loaded")
-	}
-	for _, n := range names {
-		if err := Play(sounds.Get(n)); err != nil {
-			fmt.Println(err)
-			return err
-		}
-	}
-	return nil
 }

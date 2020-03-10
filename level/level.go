@@ -54,7 +54,8 @@ func (s Store) LoadWAD(w *wad.WAD) error {
 		case nameRegex.Match([]byte(lump.Name)):
 			l, err := NewLevel(w.Lumps()[i+1 : i+9])
 			if err != nil {
-				return fmt.Errorf("ERROR %s: %s", lump.Name, err.Error())
+				fmt.Printf("ERROR %s: %s\n", lump.Name, err.Error())
+				continue
 			}
 			l.Name = lump.Name
 			s[l.Name] = l

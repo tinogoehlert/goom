@@ -26,7 +26,7 @@ func NewMusStream(data []byte) (*Stream, error) {
 	data = data[HeaderStart(data):]
 	id := string(data[:4])
 	if len(data) < 16 || id != LumpID {
-		return nil, fmt.Errorf("failed to load bytes '%s' as MUS", data)
+		return nil, fmt.Errorf("failed to load bytes as MUS")
 	}
 
 	md := &Stream{

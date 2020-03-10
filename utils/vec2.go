@@ -74,6 +74,12 @@ func (a Vec2) Add(b Vec2) Vec2 {
 	return V2(a.x+b.x, a.y+b.y)
 }
 
+// AddXY Add XY to vector
+func (a *Vec2) AddXY(x, y float32) {
+	a.x += x
+	a.y += y
+}
+
 // Sub subtract two vectors.
 func (a Vec2) Sub(b Vec2) Vec2 {
 	return V2(a.x-b.x, a.y-b.y)

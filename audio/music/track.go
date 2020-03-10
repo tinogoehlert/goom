@@ -29,14 +29,27 @@ type Track struct {
 
 // NewTrack loads MUS bytes as music.Track.
 func NewTrack(lump wad.Lump) (*Track, error) {
-	mu, err := mus.NewMusStream(lump.Data)
-	if err != nil {
-		return nil, err
+	header := lump.Data[0:4]
+	var (
+		mi  *midi.Stream
+		mu  *mus.Stream
+		err error
+	)
+
+	switch string(header) {
+	case "MUS\x1a":
+		mu, err = mus.NewMusStream(lump.Data)
+		if err != nil {
+			return nil, err
+		}
+		mi, err = convert.Mus2Mid(mu)
+		if err != nil {
+			return nil, err
+		}
+	case "MThd":
+		mi = midi.NewStreamFromBytes(lump.Data)
 	}
-	mi, err := convert.Mus2Mid(mu)
-	if err != nil {
-		return nil, err
-	}
+
 	return &Track{lump, mi, mu}, nil
 }
 

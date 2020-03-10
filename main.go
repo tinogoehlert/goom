@@ -23,8 +23,6 @@ var (
 	logger = utils.GoomConsole
 
 	midiOptions = strings.Join([]string{
-		string(drivers.PortMidiMusic),
-		string(drivers.RtMidiMusic),
 		string(drivers.SdlMusic),
 		string(drivers.Noop),
 	}, "|")
@@ -34,7 +32,6 @@ var (
 	pwadfile     = flag.String("pwad", "", "PWAD file to load (without extension)")
 	levelName    = flag.String("level", "E1M1", "Level to start e.g. E1M1")
 	fpsMax       = flag.Int("fpsmax", 0, "Limit FPS")
-	midiDrv      = flag.String("mididrv", "sdl", "MIDI driver name ("+midiOptions+")")
 	winDrv       = flag.String("windowdrv", "sdl", "Window and Input driver name")
 	freeLook     = flag.Bool("freelook", false, "Allow to look up and down")
 	windowHeight = 600
@@ -50,7 +47,7 @@ func main() {
 	mainDrivers := drivers.Drivers{
 		Window:  drivers.WindowDrivers[drivers.WindowDriver(strings.ToLower(*winDrv))],
 		Audio:   drivers.AudioDrivers[drivers.SdlAudio],
-		Music:   drivers.MusicDrivers[drivers.MusicDriver(strings.ToLower(*midiDrv))],
+		Music:   drivers.MusicDrivers[drivers.SdlMusic],
 		Input:   drivers.InputDrivers[drivers.InputDriver(strings.ToLower(*winDrv))],
 		GetTime: drivers.TimerFuncs[drivers.SdlTimer],
 	}

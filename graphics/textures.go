@@ -63,6 +63,7 @@ func (t *Texture) Left() int { return 0 }
 
 // ToRGBA generates a go image from all patches
 func (t *Texture) ToRGBA(palette [256]color.RGBA) *image.RGBA {
+	
 	var (
 		bounds = image.Rect(0, 0, int(t.width), int(t.height))
 		img    = image.NewRGBA(bounds)

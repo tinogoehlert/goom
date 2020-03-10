@@ -1,6 +1,8 @@
 package opengl
 
 import (
+	"fmt"
+
 	"github.com/go-gl/gl/v2.1/gl"
 	"github.com/tinogoehlert/goom/goom"
 	"github.com/tinogoehlert/goom/level"
@@ -140,7 +142,10 @@ func (s *subSector) addWalls(md *level.Level, gd *goom.GameData, ts glTextureSto
 
 		if upTex != "-" && otherSide != nil {
 			oppositeSector := md.Sectors[otherSide.Sector]
-
+			if _, ok := ts[upTex]; !ok {
+				fmt.Println(upTex, "not found")
+				continue
+			}
 			tex := ts[upTex][0]
 			var (
 				tw     = float32(tex.image.Width()) + float32(tex.image.Left())
@@ -169,7 +174,10 @@ func (s *subSector) addWalls(md *level.Level, gd *goom.GameData, ts glTextureSto
 
 		if lowTex != "-" && otherSide != nil {
 			oppositeSector := md.Sectors[otherSide.Sector]
-
+			if _, ok := ts[lowTex]; !ok {
+				fmt.Println(lowTex, "not found")
+				continue
+			}
 			tex := ts[lowTex][0]
 			var (
 				tw     = float32(tex.image.Width()) + float32(tex.image.Left())
@@ -197,6 +205,10 @@ func (s *subSector) addWalls(md *level.Level, gd *goom.GameData, ts glTextureSto
 		}
 
 		if midTex != "-" {
+			if _, ok := ts[midTex]; !ok {
+				fmt.Println(midTex, "not found")
+				continue
+			}
 			tex := ts[midTex][0]
 			var (
 				tw     = float32(tex.image.Width()) + float32(tex.image.Left())

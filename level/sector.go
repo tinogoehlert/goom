@@ -93,6 +93,10 @@ func newSSectsFromLump(lump *wad.Lump, segs []Segment) ([]SubSector, error) {
 			Count:    uint32(int16(binary.LittleEndian.Uint16(vb[0:2]))),
 			firstSeg: uint32(int16(binary.LittleEndian.Uint16(vb[2:4]))),
 		}
+		if ssect.firstSeg > 1000000 {
+			fmt.Println("skip this..")
+			return nil, fmt.Errorf("out of bound")
+		}
 		ssect.segments = segs[ssect.firstSeg : ssect.firstSeg+ssect.Count]
 		subsectors[i] = ssect
 	}
