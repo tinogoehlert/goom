@@ -8,6 +8,6 @@ require (
 	github.com/go-gl/mathgl v0.0.0-20190713194549-592312d8590a
 	github.com/tinogoehlert/go-sdl2 v0.4.0-rc.1
 	github.com/ttacon/chalk v0.0.0-20160626202418-22c06c80ed31
-	golang.org/x/image v0.0.0-20191206065243-da761ea9ff43 // indirect
+	golang.org/x/image v0.5.0 // indirect
 	gopkg.in/yaml.v2 v2.2.7
 )
