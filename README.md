@@ -3,7 +3,7 @@ DOOM engine written in Go
 
 ![GOOM](/misc/goom.png?raw=true "GOOM")
 
-Make sure you have `DOOM1.WAD` in the root dir. Then type `make run` to run GOOM.
+Make sure you have `DOOM1.WAD` in the root dir. Then type `make run` to run GOON.
 
 # Development Status
 
